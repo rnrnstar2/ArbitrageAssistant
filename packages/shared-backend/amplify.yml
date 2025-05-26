@@ -1,0 +1,29 @@
+version: 1
+applications:
+  - backend:
+      phases:
+        preBuild:
+          commands:
+            - nvm install 20
+            - nvm use 20
+        build:
+          commands:
+            [
+              "npm ci --cache .npm --prefer-offline",
+              "npx ampx pipeline-deploy --branch $AWS_BRANCH --app-id $AWS_APP_ID",
+            ]
+    frontend:
+      phases:
+        build:
+          commands:
+            - echo ">>> build front start <<<"
+            - ls -al
+      artifacts:
+        baseDirectory: dist
+        files:
+          - "**/*"
+      cache:
+        paths:
+          - "node_modules/**/*"
+      buildPath: packages/shared-backend
+    appRoot: packages/shared-backend
