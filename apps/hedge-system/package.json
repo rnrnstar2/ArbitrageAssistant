@@ -1,5 +1,5 @@
 {
-  "name": "front",
+  "name": "hedge-system",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -8,6 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:release": "tauri build --bundles updater",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
@@ -22,6 +25,7 @@
     "@repo/eslint-config": "*",
     "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",
+    "@tauri-apps/cli": "^2.5.0",
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

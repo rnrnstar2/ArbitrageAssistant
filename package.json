@@ -1,5 +1,5 @@
 {
-  "name": "amplify-monorepo-template",
+  "name": "arbitrage-assistant",
   "version": "0.0.1",
   "workspaces": [
     "apps/*",

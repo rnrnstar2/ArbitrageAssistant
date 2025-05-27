@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, User, FileText, Settings, LogOut } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import {
@@ -15,15 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@repo/ui/components/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/sheet";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  navigationMenuTriggerStyle,
 } from "@repo/ui/components/navigation-menu";
-
+import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/sheet";
 import "./globals.css";
 
 interface MenuItem {
@@ -36,6 +35,7 @@ interface NavigationProps {
 }
 export function NavigationLayout({ children }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const pathname = usePathname();
 
   const menuItems: MenuItem[] = [
     { title: "ホーム", href: "/" },
@@ -57,16 +57,23 @@ export function NavigationLayout({ children }: NavigationProps) {
           </SheetTrigger>
           <SheetContent side="left" className="sm:hidden">
             <nav className="grid gap-2 text-lg font-medium">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-2 px-2 py-1 hover:text-primary"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.title}
-                </Link>
-              ))}
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-2 py-1 rounded-lg ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:text-primary"
+                    }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {isActive ? `▶ ${item.title}` : item.title}
+                  </Link>
+                );
+              })}
             </nav>
           </SheetContent>
         </Sheet>
@@ -78,17 +85,25 @@ export function NavigationLayout({ children }: NavigationProps) {
         <nav className="hidden flex-1 sm:block">
           <NavigationMenu>
             <NavigationMenuList className="flex gap-1">
-              {menuItems.map((item) => (
-                <NavigationMenuItem key={item.href}>
-                  <Link href={item.href} legacyBehavior passHref>
-                    <NavigationMenuLink
-                      className={navigationMenuTriggerStyle()}
-                    >
-                      {item.title}
+              {menuItems.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <NavigationMenuItem key={item.href}>
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={item.href}
+                        className={`px-3 py-2 rounded-lg ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-primary/5"
+                        }`}
+                      >
+                        {isActive ? <strong>{item.title}</strong> : item.title}
+                      </Link>
                     </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
-              ))}
+                  </NavigationMenuItem>
+                );
+              })}
             </NavigationMenuList>
           </NavigationMenu>
         </nav>

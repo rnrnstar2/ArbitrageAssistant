@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "notes": "新機能とバグ修正を含むアップデート",
+  "pub_date": "2024-01-15T12:00:00Z",
+  "platforms": {
+    "darwin-x86_64": {
+      "signature": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      "url": "https://releases.arbitrageassistant.com/hedge-system/darwin-x86_64/hedge-system-0.2.0.app.tar.gz"
+    },
+    "darwin-aarch64": {
+      "signature": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      "url": "https://releases.arbitrageassistant.com/hedge-system/darwin-aarch64/hedge-system-0.2.0.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      "url": "https://releases.arbitrageassistant.com/hedge-system/windows-x86_64/hedge-system-0.2.0.msi.zip"
+    },
+    "linux-x86_64": {
+      "signature": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk",
+      "url": "https://releases.arbitrageassistant.com/hedge-system/linux-x86_64/hedge-system-0.2.0.AppImage.tar.gz"
+    }
+  }
+}
