@@ -37,6 +37,3 @@ next-env.d.ts
 
 # Tauri signing keys
 .tauri/*.key
-
-# Amplify outputs (generated from shared-backend)
-amplify_outputs.json

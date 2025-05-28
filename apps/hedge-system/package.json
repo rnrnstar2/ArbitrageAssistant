@@ -4,10 +4,6 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "prebuild": "npm run copy:amplify-outputs",
-    "predev": "npm run copy:amplify-outputs",
-    "pretauri:dev": "npm run copy:amplify-outputs",
-    "copy:amplify-outputs": "cp ../../packages/shared-backend/amplify_outputs.json ./amplify_outputs.json || echo 'amplify_outputs.json not found, run ampx sandbox first'",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
