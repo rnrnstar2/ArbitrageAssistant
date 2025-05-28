@@ -48,7 +48,6 @@ jobs:
 
       - name: Lint code
         run: npm run lint
-        continue-on-error: true
 
       - name: Type check
         run: |
