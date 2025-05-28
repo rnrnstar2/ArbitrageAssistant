@@ -32,8 +32,10 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css",
-    "dev": "tsc --watch & tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --watch",
+    "build": "tsc && npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
+    "build:tsc": "tsc",
+    "build:css": "npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
+    "dev": "tsc --watch & npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --watch",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component"
   },
