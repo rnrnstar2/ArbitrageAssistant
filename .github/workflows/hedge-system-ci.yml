@@ -33,7 +33,12 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          cd packages/eslint-config && npm install
+          cd ../ui && npm install
+          cd ../../apps/admin && npm install
+          cd ../hedge-system && npm install
 
       - name: Build shared packages
         run: |
