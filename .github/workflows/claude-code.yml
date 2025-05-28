@@ -1,0 +1,107 @@
+name: Claude Code Assistant
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types: [opened, edited, synchronize]
+  pull_request_review_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: false
+        type: string
+      pr_number:
+        description: 'Pull request number to process'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  checks: write
+
+jobs:
+  claude-code:
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config --local user.email "claude-code[bot]@anthropic.com"
+          git config --local user.name "Claude Code Assistant"
+
+      - name: Process Claude request
+        uses: anthropics/claude-code-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          anthropic-api-key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max-iterations: 10
+          model: claude-3-5-sonnet-20241022
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+  validate-changes:
+    runs-on: ubuntu-latest
+    needs: claude-code
+    if: always() && needs.claude-code.result == 'success'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run type checking (admin)
+        run: |
+          cd apps/admin
+          npm run check-types
+        continue-on-error: true
+
+      - name: Run type checking (hedge-system)
+        run: |
+          cd apps/hedge-system
+          npm run check-types
+        continue-on-error: true
+
+      - name: Build applications
+        run: npm run build
+        continue-on-error: true

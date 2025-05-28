@@ -84,3 +84,9 @@ npm version patch  # or minor, major
 - **Node version**: >=20 required
 - **Turbo caching**: Enabled for builds, disabled for dev mode
 - **Theme support**: Dark mode implementation in hedge-system app
+
+## Claude Code Action Integration
+- **Trigger**: Use `@claude` in issues, PRs, or comments to activate Claude Code assistant
+- **Workflow**: `.github/workflows/claude-code.yml` handles automated code assistance
+- **Validation**: Automatic linting, type checking, and build validation after changes
+- **Permissions**: Full repository access for code modifications and PR/issue management
