@@ -1,81 +1,119 @@
-# Turborepo starter
+# ArbitrageAssistant
 
-This is an official starter Turborepo.
+アービトラージ取引ツールを含むモノレポジトリ。管理用Webアプリケーションとヘッジシステムデスクトップアプリケーションを含みます。
 
-## Using this example
+## 概要
 
-Run the following command:
+ArbitrageAssistantは、最新のWeb技術で構築された包括的な取引アシスタントプラットフォームです。以下のコンポーネントで構成されています：
 
-```sh
-npx create-turbo@latest
+- **Admin App**: Web ベースの管理インターフェース
+- **Hedge System**: ヘッジ取引業務用の Tauri デスクトップアプリケーション
+
+## 技術スタック
+
+- **フロントエンド**: React 19、Next.js 15.3.2、TypeScript
+- **デスクトップ**: Tauri (Rust + Next.js)
+- **バックエンド**: AWS Amplify Gen2
+- **UI**: Radix UI、shadcn/ui、Tailwind CSS
+- **ビルド**: Turborepo、npm workspaces
+
+## 前提条件
+
+- Node.js >= 20
+- npm >= 9.8.0
+- Rust（Tauriデスクトップアプリ開発用）
+
+## インストール
+
+```bash
+# リポジトリをクローン
+git clone https://github.com/yourusername/ArbitrageAssistant.git
+cd ArbitrageAssistant
+
+# 依存関係をインストール
+npm install
 ```
 
-## What's inside?
+## 開発
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm build
+### すべてのアプリケーションを起動
+```bash
+npm run dev
 ```
 
-### Develop
+### 特定のアプリを実行
+```bash
+# Admin Webアプリ
+cd apps/admin
+npm run dev
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-pnpm dev
-```
-
-### Remote Caching
-
-Turborepo can use a technique known as [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup), then enter the following commands:
-
-```
-cd my-turborepo
-npx turbo login
+# ヘッジシステムデスクトップアプリ
+cd apps/hedge-system
+npm run tauri:dev
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## ビルド
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### すべてのパッケージとアプリをビルド
+```bash
+npm run build
+```
+
+### 特定のアプリをビルド
+```bash
+# Admin Webアプリ
+cd apps/admin
+npm run build
+
+# ヘッジシステムデスクトップアプリ
+cd apps/hedge-system
+npm run tauri:build
+```
+
+## プロジェクト構造
 
 ```
-npx turbo link
+ArbitrageAssistant/
+├── apps/
+│   ├── admin/          # Webベース管理インターフェース
+│   └── hedge-system/   # Tauriデスクトップアプリケーション
+├── packages/
+│   └── shared-backend/ # AWS Amplifyバックエンド
+├── scripts/            # ビルド・テストスクリプト
+└── turbo.json         # Turborepo設定
 ```
 
-## Useful Links
+## 利用可能なスクリプト
 
-Learn more about the power of Turborepo:
+- `npm run dev` - すべてのアプリを開発モードで起動
+- `npm run build` - すべてのアプリとパッケージをビルド
+- `npm run lint` - すべてのコードをリント
+- `npm run format` - Prettierでコードをフォーマット
 
-- [Tasks](https://turbo.build/repo/docs/core-concepts/monorepos/running-tasks)
-- [Caching](https://turbo.build/repo/docs/core-concepts/caching)
-- [Remote Caching](https://turbo.build/repo/docs/core-concepts/remote-caching)
-- [Filtering](https://turbo.build/repo/docs/core-concepts/monorepos/filtering)
-- [Configuration Options](https://turbo.build/repo/docs/reference/configuration)
-- [CLI Usage](https://turbo.build/repo/docs/reference/command-line-reference)
+## リリースプロセス
+
+ヘッジシステムの新しいリリースを作成するには：
+
+```bash
+# リリースタグを作成してプッシュ
+git tag hedge-system-v0.1.1
+git push origin hedge-system-v0.1.1
+```
+
+これにより、GitHub Actionsワークフローがトリガーされ、ビルドとリリースが作成されます。
+
+## コントリビューション
+
+1. リポジトリをフォーク
+2. フィーチャーブランチを作成 (`git checkout -b feature/amazing-feature`)
+3. 変更をコミット (`git commit -m 'Add some amazing feature'`)
+4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
+5. プルリクエストを作成
+
+## ライセンス
+
+このプロジェクトは独占的ソフトウェアです。すべての権利を保有しています。
+
+## サポート
+
+問題や機能リクエストについては、GitHubのイシュートラッカーをご利用ください。

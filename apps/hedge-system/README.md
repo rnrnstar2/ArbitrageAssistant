@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Hedge System
 
-## Getting Started
+アービトラージ取引のためのヘッジシステムデスクトップアプリケーション。
 
-First, run the development server:
+## 概要
+
+Hedge SystemはTauriとNext.jsを使用して構築されたクロスプラットフォームデスクトップアプリケーションです。アービトラージ取引におけるヘッジ戦略の実行と管理を支援します。
+
+## 技術スタック
+
+- **フロントエンド**: Next.js 15.3.2、React 19、TypeScript
+- **デスクトップフレームワーク**: Tauri 2.0 (Rust)
+- **UI コンポーネント**: Radix UI、shadcn/ui
+- **スタイリング**: Tailwind CSS
+- **認証**: AWS Amplify Auth
+
+## 機能
+
+- 🔐 セキュアな認証システム
+- 🖥️ ネイティブデスクトップアプリケーション
+- 🌓 ダークモード対応
+- 🔄 自動アップデート機能
+- 📊 リアルタイム取引データ表示（開発中）
+
+## 開発環境のセットアップ
+
+### 前提条件
+
+- Node.js >= 20
+- npm >= 9.8.0
+- Rust（最新の安定版）
+- Tauri CLI
+
+### インストール
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# プロジェクトルートから
+cd apps/hedge-system
+
+# 依存関係をインストール
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 開発
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Webアプリとして開発
+```bash
+npm run dev
+```
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いて確認できます。
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+### デスクトップアプリとして開発
+```bash
+npm run tauri:dev
+```
+Tauriがデスクトップウィンドウを起動し、ホットリロードが有効になります。
 
-## Learn More
+## ビルド
 
-To learn more about Next.js, take a look at the following resources:
+### プロダクションビルド（デスクトップアプリ）
+```bash
+npm run tauri:build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### リリースビルド（アップデーター付き）
+```bash
+npm run tauri:release
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Webアプリのみビルド
+```bash
+npm run build
+```
 
-## Deploy on Vercel
+## プロジェクト構造
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+hedge-system/
+├── app/                    # Next.js App Router
+│   ├── NavigationLayout.tsx # ナビゲーションレイアウト
+│   ├── layout.tsx          # ルートレイアウト
+│   └── page.tsx            # ホームページ
+├── components/             # Reactコンポーネント
+│   ├── auth/              # 認証関連コンポーネント
+│   └── providers.tsx      # コンテキストプロバイダー
+├── hooks/                 # カスタムフック
+├── src-tauri/            # Tauri（Rust）バックエンド
+│   ├── src/              # Rustソースコード
+│   ├── icons/            # アプリアイコン
+│   └── tauri.conf.json   # Tauri設定
+└── public/               # 静的アセット
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 設定
+
+### Tauri設定
+`src-tauri/tauri.conf.json`でアプリの動作を設定：
+- ウィンドウサイズ: 800x600（リサイズ可能）
+- アップデーター: GitHub Releasesを使用
+- セキュリティ: CSPとケーパビリティ設定
+
+### 環境変数
+必要に応じて`.env.local`ファイルを作成：
+```env
+# 開発環境用の設定
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## リリース
+
+### バージョンアップ
+```bash
+npm version patch  # または minor, major
+```
+
+### GitHubリリース
+```bash
+git tag hedge-system-v0.1.1
+git push origin hedge-system-v0.1.1
+```
+GitHub Actionsが自動的にビルドとリリースを作成します。
+
+## トラブルシューティング
+
+### Tauriビルドエラー
+- Rustが最新バージョンであることを確認
+- `cargo clean`を実行してキャッシュをクリア
+
+### 認証エラー
+- `amplify_outputs.json`が存在することを確認
+- AWS Amplifyバックエンドが正しく設定されているか確認
+
+## ライセンス
+
+このプロジェクトは独占的ソフトウェアです。すべての権利を保有しています。
