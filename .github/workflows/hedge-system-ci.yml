@@ -36,6 +36,8 @@ jobs:
         run: npm ci
 
       - name: Build applications and packages
+        env:
+          PARCEL_WATCHER_BACKEND: fs
         run: npm run build
 
       - name: Lint code
@@ -93,7 +95,14 @@ jobs:
         run: npm ci
 
       - name: Build applications and packages
+        env:
+          PARCEL_WATCHER_BACKEND: fs
         run: npm run build
+
+      - name: Build Next.js app
+        run: |
+          cd apps/hedge-system
+          npm run build
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
