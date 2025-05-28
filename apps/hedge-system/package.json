@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^6.11.2",
     "@repo/ui": "*",
+    "@tauri-apps/api": "^2.5.0",
     "aws-amplify": "^6.15.0",
     "lucide-react": "^0.510.0",
     "next": "15.3.2",

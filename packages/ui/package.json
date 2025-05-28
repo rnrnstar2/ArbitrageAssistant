@@ -32,7 +32,7 @@
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && PARCEL_WATCHER_BACKEND=fs npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
+    "build": "tsc && npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
     "build:tsc": "tsc",
     "build:css": "npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
     "dev": "tsc --watch & npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --watch",
