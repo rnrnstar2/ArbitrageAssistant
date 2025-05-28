@@ -59,8 +59,6 @@ jobs:
             args: "--target aarch64-apple-darwin"
           - platform: "macos-latest"
             args: "--target x86_64-apple-darwin"
-          - platform: "ubuntu-latest"
-            args: ""
           - platform: "windows-latest"
             args: ""
 
@@ -85,12 +83,6 @@ jobs:
         with:
           workspaces: "./apps/hedge-system/src-tauri -> target"
 
-      - name: Install system dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
       - name: Install frontend dependencies
         run: npm ci
 
@@ -98,11 +90,6 @@ jobs:
         env:
           PARCEL_WATCHER_BACKEND: fs
         run: npx turbo build --filter=hedge-system...
-
-      - name: Build Next.js app
-        run: |
-          cd apps/hedge-system
-          npm run build
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
