@@ -38,10 +38,10 @@ jobs:
       - name: Build applications and packages
         env:
           PARCEL_WATCHER_BACKEND: fs
-        run: npm run build
+        run: npx turbo build --filter=hedge-system...
 
       - name: Lint code
-        run: npm run lint
+        run: npx turbo lint --filter=hedge-system...
 
       - name: Type check
         run: |
@@ -97,7 +97,7 @@ jobs:
       - name: Build applications and packages
         env:
           PARCEL_WATCHER_BACKEND: fs
-        run: npm run build
+        run: npx turbo build --filter=hedge-system...
 
       - name: Build Next.js app
         run: |
