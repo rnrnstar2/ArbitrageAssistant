@@ -98,3 +98,4 @@ jobs:
         with:
           projectPath: "./apps/hedge-system"
           args: ${{ matrix.args }}
+          tauriScript: "npm run tauri:build"
