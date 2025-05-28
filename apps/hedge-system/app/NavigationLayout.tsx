@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, User, FileText, Settings, LogOut } from "lucide-react";
+import { User, FileText, Settings, LogOut } from "lucide-react";
 import { Button } from "@repo/ui/components/button";
 import {
   Avatar,
@@ -22,7 +22,6 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
 } from "@repo/ui/components/navigation-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import "./globals.css";
 
@@ -35,7 +34,6 @@ interface NavigationProps {
   children: React.ReactNode;
 }
 export function NavigationLayout({ children }: NavigationProps) {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const pathname = usePathname();
   const { user, signOut } = useAuth();
 
@@ -50,41 +48,11 @@ export function NavigationLayout({ children }: NavigationProps) {
     <div className="flex min-h-screen flex-col">
       {/* Header/Menu Bar */}
       <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background text-accent-foreground px-4 sm:px-6">
-        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="sm:hidden">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">メニュー切替</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="sm:hidden">
-            <nav className="grid gap-2 text-lg font-medium">
-              {menuItems.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-2 px-2 py-1 rounded-lg ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:text-primary"
-                    }`}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {isActive ? `▶ ${item.title}` : item.title}
-                  </Link>
-                );
-              })}
-            </nav>
-          </SheetContent>
-        </Sheet>
-
         <div className="flex items-center gap-2 font-semibold">
           <span>Hedge System</span>
         </div>
 
-        <nav className="hidden flex-1 sm:block">
+        <nav className="flex-1">
           <NavigationMenu>
             <NavigationMenuList className="flex gap-1">
               {menuItems.map((item) => {
@@ -109,8 +77,6 @@ export function NavigationLayout({ children }: NavigationProps) {
             </NavigationMenuList>
           </NavigationMenu>
         </nav>
-
-        <div className="flex-1 sm:hidden"></div>
 
         <div className="relative">
           <DropdownMenu>

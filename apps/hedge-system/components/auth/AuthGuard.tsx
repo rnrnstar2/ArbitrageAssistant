@@ -22,7 +22,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!user) {
-    return <LoginForm onSignIn={checkAuthState} />;
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <LoginForm onSignIn={checkAuthState} className="w-full max-w-md" />
+      </div>
+    );
   }
 
   return <>{children}</>;
