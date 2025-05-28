@@ -2,27 +2,27 @@
 import * as React from "react";
 import Link from "next/link";
 import { Menu, User, FileText, Settings, LogOut } from "lucide-react";
-import { Button } from "@repo/ui/components/button";
+import { Button } from "@repo/ui/components/ui/button";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@repo/ui/components/avatar";
+} from "@repo/ui/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/components/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/sheet";
+} from "@repo/ui/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/ui/sheet";
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-} from "@repo/ui/components/navigation-menu";
+} from "@repo/ui/components/ui/navigation-menu";
 
 import "./globals.css";
 

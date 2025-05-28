@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { signIn, signUp, confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
 import { cn } from "@repo/ui/lib/utils";
-import { Button } from "@repo/ui/components/button";
-import { Input } from "@repo/ui/components/input";
-import { Label } from "@repo/ui/components/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui/components/card";
+import { Button } from "@repo/ui/components/ui/button";
+import { Input } from "@repo/ui/components/ui/input";
+import { Label } from "@repo/ui/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 import { AlertCircle } from "lucide-react";
 import { translateAuthError } from "../../utils/amplify-i18n";
 

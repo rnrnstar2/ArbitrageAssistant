@@ -9,12 +9,7 @@
     "dist"
   ],
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./components/*": {
+    "./components/ui/*": {
       "import": "./dist/components/ui/*.js",
       "require": "./dist/components/ui/*.js",
       "types": "./dist/components/ui/*.d.ts"
@@ -25,9 +20,9 @@
       "types": "./dist/lib/*.d.ts"
     },
     "./hooks/*": {
-      "import": "./dist/src/hooks/*.js",
-      "require": "./dist/src/hooks/*.js",
-      "types": "./dist/src/hooks/*.d.ts"
+      "import": "./dist/hooks/*.js",
+      "require": "./dist/hooks/*.js",
+      "types": "./dist/hooks/*.d.ts"
     },
     "./styles.css": "./dist/index.css"
   },

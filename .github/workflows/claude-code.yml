@@ -23,7 +23,8 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      actions: read
+      actions: write 
+      packages: write
 
     steps:
       - name: Checkout code
