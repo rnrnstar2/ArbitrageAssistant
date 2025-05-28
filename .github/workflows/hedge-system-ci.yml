@@ -3,16 +3,16 @@ name: Hedge System CI/CD
 on:
   push:
     branches: [main, develop]
-    paths: 
-      - 'apps/hedge-system/**'
-      - 'packages/**'
-      - '.github/workflows/hedge-system-ci.yml'
+    paths:
+      - "apps/hedge-system/**"
+      - "packages/**"
+      - ".github/workflows/hedge-system-ci.yml"
   pull_request:
     branches: [main, develop]
     paths:
-      - 'apps/hedge-system/**'
-      - 'packages/**'
-      - '.github/workflows/hedge-system-ci.yml'
+      - "apps/hedge-system/**"
+      - "packages/**"
+      - ".github/workflows/hedge-system-ci.yml"
   workflow_dispatch:
 
 env:
@@ -21,7 +21,7 @@ env:
 jobs:
   lint-and-test:
     name: Lint and Test
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,15 +29,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install dependencies
-        run: npm ci --include=optional
+        run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/ui && npm run build
+      - name: Build applications and packages
+        run: npm run build
 
       - name: Lint code
         run: npm run lint
@@ -47,11 +46,6 @@ jobs:
           cd apps/hedge-system
           npm run check-types
 
-      - name: Build Next.js app
-        run: |
-          cd apps/hedge-system
-          npm run build
-
   build-tauri:
     name: Build Tauri App
     needs: lint-and-test
@@ -59,12 +53,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest'
-            args: '--target x86_64-apple-darwin'
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "macos-latest"
+            args: "--target x86_64-apple-darwin"
+          - platform: "ubuntu-latest"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -74,8 +70,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
@@ -85,20 +81,24 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './apps/hedge-system/src-tauri -> target'
+          workspaces: "./apps/hedge-system/src-tauri -> target"
 
+      - name: Install system dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend dependencies
-        run: npm ci --include=optional
+        run: npm ci
 
-      - name: Build shared packages
-        run: |
-          cd packages/ui && npm run build
+      - name: Build applications and packages
+        run: npm run build
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: './apps/hedge-system'
+          projectPath: "./apps/hedge-system"
           args: ${{ matrix.args }}

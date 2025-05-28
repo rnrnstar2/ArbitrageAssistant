@@ -6,7 +6,7 @@ const schema = a.schema({
       content: a.string(),
       isDone: a.boolean(),
     })
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.owner()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -14,9 +14,6 @@ export const data = defineData({
   schema,
   name: "ArbitrageAssistantData",
   authorizationModes: {
-    defaultAuthorizationMode: "apiKey",
-    apiKeyAuthorizationMode: {
-      expiresInDays: 365,
-    },
+    defaultAuthorizationMode: "userPool",
   },
 });

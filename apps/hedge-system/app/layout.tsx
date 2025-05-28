@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { NavigationLayout } from "./NavigationLayout";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export const metadata: Metadata = {
-  title: "Front Template",
-  description: "モダンなNext.jsアプリケーションのテンプレート",
+  title: "Hedge System",
+  description: "AI-powered hedge fund assistant for arbitrage trading",
 };
 
 export const viewport = {
@@ -36,7 +37,9 @@ export default function RootLayout({
       >
         <main>
           <Providers>
-            <NavigationLayout>{children}</NavigationLayout>
+            <AuthGuard>
+              <NavigationLayout>{children}</NavigationLayout>
+            </AuthGuard>
           </Providers>
         </main>
       </body>

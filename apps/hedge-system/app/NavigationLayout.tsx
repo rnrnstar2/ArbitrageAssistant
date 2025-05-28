@@ -23,6 +23,7 @@ import {
   NavigationMenuList,
 } from "@repo/ui/components/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@repo/ui/components/sheet";
+import { useAuth } from "@/hooks/useAuth";
 import "./globals.css";
 
 interface MenuItem {
@@ -36,6 +37,7 @@ interface NavigationProps {
 export function NavigationLayout({ children }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   const menuItems: MenuItem[] = [
     { title: "ホーム", href: "/" },
@@ -79,7 +81,7 @@ export function NavigationLayout({ children }: NavigationProps) {
         </Sheet>
 
         <div className="flex items-center gap-2 font-semibold">
-          <span>Template</span>
+          <span>Hedge System</span>
         </div>
 
         <nav className="hidden flex-1 sm:block">
@@ -121,7 +123,7 @@ export function NavigationLayout({ children }: NavigationProps) {
                 <Avatar className="h-7 w-7 rounded-full ring-2 ring-background">
                   <AvatarImage src="/placeholder.png" alt="avatar" />
                   <AvatarFallback className="bg-primary/10 text-primary">
-                    Name
+                    {user?.signInDetails?.loginId?.charAt(0).toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
               </Button>
@@ -135,13 +137,15 @@ export function NavigationLayout({ children }: NavigationProps) {
                   <Avatar className="h-10 w-10 rounded-full border-2 border-primary/10">
                     <AvatarImage src="/placeholder.png" alt="avatar" />
                     <AvatarFallback className="bg-primary/5 text-primary">
-                      Name
+                      {user?.signInDetails?.loginId?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col">
-                    <span className="text-sm font-medium">名前</span>
+                    <span className="text-sm font-medium">
+                      {user?.signInDetails?.loginId || "ユーザー"}
+                    </span>
                     <span className="text-xs text-muted-foreground">
-                      example@gmail.com
+                      {user?.signInDetails?.loginId || ""}
                     </span>
                   </div>
                 </div>
@@ -162,7 +166,10 @@ export function NavigationLayout({ children }: NavigationProps) {
               </div>
               <DropdownMenuSeparator />
               <div className="p-1">
-                <DropdownMenuItem className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50">
+                <DropdownMenuItem 
+                  onClick={signOut}
+                  className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50"
+                >
                   <LogOut className="h-4 w-4 text-red-500" />
                   ログアウト
                 </DropdownMenuItem>
