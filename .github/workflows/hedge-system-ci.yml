@@ -91,6 +91,13 @@ jobs:
           PARCEL_WATCHER_BACKEND: fs
         run: npx turbo build --filter=hedge-system...
 
+      - name: Disable updater for CI build
+        run: |
+          cd apps/hedge-system/src-tauri
+          # Create a temporary config that disables updater artifacts
+          jq '.bundle.createUpdaterArtifacts = false' tauri.conf.json > tauri.conf.json.tmp
+          mv tauri.conf.json.tmp tauri.conf.json
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
