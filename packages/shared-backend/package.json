@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
-    "lint": "turbo lint",
+    "build": "tsc --noEmit",
+    "dev": "echo 'No dev server for backend package'",
+    "lint": "echo 'No linting configured for backend package'",
     "lock": "npm install --package-lock-only --workspaces=false",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
