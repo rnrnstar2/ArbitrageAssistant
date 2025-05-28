@@ -47,6 +47,19 @@ cd apps/hedge-system
 npm version patch  # or minor, major
 ```
 
+### Local Testing
+```bash
+# Test GitHub Actions locally (requires act)
+./scripts/test-ci-local.sh
+
+# Manual build and test sequence
+npm ci
+cd packages/ui && npm run build && cd ../..
+npm run lint
+cd apps/hedge-system && npm run check-types
+npm run build
+```
+
 ## Architecture Overview
 
 ### Monorepo Structure
