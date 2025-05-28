@@ -95,7 +95,6 @@ jobs:
           projectPath: './apps/hedge-system'
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
-          tauriScript: 'npm run tauri:build'
 
   publish-release:
     permissions:

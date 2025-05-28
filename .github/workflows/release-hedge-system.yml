@@ -80,7 +80,6 @@ jobs:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           projectPath: apps/hedge-system
           args: ${{ matrix.args }}
-          tauriScript: npm run tauri:build
 
   publish-release:
     runs-on: ubuntu-latest
