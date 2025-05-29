@@ -1,36 +1,87 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# Admin Web Application
 
-## Getting Started
+ArbitrageAssistantプロジェクトの管理用Webアプリケーション。取引データの管理、ユーザー管理、システム設定などの機能を提供します。
 
-First, run the development server:
+## 概要
+
+Admin Appは、アービトラージ取引の管理・監視を行うためのWebベースの管理インターフェースです。
+
+## 技術スタック
+
+- **フレームワーク**: Next.js 15.3.2 (App Router)
+- **言語**: TypeScript
+- **UI**: Radix UI + shadcn/ui components
+- **スタイリング**: Tailwind CSS v4
+- **共通ライブラリ**: @repo/ui (モノレポ内の共通UIパッケージ)
+
+## 開発環境のセットアップ
+
+### 前提条件
+
+- Node.js >= 20
+- npm >= 9.8.0
+
+### 開発サーバーの起動
 
 ```bash
+# プロジェクトルートから
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# または、このディレクトリから直接
+cd apps/admin
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+ブラウザで [http://localhost:3000](http://localhost:3000) を開いて確認できます。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 利用可能なコマンド
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+```bash
+# 開発サーバー（Turbopack使用）
+npm run dev
 
-## Learn More
+# プロダクションビルド
+npm run build
 
-To learn more about Next.js, take a look at the following resources:
+# プロダクションサーバー起動
+npm run start
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# ESLintによるコード検証
+npm run lint
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# TypeScript型チェック
+npm run check-types
 
-## Deploy on Vercel
+# Vitestテスト実行
+npm run test
+npm run test:watch
+npm run test:coverage
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## プロジェクト構造
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+admin/
+├── app/                # Next.js App Router
+│   ├── layout.tsx     # ルートレイアウト
+│   ├── page.tsx       # ホームページ
+│   └── globals.css    # グローバルスタイル
+├── public/            # 静的アセット
+└── components.json    # shadcn/ui設定
+```
+
+## モノレポとの統合
+
+- **共通UIコンポーネント**: `@repo/ui`パッケージを使用
+- **共通設定**: ESLint、TypeScript、Tailwind設定を共有
+- **ビルド管理**: Turborepoによる効率的なビルド
+
+## 開発ガイドライン
+
+- ESLintの警告ゼロポリシー（`--max-warnings 0`）
+- TypeScript strict mode使用
+- shadcn/uiコンポーネントを基準としたUI開発
+
+## デプロイ
+
+現在は開発段階のため、デプロイ設定は未実装です。本格運用時はVercelまたはAWS Amplifyでの配布を検討しています。

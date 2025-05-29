@@ -45,7 +45,7 @@ xattr -cr /Applications/Hedge\ System.app
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/yourusername/ArbitrageAssistant.git
+git clone https://github.com/rnrnstar/ArbitrageAssistant.git
 cd ArbitrageAssistant
 
 # 依存関係をインストール
@@ -96,8 +96,13 @@ ArbitrageAssistant/
 │   ├── admin/          # Webベース管理インターフェース
 │   └── hedge-system/   # Tauriデスクトップアプリケーション
 ├── packages/
-│   └── shared-backend/ # AWS Amplifyバックエンド
-├── scripts/            # ビルド・テストスクリプト
+│   ├── shared-backend/ # AWS Amplifyバックエンド
+│   ├── ui/            # 共通UIコンポーネント
+│   ├── eslint-config/ # ESLint設定
+│   ├── typescript-config/ # TypeScript設定
+│   └── tailwind-config/   # Tailwind CSS設定
+├── scripts/            # ビルド・リリーススクリプト
+├── docs/              # ドキュメント
 └── turbo.json         # Turborepo設定
 ```
 
@@ -107,18 +112,30 @@ ArbitrageAssistant/
 - `npm run build` - すべてのアプリとパッケージをビルド
 - `npm run lint` - すべてのコードをリント
 - `npm run format` - Prettierでコードをフォーマット
+- `npm run test` - すべてのテストを実行
+- `npm run test:watch` - テストをウォッチモードで実行
+- `npm run release:hedge-system` - Hedge Systemのリリースを実行
 
 ## リリースプロセス
 
-ヘッジシステムの新しいリリースを作成するには：
+ヘッジシステムの新しいリリースを作成するには、必ず自動リリーススクリプトを使用してください：
 
 ```bash
-# リリースタグを作成してプッシュ
-git tag hedge-system-v0.1.1
-git push origin hedge-system-v0.1.1
+# 🚨 重要: 必ずこのスクリプトを使用すること
+npm run release:hedge-system
+
+# または特定のバージョンタイプを指定
+npm run release:hedge-system patch  # バグ修正
+npm run release:hedge-system minor  # 新機能
+npm run release:hedge-system major  # 破壊的変更
 ```
 
-これにより、GitHub Actionsワークフローがトリガーされ、ビルドとリリースが作成されます。
+**注意**: 手動でのタグ作成・プッシュは推奨されません。自動スクリプトが以下を実行します：
+- バージョン更新
+- package.jsonとtauri.conf.jsonの同期
+- 変更のコミット
+- リリースタグの作成とプッシュ
+- GitHub Actionsによる自動ビルド・配布の開始
 
 ## コントリビューション
 

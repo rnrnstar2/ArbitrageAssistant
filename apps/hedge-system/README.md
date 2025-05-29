@@ -16,10 +16,11 @@ Hedge SystemはTauriとNext.jsを使用して構築されたクロスプラッ�
 
 ## 機能
 
-- 🔐 セキュアな認証システム
-- 🖥️ ネイティブデスクトップアプリケーション
-- 🌓 ダークモード対応
-- 🔄 自動アップデート機能
+- 🔐 セキュアな認証システム (AWS Amplify Auth)
+- 🖥️ ネイティブデスクトップアプリケーション (Tauri)
+- 🌓 ダークモード対応 (next-themes)
+- 🔄 完全自動アップデート機能 (S3配布)
+- 🔔 ネイティブメニューとポップアップ通知
 - 📊 リアルタイム取引データ表示（開発中）
 
 ## 開発環境のセットアップ
@@ -108,17 +109,26 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 
 ## リリース
 
-### バージョンアップ
+### 自動リリース（推奨）
 ```bash
-npm version patch  # または minor, major
+# 🚨 重要: 必ずこのスクリプトを使用すること
+npm run release:hedge-system
+
+# または特定のバージョンタイプを指定
+npm run release:hedge-system patch  # バグ修正
+npm run release:hedge-system minor  # 新機能
+npm run release:hedge-system major  # 破壊的変更
 ```
 
-### GitHubリリース
+### 手動リリース（非推奨）
+上記の自動スクリプトが使用できない場合のみ：
 ```bash
+npm version patch  # または minor, major
 git tag hedge-system-v0.1.1
 git push origin hedge-system-v0.1.1
 ```
-GitHub Actionsが自動的にビルドとリリースを作成します。
+
+**注意**: 自動スクリプトはpackage.jsonとtauri.conf.jsonのバージョン同期、ビルドチェック、コミット・タグ作成を自動化しています。
 
 ## トラブルシューティング
 

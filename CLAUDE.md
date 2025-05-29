@@ -42,9 +42,11 @@ npm run format
 ```bash
 # Admin web app (apps/admin)
 cd apps/admin
-npm run dev          # Next.js dev server
+npm run dev          # Next.js dev server with Turbopack
 npm run build        # Production build
 npm run check-types  # TypeScript validation
+npm run lint         # ESLint validation
+npm run test         # Run vitest tests
 
 # Hedge system desktop app (apps/hedge-system)
 cd apps/hedge-system
@@ -53,6 +55,8 @@ npm run tauri:dev    # Tauri desktop app development
 npm run tauri:build  # Build desktop app
 npm run tauri:release # Build with updater artifacts
 npm run check-types  # TypeScript validation
+npm run lint         # ESLint validation
+npm run test         # Run vitest tests
 ```
 
 ### Release Commands
@@ -104,6 +108,11 @@ cd packages/ui && npm run build && cd ../..
 npm run lint
 cd apps/hedge-system && npm run check-types
 npm run build
+
+# Run tests
+npm run test        # Run all tests
+npm run test:watch  # Watch mode
+npm run test:coverage # Coverage report
 ```
 
 ## Architecture Overview
@@ -115,10 +124,11 @@ npm run build
 
 ### AWS Amplify Backend (`packages/shared-backend`)
 - **Framework**: AWS Amplify Gen2 with GraphQL
-- **Authentication**: Email-based auth (`ArbitrageAssistantAuth`)
-- **Data layer**: Currently has Todo model structure (commented out)
-- **Authorization**: Public API key mode, 365-day expiration
+- **Authentication**: Email-based authentication system
+- **Data layer**: GraphQL schema defined in `amplify/data/resource.ts`
+- **Authorization**: Public API key mode with auth rules
 - **Entry point**: `amplify/backend.ts`
+- **Build output**: TypeScript definitions in `dist/` directory
 
 ### Tauri Desktop App (`apps/hedge-system`)
 - **Hybrid architecture**: Next.js frontend + Rust backend
@@ -127,9 +137,17 @@ npm run build
 - **Window config**: 800x600 resizable, system theme integration
 - **Build output**: Platform-specific desktop executables
 
-### Shared Components
+### Shared Components (`packages/ui`)
 - **UI Library**: Radix UI + shadcn/ui patterns with Tailwind CSS
-- **Configuration**: Centralized ESLint, TypeScript, and Tailwind configs
+- **Build system**: TypeScript compilation + Tailwind CSS build
+- **Export structure**: Named exports for components, hooks, and utilities
+- **Testing**: Vitest with React Testing Library
+- **Dependencies**: React 19, Radix UI components, Lucide React icons
+
+### Configuration Packages
+- **ESLint config** (`packages/eslint-config`): Shared linting rules
+- **TypeScript config** (`packages/typescript-config`): Base, Next.js, and library configs
+- **Tailwind config** (`packages/tailwind-config`): Shared styles and PostCSS setup
 - **Package dependencies**: React 19, Next.js 15.3.2, TypeScript 5.x
 
 ## Code Quality Standards
@@ -142,7 +160,10 @@ npm run build
 - **Package manager**: npm@9.8.0 (specified in package.json)
 - **Node version**: >=20 required
 - **Turbo caching**: Enabled for builds, disabled for dev mode
-- **Theme support**: Dark mode implementation in hedge-system app
+- **Theme support**: Dark mode implementation in hedge-system app using next-themes
+- **Auto-updater**: Tauri updater plugin with S3 distribution
+- **Testing framework**: Vitest with jsdom environment
+- **Build tools**: Tailwind CSS v4, ESLint v9, TypeScript 5.8
 
 ## Claude Code Action Integration
 - **Trigger**: Use `@claude` in issues, PRs, or comments to activate Claude Code assistant
