@@ -38,7 +38,7 @@
     "updater": {
       "pubkey": "RWRqiQAfs8rqxO02KlHflKo2scDyjjaEWdfq706hHetX77RWBg8n+UnY",
       "endpoints": [
-        "https://github.com/rnrnstar2/ArbitrageAssistant/releases/latest/download/latest.json"
+        "https://YOUR_AMPLIFY_API_DOMAIN/releases/latest"
       ]
     }
   }
