@@ -25,6 +25,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "createUpdaterArtifacts": true,
     "resources": [],
     "icon": [
       "icons/32x32.png",
@@ -38,7 +39,7 @@
     "updater": {
       "pubkey": "RWRqiQAfs8rqxO02KlHflKo2scDyjjaEWdfq706hHetX77RWBg8n+UnY",
       "endpoints": [
-        "https://YOUR_AMPLIFY_API_DOMAIN/releases/latest"
+        "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/latest.json"
       ]
     }
   }

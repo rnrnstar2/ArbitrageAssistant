@@ -94,7 +94,7 @@ jobs:
         shell: powershell
         run: |
           cd apps/hedge-system/src-tauri
-          # Create a temporary config that disables updater artifacts
+          # CI ビルドではアップデーターアーティファクトを無効化
           $json = Get-Content -Raw -Path tauri.conf.json | ConvertFrom-Json
           $json.bundle.createUpdaterArtifacts = $false
           $json | ConvertTo-Json -Depth 100 | Set-Content -Path tauri.conf.json

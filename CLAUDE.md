@@ -56,7 +56,7 @@ npm run release:hedge-system
 # 2. package.json と tauri.conf.json の同期
 # 3. 変更のコミット
 # 4. リリースタグの作成とプッシュ
-# 5. GitHub Actions による自動ビルドの開始
+# 5. GitHub Actions による自動ビルド・S3アップロードの開始
 
 # 手動実行（非推奨 - スクリプトを使うこと！）
 cd apps/hedge-system
@@ -64,6 +64,24 @@ npm version patch  # or minor, major
 git tag hedge-system-v0.1.1
 git push origin hedge-system-v0.1.1
 ```
+
+### S3 Distribution Setup
+```bash
+# S3バケットのパブリックアクセス設定（初回のみ実行）
+./scripts/setup-s3-bucket-policy.sh
+
+# S3配布URL:
+# - バケット: amplify-arbitrageassistantreleases
+# - アップデーターエンドポイント: https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/latest.json
+# - バージョン別配布: https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v{version}/
+```
+
+### AWS環境変数設定
+GitHub Actions でのS3アップロードに必要な環境変数：
+- `AWS_ACCESS_KEY_ID`: AWS IAMユーザーのアクセスキーID
+- `AWS_SECRET_ACCESS_KEY`: AWS IAMユーザーのシークレットアクセスキー
+
+詳細な設定方法は `docs/AWS_SECRETS_SETUP.md` を参照してください。
 
 ### Local Testing
 ```bash
