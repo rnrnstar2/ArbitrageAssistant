@@ -59,7 +59,17 @@
       "require": "./dist/hooks/use-toast.js",
       "types": "./dist/hooks/use-toast.d.ts"
     },
-    "./styles.css": "./dist/index.css"
+    "./styles.css": "./dist/index.css",
+    "./components/ui/badge": {
+      "import": "./dist/components/ui/badge.js",
+      "require": "./dist/components/ui/badge.js",
+      "types": "./dist/components/ui/badge.d.ts"
+    },
+    "./components/ui/alert-dialog": {
+      "import": "./dist/components/ui/alert-dialog.js",
+      "require": "./dist/components/ui/alert-dialog.js",
+      "types": "./dist/components/ui/alert-dialog.d.ts"
+    }
   },
   "license": "MIT",
   "scripts": {
@@ -90,6 +100,7 @@
     "typescript": "5.8.2"
   },
   "dependencies": {
+    "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-dialog": "^1.1.14",
     "@radix-ui/react-dropdown-menu": "^2.1.15",

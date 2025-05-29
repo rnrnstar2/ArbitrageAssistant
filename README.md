@@ -23,6 +23,24 @@ ArbitrageAssistantは、最新のWeb技術で構築された包括的な取引�
 - npm >= 9.8.0
 - Rust（Tauriデスクトップアプリ開発用）
 
+## macOSユーザーへの重要な注意事項
+
+現在、Hedge SystemのmacOS版は開発者証明書で署名されていないため、初回起動時に「壊れている」というエラーが表示される場合があります。
+
+**解決方法：**
+
+### 最も簡単な方法: ターミナルコマンド
+```bash
+xattr -cr /Applications/Hedge\ System.app
+```
+※このコマンドで検疫属性が削除され、アプリが正常に起動します
+
+### その他の方法: 右クリックで開く
+1. Finderでアプリを右クリック
+2. 「開く」を選択
+
+詳細は[macOS署名設定ガイド](docs/MACOS_SIGNING_SETUP.md)を参照してください。
+
 ## インストール
 
 ```bash

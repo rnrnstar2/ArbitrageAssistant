@@ -49,7 +49,26 @@ npm version $RELEASE_TYPE --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 print_success "New version: $NEW_VERSION"
 
+# Update tauri.conf.json version
+print_info "Updating tauri.conf.json version..."
+cd src-tauri
+# Use Node.js to update the JSON file to preserve formatting
+node -e "
+const fs = require('fs');
+const config = JSON.parse(fs.readFileSync('tauri.conf.json', 'utf8'));
+config.version = '$NEW_VERSION';
+fs.writeFileSync('tauri.conf.json', JSON.stringify(config, null, 2) + '\n');
+"
+cd ..
+print_success "tauri.conf.json version updated to $NEW_VERSION"
+
 # Go back to root directory
+cd ../..
+
+# Build UI package first to ensure latest components are available
+print_info "Building UI package..."
+cd packages/ui
+npm run build
 cd ../..
 
 # Build all packages
@@ -68,7 +87,7 @@ cd ../..
 
 # Commit changes
 print_info "Committing version bump..."
-git add apps/hedge-system/package.json
+git add apps/hedge-system/package.json apps/hedge-system/src-tauri/tauri.conf.json
 git commit -m "chore: bump hedge-system version to $NEW_VERSION"
 
 # Create and push tag
