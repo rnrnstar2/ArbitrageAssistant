@@ -1,0 +1,51 @@
+name: PR Documentation Generator
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  generate-pr-docs:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Create docs directory
+        run: mkdir -p docs/pull-requests
+      
+      - name: Generate PR Documentation
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
+          allowed_tools: "mcp__github"
+          prompt: |
+            Generate comprehensive documentation for the merged PR #${{ github.event.pull_request.number }}.
+            
+            Please analyze the PR and create a markdown document that includes:
+            1. PR title and number
+            2. Author and merge date
+            3. Summary of changes
+            4. List of modified files
+            5. Key code changes and their impact
+            6. Any breaking changes or migration notes
+            
+            Save the documentation to: docs/pull-requests/PR-${{ github.event.pull_request.number }}.md
+            
+            Use only the MCP GitHub tool to gather PR information and create the documentation file.
+            Do not use any file system tools - only use the GitHub API through MCP.

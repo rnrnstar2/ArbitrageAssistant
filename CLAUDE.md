@@ -103,3 +103,13 @@ npm run build
 - **Workflow**: `.github/workflows/claude-code.yml` handles automated code assistance
 - **Validation**: Automatic linting, type checking, and build validation after changes
 - **Permissions**: Full repository access for code modifications and PR/issue management
+
+## Pull Request Documentation Language
+- **Language**: All PR titles, descriptions, and commit messages should be written in Japanese
+- **Format**: Use clear and concise Japanese technical writing
+- **PR Title**: 日本語で簡潔に変更内容を記述
+- **PR Description**: 以下の形式で日本語で記載:
+  - ## 概要
+  - ## 変更内容
+  - ## テスト計画
+  - ## その他の注意事項（必要に応じて）

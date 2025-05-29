@@ -10,11 +10,21 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "test": "vitest",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "release:hedge-system": "./scripts/release-hedge-system.sh"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@vitejs/plugin-react": "^4.5.0",
+    "jsdom": "^26.1.0",
     "prettier": "^3.2.5",
-    "turbo": "^2.3.3"
+    "turbo": "^2.3.3",
+    "vitest": "^3.1.4"
   },
   "engines": {
     "node": ">=20"

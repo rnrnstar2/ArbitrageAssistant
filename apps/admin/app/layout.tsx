@@ -1,8 +1,6 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
-import { NavigationLayout } from "./NavigationLayout";
 
 export const metadata: Metadata = {
   title: "Front Template",
@@ -30,9 +28,7 @@ export default function RootLayout({
         className={`${fontSans.variable} min-h-screen font-sans antialiased`}
       >
         <main>
-          <Providers>
-            <NavigationLayout>{children}</NavigationLayout>
-          </Providers>
+          {children}
         </main>
       </body>
     </html>
