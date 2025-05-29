@@ -117,16 +117,29 @@ jobs:
           # Get version for S3 path
           PACKAGE_VERSION=$(node -pe "require('./apps/hedge-system/package.json').version")
           
-          # S3にビルド成果物をアップロード
-          aws s3 sync ./apps/hedge-system/src-tauri/target/release/bundle/ s3://amplify-arbitrageassistantreleases/releases/hedge-system/v${PACKAGE_VERSION}/ --recursive
+          # Determine bundle directory based on platform and target
+          if [[ "${{ matrix.platform }}" == "macos-latest" ]]; then
+            if [[ "${{ matrix.args }}" == "--target aarch64-apple-darwin" ]]; then
+              BUNDLE_DIR="./apps/hedge-system/src-tauri/target/aarch64-apple-darwin/release/bundle"
+            elif [[ "${{ matrix.args }}" == "--target x86_64-apple-darwin" ]]; then
+              BUNDLE_DIR="./apps/hedge-system/src-tauri/target/x86_64-apple-darwin/release/bundle"
+            else
+              BUNDLE_DIR="./apps/hedge-system/src-tauri/target/release/bundle"
+            fi
+          else
+            BUNDLE_DIR="./apps/hedge-system/src-tauri/target/release/bundle"
+          fi
           
-          # updater.jsonファイルをlattest.jsonとしてもアップロード
-          if [ -f "./apps/hedge-system/src-tauri/target/release/bundle/nsis/latest.json" ]; then
-            aws s3 cp ./apps/hedge-system/src-tauri/target/release/bundle/nsis/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
-          elif [ -f "./apps/hedge-system/src-tauri/target/release/bundle/macos/latest.json" ]; then
-            aws s3 cp ./apps/hedge-system/src-tauri/target/release/bundle/macos/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
-          elif [ -f "./apps/hedge-system/src-tauri/target/release/bundle/appimage/latest.json" ]; then
-            aws s3 cp ./apps/hedge-system/src-tauri/target/release/bundle/appimage/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
+          # S3にビルド成果物をアップロード (--recursiveオプションを削除)
+          aws s3 sync ${BUNDLE_DIR}/ s3://amplify-arbitrageassistantreleases/releases/hedge-system/v${PACKAGE_VERSION}/
+          
+          # updater.jsonファイルをlatest.jsonとしてもアップロード
+          if [ -f "${BUNDLE_DIR}/nsis/latest.json" ]; then
+            aws s3 cp ${BUNDLE_DIR}/nsis/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
+          elif [ -f "${BUNDLE_DIR}/macos/latest.json" ]; then
+            aws s3 cp ${BUNDLE_DIR}/macos/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
+          elif [ -f "${BUNDLE_DIR}/appimage/latest.json" ]; then
+            aws s3 cp ${BUNDLE_DIR}/appimage/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
           fi
 
   publish-release:

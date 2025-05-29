@@ -5,10 +5,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 🚨 最重要指示
 
 ### Tauri アプリのリリース
-ユーザーが「リリースして」「Tauriをリリースして」などと言った場合、**必ず** 以下のコマンドを実行すること：
-```bash
-npm run release:hedge-system
-```
+ユーザーが「リリースして」「Tauriをリリースして」などと言った場合、**必ず** 以下の手順を実行すること：
+
+1. **先に変更をコミット・プッシュする**
+   ```bash
+   git add .
+   git commit -m "変更内容"
+   git push
+   ```
+
+2. **その後、リリーススクリプトを実行**
+   ```bash
+   npm run release:hedge-system
+   ```
+
 手動でタグを作成したりプッシュしたりしないこと！スクリプトが全て自動化している。
 
 ## Development Commands
