@@ -12,6 +12,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "vitest.d.ts",
     "next.config.js",
     "**/*.ts",
     "**/*.tsx",
