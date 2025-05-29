@@ -8,21 +8,15 @@ GitHubリポジトリの `Settings` > `Secrets and variables` > `Actions` で以
 
 ### 1. TAURI_SIGNING_PRIVATE_KEY
 
-**説明**: アプリ更新用の署名に使用する秘密鍵
+**説明**: アプリ更新用の署名に使用する秘密鍵（Base64エンコード）
 
 **設定値**: 
 ```bash
-# ローカルで秘密鍵の内容を取得
-cat apps/hedge-system/.tauri/hedge-system.key
+# ローカルで秘密鍵をBase64エンコード
+cat apps/hedge-system/.tauri/hedge-system.key | base64 | tr -d '\n'
 ```
 
-取得した内容全体（コメント行含む）をコピーしてGitHub Secretsに設定
-
-### 2. TAURI_SIGNING_PRIVATE_KEY_PASSWORD
-
-**説明**: 秘密鍵のパスワード
-
-**設定値**: `hedge-system-key`
+出力された文字列（改行なしの1行）をGitHub Secretsに設定
 
 
 ## 設定手順
@@ -30,12 +24,9 @@ cat apps/hedge-system/.tauri/hedge-system.key
 1. GitHubリポジトリページで `Settings` タブをクリック
 2. 左サイドバーの `Secrets and variables` > `Actions` をクリック  
 3. `New repository secret` ボタンをクリック
-4. 各Secretを順番に追加
-
-### 全Secretsの追加
-
-- `TAURI_SIGNING_PRIVATE_KEY`: 秘密鍵ファイルの内容
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: `hedge-system-key`
+4. 以下のSecretを追加：
+   - **Name**: `TAURI_SIGNING_PRIVATE_KEY`
+   - **Value**: Base64エンコードした秘密鍵（上記コマンドの出力）
 
 ## リリース実行
 
