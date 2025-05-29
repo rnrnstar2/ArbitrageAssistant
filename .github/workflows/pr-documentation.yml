@@ -31,7 +31,6 @@ jobs:
       - name: Generate PR Documentation
         uses: anthropics/claude-code-action@beta
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
           timeout_minutes: 30
           direct_prompt: |

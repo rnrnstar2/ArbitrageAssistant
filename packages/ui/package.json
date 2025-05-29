@@ -9,20 +9,55 @@
     "dist"
   ],
   "exports": {
-    "./components/ui/*": {
-      "import": "./dist/components/ui/*.js",
-      "require": "./dist/components/ui/*.js",
-      "types": "./dist/components/ui/*.d.ts"
+    "./components/ui/avatar": {
+      "import": "./dist/components/ui/avatar.js",
+      "require": "./dist/components/ui/avatar.js",
+      "types": "./dist/components/ui/avatar.d.ts"
     },
-    "./lib/*": {
-      "import": "./dist/lib/*.js",
-      "require": "./dist/lib/*.js",
-      "types": "./dist/lib/*.d.ts"
+    "./components/ui/button": {
+      "import": "./dist/components/ui/button.js",
+      "require": "./dist/components/ui/button.js",
+      "types": "./dist/components/ui/button.d.ts"
     },
-    "./hooks/*": {
-      "import": "./dist/hooks/*.js",
-      "require": "./dist/hooks/*.js",
-      "types": "./dist/hooks/*.d.ts"
+    "./components/ui/card": {
+      "import": "./dist/components/ui/card.js",
+      "require": "./dist/components/ui/card.js",
+      "types": "./dist/components/ui/card.d.ts"
+    },
+    "./components/ui/dropdown-menu": {
+      "import": "./dist/components/ui/dropdown-menu.js",
+      "require": "./dist/components/ui/dropdown-menu.js",
+      "types": "./dist/components/ui/dropdown-menu.d.ts"
+    },
+    "./components/ui/input": {
+      "import": "./dist/components/ui/input.js",
+      "require": "./dist/components/ui/input.js",
+      "types": "./dist/components/ui/input.d.ts"
+    },
+    "./components/ui/label": {
+      "import": "./dist/components/ui/label.js",
+      "require": "./dist/components/ui/label.js",
+      "types": "./dist/components/ui/label.d.ts"
+    },
+    "./components/ui/navigation-menu": {
+      "import": "./dist/components/ui/navigation-menu.js",
+      "require": "./dist/components/ui/navigation-menu.js",
+      "types": "./dist/components/ui/navigation-menu.d.ts"
+    },
+    "./components/ui/sheet": {
+      "import": "./dist/components/ui/sheet.js",
+      "require": "./dist/components/ui/sheet.js",
+      "types": "./dist/components/ui/sheet.d.ts"
+    },
+    "./lib/utils": {
+      "import": "./dist/lib/utils.js",
+      "require": "./dist/lib/utils.js",
+      "types": "./dist/lib/utils.d.ts"
+    },
+    "./hooks/use-toast": {
+      "import": "./dist/hooks/use-toast.js",
+      "require": "./dist/hooks/use-toast.js",
+      "types": "./dist/hooks/use-toast.d.ts"
     },
     "./styles.css": "./dist/index.css"
   },
