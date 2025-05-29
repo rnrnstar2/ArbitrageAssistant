@@ -109,6 +109,16 @@ jobs:
           args: ${{ matrix.args }}
           includeUpdaterJson: true
 
+      - name: Upload to S3 via Amplify
+        if: startsWith(matrix.platform, 'macos') || startsWith(matrix.platform, 'windows')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-1
+        run: |
+          # S3にビルド成果物をアップロード（ArbitrageAssistantプレフィックス付き）
+          aws s3 sync ./apps/hedge-system/src-tauri/target/release/bundle/ s3://amplify-arbitrageassistantreleases/releases/hedge-system/ --recursive
+
   publish-release:
     permissions:
       contents: write
