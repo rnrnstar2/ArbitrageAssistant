@@ -94,19 +94,11 @@ jobs:
           PARCEL_WATCHER_BACKEND: fs
         run: npx turbo build --filter=hedge-system...
 
-      - name: Protect Tauri v2 config from modification
-        run: |
-          cd apps/hedge-system/src-tauri
-          # tauri-actionがcreateUpdaterArtifactsを削除しようとするのを防ぐ
-          # Tauri v2では既にこのプロパティは存在しないため、何もしない
-          echo "Tauri v2 config protection: createUpdaterArtifacts property is not needed"
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: './apps/hedge-system'
           releaseId: ${{ needs.create-release.outputs.release_id }}

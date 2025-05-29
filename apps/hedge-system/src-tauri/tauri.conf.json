@@ -37,7 +37,6 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWRqiQAfs8rqxO02KlHflKo2scDyjjaEWdfq706hHetX77RWBg8n+UnY",
       "endpoints": [
         "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/latest.json"
       ]
