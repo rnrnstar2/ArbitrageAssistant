@@ -6,6 +6,10 @@
     "main"
   ],
   "permissions": [
-    "core:default"
+    "core:default",
+    "updater:default",
+    "updater:allow-check",
+    "process:default",
+    "process:allow-restart"
   ]
 }
