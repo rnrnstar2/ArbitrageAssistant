@@ -38,7 +38,7 @@
     "updater": {
       "pubkey": "RWRqiQAfs8rqxO02KlHflKo2scDyjjaEWdfq706hHetX77RWBg8n+UnY",
       "endpoints": [
-        "https://releases.arbitrageassistant.com/hedge-system/{{target}}/{{arch}}/{{current_version}}"
+        "https://github.com/rnrnstar2/ArbitrageAssistant/releases/latest/download/latest.json"
       ]
     }
   }
