@@ -1,5 +1,4 @@
 {
-  "$schema": "../../../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Hedge System",
   "version": "0.1.2",
   "identifier": "com.arbitrageassistant.hedge-system",
@@ -26,18 +25,18 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "createUpdaterArtifacts": true
+    ]
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWT0Bf4LODhokelLRz7Ph0ung9kdUqaiFPNraJfeU5VCnqws8UqS4+8W",
+      "pubkey": "RWSjdY3en/ZDeufYF1vQA/3fhPR+8rGQjpnrDFjZT3qFd26+as+KUJXMN",
       "endpoints": [
         "https://releases.arbitrageassistant.com/hedge-system/{{target}}/{{arch}}/{{current_version}}"
       ]
