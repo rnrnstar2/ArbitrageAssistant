@@ -85,6 +85,11 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --include=optional
 
+      - name: Build applications and packages
+        env:
+          PARCEL_WATCHER_BACKEND: fs
+        run: npx turbo build --filter=hedge-system...
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
