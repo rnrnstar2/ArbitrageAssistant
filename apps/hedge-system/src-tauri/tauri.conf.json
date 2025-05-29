@@ -1,6 +1,6 @@
 {
   "productName": "Hedge System",
-  "version": "0.1.2",
+  "version": "0.1.17",
   "identifier": "com.arbitrageassistant.hedge-system",
   "build": {
     "frontendDist": "../out",
