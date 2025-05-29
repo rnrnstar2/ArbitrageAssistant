@@ -55,10 +55,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: "macos-latest"
-            args: "--target aarch64-apple-darwin"
-          - platform: "macos-latest"
-            args: "--target x86_64-apple-darwin"
           - platform: "windows-latest"
             args: ""
 
@@ -75,8 +71,6 @@ jobs:
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -91,14 +85,12 @@ jobs:
           PARCEL_WATCHER_BACKEND: fs
         run: npx turbo build --filter=hedge-system...
 
-      - name: Install jq (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Install jq
         run: |
           choco install jq -y
         shell: powershell
 
-      - name: Disable updater for CI build (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Disable updater for CI build
         shell: powershell
         run: |
           cd apps/hedge-system/src-tauri
@@ -106,15 +98,6 @@ jobs:
           $json = Get-Content -Raw -Path tauri.conf.json | ConvertFrom-Json
           $json.bundle.createUpdaterArtifacts = $false
           $json | ConvertTo-Json -Depth 100 | Set-Content -Path tauri.conf.json
-
-      - name: Disable updater for CI build (macOS/Linux)
-        if: matrix.platform != 'windows-latest'
-        shell: bash
-        run: |
-          cd apps/hedge-system/src-tauri
-          # Create a temporary config that disables updater artifacts
-          jq '.bundle.createUpdaterArtifacts = false' tauri.conf.json > tauri.conf.json.tmp
-          mv tauri.conf.json.tmp tauri.conf.json
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
