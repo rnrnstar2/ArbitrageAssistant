@@ -42,11 +42,18 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
             
             // ダウンロードと進捗の追跡
             let lastProgress = 0;
-            await update.downloadAndInstall((progress) => {
-              const percentage = Math.round((progress.downloadedLength / progress.contentLength) * 100);
-              if (percentage > lastProgress + 10) {
-                console.log(`ダウンロード進捗: ${percentage}%`);
-                lastProgress = percentage;
+            await update.downloadAndInstall((event: any) => {
+              // DownloadEventの型に基づいて処理
+              if (event.event === 'Started' && event.data?.contentLength) {
+                console.log(`ダウンロード開始: ${event.data.contentLength} bytes`);
+              } else if (event.event === 'Progress' && event.data?.contentLength) {
+                const percentage = Math.round((event.data.downloadedLength || 0) / event.data.contentLength * 100);
+                if (percentage > lastProgress + 10) {
+                  console.log(`ダウンロード進捗: ${percentage}%`);
+                  lastProgress = percentage;
+                }
+              } else if (event.event === 'Finished') {
+                console.log('ダウンロード完了');
               }
             });
             
