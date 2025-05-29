@@ -90,11 +90,22 @@ jobs:
           PARCEL_WATCHER_BACKEND: fs
         run: npx turbo build --filter=hedge-system...
 
+      - name: Prepare signing key
+        shell: bash
+        run: |
+          # GitHub Actions環境で改行文字を適切に処理
+          echo "${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}" > temp_key.txt
+          # 改行文字を正規化
+          cat temp_key.txt | tr -d '\r' > normalized_key.txt
+          echo "TAURI_SIGNING_PRIVATE_KEY_CONTENT=$(cat normalized_key.txt)" >> $GITHUB_ENV
+          rm temp_key.txt normalized_key.txt
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ env.TAURI_SIGNING_PRIVATE_KEY_CONTENT }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
         with:
           projectPath: './apps/hedge-system'
           releaseId: ${{ needs.create-release.outputs.release_id }}

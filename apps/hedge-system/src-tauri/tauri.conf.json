@@ -36,7 +36,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWSjdY3en/ZDeufYF1vQA/3fhPR+8rGQjpnrDFjZT3qFd26+as+KUJXMN",
+      "pubkey": "RWRqiQAfs8rqxO02KlHflKo2scDyjjaEWdfq706hHetX77RWBg8n+UnY",
       "endpoints": [
         "https://releases.arbitrageassistant.com/hedge-system/{{target}}/{{arch}}/{{current_version}}"
       ]
