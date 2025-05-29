@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🚨 最重要指示
+
+### Tauri アプリのリリース
+ユーザーが「リリースして」「Tauriをリリースして」などと言った場合、**必ず** 以下のコマンドを実行すること：
+```bash
+npm run release:hedge-system
+```
+手動でタグを作成したりプッシュしたりしないこと！スクリプトが全て自動化している。
+
 ## Development Commands
 
 ### Common Operations
@@ -38,13 +47,22 @@ npm run check-types  # TypeScript validation
 
 ### Release Commands
 ```bash
-# Create and push release tag (triggers GitHub Actions)
-git tag hedge-system-v0.1.1
-git push origin hedge-system-v0.1.1
+# 🚨 重要: Tauri アプリのリリース時は必ずこのコマンドを使用すること！
+# 「リリースして」と言われたら、このコマンド一発で全て実行
+npm run release:hedge-system
 
-# Manual version bump
+# このスクリプトが自動的に以下を実行:
+# 1. バージョン番号の更新 (patch/minor/major を選択)
+# 2. package.json と tauri.conf.json の同期
+# 3. 変更のコミット
+# 4. リリースタグの作成とプッシュ
+# 5. GitHub Actions による自動ビルドの開始
+
+# 手動実行（非推奨 - スクリプトを使うこと！）
 cd apps/hedge-system
 npm version patch  # or minor, major
+git tag hedge-system-v0.1.1
+git push origin hedge-system-v0.1.1
 ```
 
 ### Local Testing
