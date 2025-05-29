@@ -29,12 +29,12 @@ jobs:
         run: mkdir -p docs/pull-requests
       
       - name: Generate PR Documentation
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
-          allowed_tools: "mcp__github"
-          prompt: |
+          timeout_minutes: 30
+          direct_prompt: |
             Generate comprehensive documentation for the merged PR #${{ github.event.pull_request.number }}.
             
             Please analyze the PR and create a markdown document that includes:
@@ -46,6 +46,3 @@ jobs:
             6. Any breaking changes or migration notes
             
             Save the documentation to: docs/pull-requests/PR-${{ github.event.pull_request.number }}.md
-            
-            Use only the MCP GitHub tool to gather PR information and create the documentation file.
-            Do not use any file system tools - only use the GitHub API through MCP.

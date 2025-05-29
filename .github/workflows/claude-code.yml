@@ -43,7 +43,9 @@ jobs:
         run: npm ci
 
       - name: Run Claude Code
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.CLAUDE_GITHUB_TOKEN }}
+          trigger_phrase: '@claude'
+          timeout_minutes: 30
