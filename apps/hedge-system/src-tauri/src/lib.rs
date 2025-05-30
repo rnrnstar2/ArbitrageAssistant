@@ -50,11 +50,29 @@ pub fn run() {
           "check_updates" => {
             log::info!("Menu: Check for updates clicked");
             println!("DEBUG: Menu check_updates clicked"); // デバッグ出力
-            if let Err(e) = app.emit("manual-update-check", ()) {
-              log::error!("Failed to emit update check event: {}", e);
-              println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
+            
+            // 開発モードの場合は開発者ツールを開く
+            #[cfg(debug_assertions)]
+            if let Some(window) = app.get_webview_window("main") {
+              window.open_devtools();
+            }
+            
+            // メインウィンドウに対してイベントを送信
+            if let Some(window) = app.get_webview_window("main") {
+              if let Err(e) = window.emit("manual-update-check", ()) {
+                log::error!("Failed to emit update check event: {}", e);
+                println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
+              } else {
+                println!("DEBUG: Successfully emitted manual-update-check event to main window"); // デバッグ出力
+              }
             } else {
-              println!("DEBUG: Successfully emitted manual-update-check event"); // デバッグ出力
+              // ウィンドウが見つからない場合は、アプリ全体にイベントを送信
+              if let Err(e) = app.emit("manual-update-check", ()) {
+                log::error!("Failed to emit update check event: {}", e);
+                println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
+              } else {
+                println!("DEBUG: Successfully emitted manual-update-check event globally"); // デバッグ出力
+              }
             }
           }
           "about" => {

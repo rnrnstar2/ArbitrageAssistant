@@ -74,15 +74,15 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
     
     const setupManualCheckListener = async () => {
       try {
-        console.log('Setting up manual check listener...');
-        unlistenManualCheck = await listen('manual-update-check', () => {
-          console.log('Manual update check event received!');
+        console.log('[useAutoUpdater] Setting up manual check listener...');
+        // グローバルイベントリスナーとして登録
+        unlistenManualCheck = await listen('manual-update-check', (event) => {
+          console.log('[useAutoUpdater] Manual update check event received!', event);
           performUpdate(true);
         });
-        console.log('Manual check listener setup complete');
+        console.log('[useAutoUpdater] Manual check listener setup complete');
       } catch (error) {
-        console.error('Failed to setup manual check listener:', error);
-        alert('Failed to setup manual check listener: ' + error);
+        console.error('[useAutoUpdater] Failed to setup manual check listener:', error);
       }
     };
 
