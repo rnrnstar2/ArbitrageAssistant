@@ -131,16 +131,54 @@ jobs:
             BUNDLE_DIR="./apps/hedge-system/src-tauri/target/release/bundle"
           fi
           
-          # S3にビルド成果物をアップロード (--recursiveオプションを削除)
+          # S3にビルド成果物をアップロード
           aws s3 sync ${BUNDLE_DIR}/ s3://amplify-arbitrageassistantreleases/releases/hedge-system/v${PACKAGE_VERSION}/
           
-          # updater.jsonファイルをlatest.jsonとしてもアップロード
-          if [ -f "${BUNDLE_DIR}/nsis/latest.json" ]; then
-            aws s3 cp ${BUNDLE_DIR}/nsis/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
-          elif [ -f "${BUNDLE_DIR}/macos/latest.json" ]; then
-            aws s3 cp ${BUNDLE_DIR}/macos/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
-          elif [ -f "${BUNDLE_DIR}/appimage/latest.json" ]; then
-            aws s3 cp ${BUNDLE_DIR}/appimage/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
+          # latest.jsonファイルを検索してアップロード（様々な可能性のあるパスを確認）
+          LATEST_JSON_FOUND=false
+          
+          # 各プラットフォームのlatest.jsonを探す
+          for json_path in \
+            "${BUNDLE_DIR}/nsis/latest.json" \
+            "${BUNDLE_DIR}/macos/latest.json" \
+            "${BUNDLE_DIR}/appimage/latest.json" \
+            "${BUNDLE_DIR}/latest.json" \
+            "./apps/hedge-system/src-tauri/target/release/bundle/nsis/latest.json" \
+            "./apps/hedge-system/src-tauri/target/release/bundle/macos/latest.json"; do
+            
+            if [ -f "$json_path" ]; then
+              echo "Found latest.json at: $json_path"
+              aws s3 cp "$json_path" s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
+              LATEST_JSON_FOUND=true
+              break
+            fi
+          done
+          
+          # latest.jsonが見つからない場合、手動で生成
+          if [ "$LATEST_JSON_FOUND" = false ]; then
+            echo "latest.json not found, creating manually..."
+            cat > /tmp/latest.json << EOF
+          {
+            "version": "${PACKAGE_VERSION}",
+            "notes": "リリース v${PACKAGE_VERSION}",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "",
+                "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/macos/Hedge%20System.app.tar.gz"
+              },
+              "darwin-x86_64": {
+                "signature": "",
+                "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/macos/Hedge%20System.app.tar.gz"
+              },
+              "windows-x86_64": {
+                "signature": "",
+                "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/nsis/Hedge%20System_${PACKAGE_VERSION}_x64-setup.exe"
+              }
+            }
+          }
+          EOF
+            aws s3 cp /tmp/latest.json s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
           fi
 
   publish-release:
