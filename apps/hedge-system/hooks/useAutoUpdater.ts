@@ -14,6 +14,10 @@ interface AutoUpdaterOptions {
   initialDelay?: number;
   // アップデート通知のコールバック
   onUpdateAvailable?: (version: string, notes: string) => void;
+  // チェック開始時のコールバック
+  onCheckStart?: () => void;
+  // アップデートがない場合のコールバック
+  onNoUpdate?: () => void;
 }
 
 export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
@@ -22,87 +26,12 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
     silent = false, // デフォルトでポップアップ表示
     initialDelay = 10 * 1000, // デフォルト10秒
     onUpdateAvailable,
+    onCheckStart,
+    onNoUpdate,
   } = options;
 
   const isUpdatingRef = useRef(false);
-
-  useEffect(() => {
-    const performUpdate = async (isManual = false) => {
-      // 既にアップデート中の場合はスキップ
-      if (isUpdatingRef.current) return;
-
-      try {
-        console.log(isManual ? '手動アップデートチェック中...' : 'アップデートをチェック中...');
-        
-        // デバッグ用のアラート
-        if (isManual) {
-          alert('アップデートをチェックしています...');
-        }
-        
-        const update = await check();
-        
-        if (update?.available) {
-          console.log(`新しいバージョン ${update.version} が利用可能です`);
-          
-          if (silent && !isManual) {
-            // サイレントアップデート：ユーザー確認なし（手動の場合は除く）
-            await downloadAndInstallUpdate(update);
-          } else {
-            // ポップアップ通知：ユーザーに通知
-            if (onUpdateAvailable) {
-              onUpdateAvailable(update.version, update.body || 'アップデートが利用可能です');
-            }
-          }
-        } else {
-          console.log('現在のバージョンは最新です');
-          if (isManual) {
-            // 手動チェックで最新版の場合のみ通知
-            alert('お使いのバージョンは最新です。');
-          }
-        }
-      } catch (error) {
-        console.error('アップデートチェックエラー:', error);
-        if (isManual) {
-          alert('アップデートのチェック中にエラーが発生しました。');
-        }
-        isUpdatingRef.current = false;
-      }
-    };
-
-    // メニューからの手動チェックイベントをリッスン
-    let unlistenManualCheck: (() => void) | null = null;
-    
-    const setupManualCheckListener = async () => {
-      try {
-        console.log('[useAutoUpdater] Setting up manual check listener...');
-        // グローバルイベントリスナーとして登録
-        unlistenManualCheck = await listen('manual-update-check', (event) => {
-          console.log('[useAutoUpdater] Manual update check event received!', event);
-          performUpdate(true);
-        });
-        console.log('[useAutoUpdater] Manual check listener setup complete');
-      } catch (error) {
-        console.error('[useAutoUpdater] Failed to setup manual check listener:', error);
-      }
-    };
-
-    setupManualCheckListener();
-
-    // 初回チェック
-    const initialTimer = setTimeout(() => performUpdate(false), initialDelay);
-
-    // 定期的なチェック
-    const interval = setInterval(() => performUpdate(false), checkInterval);
-
-    return () => {
-      clearTimeout(initialTimer);
-      clearInterval(interval);
-      if (unlistenManualCheck) {
-        unlistenManualCheck();
-      }
-    };
-  }, [checkInterval, silent, initialDelay, onUpdateAvailable]);
-
+  
   // アップデートをダウンロード・インストールする関数
   const downloadAndInstallUpdate = async (update: any) => {
     isUpdatingRef.current = true;
@@ -140,10 +69,95 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
       throw error;
     }
   };
+  
+  // performUpdate関数を定義
+  const performUpdate = async (isManual = false) => {
+    // 既にアップデート中の場合はスキップ
+    if (isUpdatingRef.current) return;
+
+    try {
+      console.log(isManual ? '手動アップデートチェック中...' : 'アップデートをチェック中...');
+      
+      // 手動チェック時は開始を通知
+      if (isManual && onCheckStart) {
+        onCheckStart();
+      }
+      
+      const update = await check();
+      
+      if (update?.available) {
+        console.log(`新しいバージョン ${update.version} が利用可能です`);
+        
+        if (silent && !isManual) {
+          // サイレントアップデート：ユーザー確認なし（手動の場合は除く）
+          await downloadAndInstallUpdate(update);
+        } else {
+          // ポップアップ通知：ユーザーに通知
+          if (onUpdateAvailable) {
+            onUpdateAvailable(update.version, update.body || 'アップデートが利用可能です');
+          }
+        }
+      } else {
+        console.log('現在のバージョンは最新です');
+        if (isManual && onNoUpdate) {
+          // 手動チェックで最新版の場合のみ通知
+          onNoUpdate();
+        }
+      }
+    } catch (error) {
+      console.error('アップデートチェックエラー:', error);
+      if (isManual && onUpdateAvailable) {
+        onUpdateAvailable('エラー', 'アップデートのチェック中にエラーが発生しました。');
+      }
+      isUpdatingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+
+    // メニューからの手動チェックイベントをリッスン
+    let unlistenManualCheck: (() => void) | null = null;
+    
+    const setupManualCheckListener = async () => {
+      try {
+        console.log('[useAutoUpdater] Setting up manual check listener...');
+        // グローバルイベントリスナーとして登録
+        unlistenManualCheck = await listen('manual-update-check', (event) => {
+          console.log('[useAutoUpdater] Manual update check event received!', event);
+          performUpdate(true);
+        });
+        console.log('[useAutoUpdater] Manual check listener setup complete');
+      } catch (error) {
+        console.error('[useAutoUpdater] Failed to setup manual check listener:', error);
+      }
+    };
+
+    setupManualCheckListener();
+
+    // 初回チェック
+    const initialTimer = setTimeout(() => performUpdate(false), initialDelay);
+
+    // 定期的なチェック
+    const interval = setInterval(() => performUpdate(false), checkInterval);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(interval);
+      if (unlistenManualCheck) {
+        unlistenManualCheck();
+      }
+    };
+  }, [checkInterval, silent, initialDelay, onUpdateAvailable, onCheckStart, onNoUpdate]);
+
+  // 手動でアップデートをチェックする関数
+  const checkForUpdate = async () => {
+    await performUpdate(true);
+  };
 
   return { 
     isUpdating: isUpdatingRef.current,
-    downloadAndInstallUpdate
+    downloadAndInstallUpdate,
+    checkForUpdate
   };
 }
 

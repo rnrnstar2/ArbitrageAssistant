@@ -15,15 +15,32 @@ export function UpdateNotification() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
+  const [showCheckingDialog, setShowCheckingDialog] = useState(false);
+  const [checkingMessage, setCheckingMessage] = useState<string>('アップデートを確認中...');
 
   // アップデーターフックを使用（ポップアップモード）
-  useAutoUpdater({
+  const { isUpdating, downloadAndInstallUpdate, checkForUpdate } = useAutoUpdater({
     silent: false, // ポップアップ表示
     checkInterval: 30 * 60 * 1000, // 30分ごと
     initialDelay: 10 * 1000, // 10秒後
     onUpdateAvailable: (version, notes) => {
-      setUpdateInfo({ version, notes });
-      setShowUpdateDialog(true);
+      setShowCheckingDialog(false);
+      if (version === 'エラー') {
+        // エラーの場合
+        setCheckingMessage(notes);
+        setTimeout(() => setShowCheckingDialog(false), 3000);
+      } else {
+        setUpdateInfo({ version, notes });
+        setShowUpdateDialog(true);
+      }
+    },
+    onCheckStart: () => {
+      setShowCheckingDialog(true);
+      setCheckingMessage('アップデートを確認中...');
+    },
+    onNoUpdate: () => {
+      setCheckingMessage('お使いのバージョンは最新です。');
+      setTimeout(() => setShowCheckingDialog(false), 2000);
     },
   });
 
@@ -83,6 +100,24 @@ export function UpdateNotification() {
 
   return (
     <>
+      {/* チェック中ダイアログ */}
+      <AlertDialog open={showCheckingDialog} onOpenChange={setShowCheckingDialog}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center justify-center gap-2">
+              {checkingMessage.includes('最新') ? (
+                <Badge className="bg-green-600">✓</Badge>
+              ) : checkingMessage.includes('エラー') ? (
+                <Badge variant="destructive">✗</Badge>
+              ) : (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              )}
+              <span className="text-center">{checkingMessage}</span>
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* アップデートダイアログ */}
       <AlertDialog open={showUpdateDialog} onOpenChange={setShowUpdateDialog}>
         <AlertDialogContent className="max-w-md">

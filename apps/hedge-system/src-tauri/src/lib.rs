@@ -4,7 +4,7 @@ use tauri::{Manager, AppHandle, Emitter};
 // アップデートチェックコマンド
 #[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<String, String> {
-    log::info!("Manual update check triggered");
+    log::info!("Manual update check triggered via command");
     // フロントエンドで処理するため、イベントを発行
     app.emit("manual-update-check", ()).map_err(|e| e.to_string())?;
     Ok("Update check initiated".to_string())
@@ -49,29 +49,16 @@ pub fn run() {
         match event.id().as_ref() {
           "check_updates" => {
             log::info!("Menu: Check for updates clicked");
-            println!("DEBUG: Menu check_updates clicked"); // デバッグ出力
-            
-            // 開発モードの場合は開発者ツールを開く
-            #[cfg(debug_assertions)]
-            if let Some(window) = app.get_webview_window("main") {
-              window.open_devtools();
-            }
             
             // メインウィンドウに対してイベントを送信
             if let Some(window) = app.get_webview_window("main") {
               if let Err(e) = window.emit("manual-update-check", ()) {
                 log::error!("Failed to emit update check event: {}", e);
-                println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
-              } else {
-                println!("DEBUG: Successfully emitted manual-update-check event to main window"); // デバッグ出力
               }
             } else {
               // ウィンドウが見つからない場合は、アプリ全体にイベントを送信
               if let Err(e) = app.emit("manual-update-check", ()) {
                 log::error!("Failed to emit update check event: {}", e);
-                println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
-              } else {
-                println!("DEBUG: Successfully emitted manual-update-check event globally"); // デバッグ出力
               }
             }
           }
