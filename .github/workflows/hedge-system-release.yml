@@ -131,23 +131,34 @@ jobs:
             BUNDLE_DIR="./apps/hedge-system/src-tauri/target/release/bundle"
           fi
           
+          # デバッグ：生成されたファイルを確認
+          echo "=== Bundle directory contents ==="
+          find ${BUNDLE_DIR} -type f -name "*.json" -o -name "*.sig" | sort
+          echo "=== End of bundle directory contents ==="
+          
           # S3にビルド成果物をアップロード
           aws s3 sync ${BUNDLE_DIR}/ s3://amplify-arbitrageassistantreleases/releases/hedge-system/v${PACKAGE_VERSION}/
           
           # latest.jsonファイルを検索してアップロード（様々な可能性のあるパスを確認）
           LATEST_JSON_FOUND=false
           
-          # 各プラットフォームのlatest.jsonを探す
+          # Tauriが生成したlatest.jsonを探す（様々な可能性のあるパスを確認）
           for json_path in \
+            "./apps/hedge-system/src-tauri/latest.json" \
+            "./apps/hedge-system/latest.json" \
             "${BUNDLE_DIR}/nsis/latest.json" \
             "${BUNDLE_DIR}/macos/latest.json" \
             "${BUNDLE_DIR}/appimage/latest.json" \
             "${BUNDLE_DIR}/latest.json" \
             "./apps/hedge-system/src-tauri/target/release/bundle/nsis/latest.json" \
-            "./apps/hedge-system/src-tauri/target/release/bundle/macos/latest.json"; do
+            "./apps/hedge-system/src-tauri/target/release/bundle/macos/latest.json" \
+            "./apps/hedge-system/src-tauri/target/release/latest.json" \
+            "./apps/hedge-system/src-tauri/target/aarch64-apple-darwin/release/latest.json" \
+            "./apps/hedge-system/src-tauri/target/x86_64-apple-darwin/release/latest.json"; do
             
             if [ -f "$json_path" ]; then
               echo "Found latest.json at: $json_path"
+              cat "$json_path" | jq '.'
               aws s3 cp "$json_path" s3://amplify-arbitrageassistantreleases/releases/hedge-system/latest.json
               LATEST_JSON_FOUND=true
               break
@@ -157,6 +168,35 @@ jobs:
           # latest.jsonが見つからない場合、手動で生成
           if [ "$LATEST_JSON_FOUND" = false ]; then
             echo "latest.json not found, creating manually..."
+            
+            # 署名ファイルを読み込む関数
+            read_signature() {
+              local sig_file="$1"
+              if [ -f "$sig_file" ]; then
+                cat "$sig_file" | tr -d '\n'
+              else
+                echo ""
+              fi
+            }
+            
+            # 各プラットフォームの署名ファイルを探して読み込む
+            MACOS_SIG=$(read_signature "${BUNDLE_DIR}/macos/Hedge System.app.tar.gz.sig")
+            WINDOWS_SIG=$(read_signature "${BUNDLE_DIR}/nsis/Hedge System_${PACKAGE_VERSION}_x64-setup.exe.sig")
+            
+            # 署名ファイルが見つからない場合、別の場所も確認
+            if [ -z "$MACOS_SIG" ]; then
+              # スペースをエスケープしたパスも試す
+              MACOS_SIG=$(read_signature "${BUNDLE_DIR}/macos/Hedge%20System.app.tar.gz.sig")
+            fi
+            
+            if [ -z "$WINDOWS_SIG" ]; then
+              # スペースをエスケープしたパスも試す
+              WINDOWS_SIG=$(read_signature "${BUNDLE_DIR}/nsis/Hedge%20System_${PACKAGE_VERSION}_x64-setup.exe.sig")
+            fi
+            
+            echo "macOS signature found: ${MACOS_SIG:0:20}..."
+            echo "Windows signature found: ${WINDOWS_SIG:0:20}..."
+            
             cat > /tmp/latest.json << EOF
           {
             "version": "${PACKAGE_VERSION}",
@@ -164,15 +204,15 @@ jobs:
             "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
             "platforms": {
               "darwin-aarch64": {
-                "signature": "",
+                "signature": "${MACOS_SIG}",
                 "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/macos/Hedge%20System.app.tar.gz"
               },
               "darwin-x86_64": {
-                "signature": "",
+                "signature": "${MACOS_SIG}",
                 "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/macos/Hedge%20System.app.tar.gz"
               },
               "windows-x86_64": {
-                "signature": "",
+                "signature": "${WINDOWS_SIG}",
                 "url": "https://amplify-arbitrageassistantreleases.s3.ap-northeast-1.amazonaws.com/releases/hedge-system/v${PACKAGE_VERSION}/nsis/Hedge%20System_${PACKAGE_VERSION}_x64-setup.exe"
               }
             }
