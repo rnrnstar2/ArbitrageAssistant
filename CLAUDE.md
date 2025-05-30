@@ -4,17 +4,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 🚨 最重要指示
 
+### コミット前の品質チェック
+変更をコミットする前に、**必ず** 以下のチェックを実行すること：
+
+1. **Lintチェック**
+   ```bash
+   npm run lint
+   ```
+
+2. **型チェック**（TypeScriptプロジェクトの場合）
+   ```bash
+   cd apps/hedge-system && npm run check-types
+   ```
+
+3. **ビルド確認**（必要に応じて）
+   ```bash
+   npm run build
+   ```
+
+これらのチェックで問題がないことを確認してからコミットすること。
+
 ### Tauri アプリのリリース
 ユーザーが「リリースして」「Tauriをリリースして」などと言った場合、**必ず** 以下の手順を実行すること：
 
-1. **先に変更をコミット・プッシュする**
+1. **品質チェックを実行**
+   ```bash
+   npm run lint
+   cd apps/hedge-system && npm run check-types
+   ```
+
+2. **変更をコミット・プッシュする**
    ```bash
    git add .
    git commit -m "変更内容"
    git push
    ```
 
-2. **その後、リリーススクリプトを実行**
+3. **その後、リリーススクリプトを実行**
    ```bash
    npm run release:hedge-system
    ```

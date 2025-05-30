@@ -19,7 +19,7 @@ export function UpdateNotification() {
   const [checkingMessage, setCheckingMessage] = useState<string>('アップデートを確認中...');
 
   // アップデーターフックを使用（ポップアップモード）
-  const { isUpdating, downloadAndInstallUpdate, checkForUpdate } = useAutoUpdater({
+  useAutoUpdater({
     silent: false, // ポップアップ表示
     checkInterval: 30 * 60 * 1000, // 30分ごと
     initialDelay: 10 * 1000, // 10秒後
