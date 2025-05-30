@@ -1,9 +1,29 @@
 "use client";
 
 import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from 'react';
+import { listen } from '@tauri-apps/api/event';
 
 export default function Home() {
   const { user } = useAuth();
+
+  useEffect(() => {
+    // デバッグ用：すべてのイベントをリッスン
+    const setupDebugListener = async () => {
+      const unlisten = await listen('manual-update-check', (event) => {
+        console.log('HOME PAGE: Manual update check event received!', event);
+        alert('HOME PAGE: Manual update check event received!');
+      });
+      
+      return unlisten;
+    };
+    
+    const cleanup = setupDebugListener();
+    
+    return () => {
+      cleanup.then(unlisten => unlisten());
+    };
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8">

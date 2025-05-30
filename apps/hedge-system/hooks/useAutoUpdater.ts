@@ -33,6 +33,12 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
 
       try {
         console.log(isManual ? '手動アップデートチェック中...' : 'アップデートをチェック中...');
+        
+        // デバッグ用のアラート
+        if (isManual) {
+          alert('アップデートをチェックしています...');
+        }
+        
         const update = await check();
         
         if (update?.available) {
@@ -68,11 +74,15 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
     
     const setupManualCheckListener = async () => {
       try {
+        console.log('Setting up manual check listener...');
         unlistenManualCheck = await listen('manual-update-check', () => {
+          console.log('Manual update check event received!');
           performUpdate(true);
         });
+        console.log('Manual check listener setup complete');
       } catch (error) {
         console.error('Failed to setup manual check listener:', error);
+        alert('Failed to setup manual check listener: ' + error);
       }
     };
 

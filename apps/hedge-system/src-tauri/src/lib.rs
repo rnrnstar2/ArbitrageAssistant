@@ -49,8 +49,12 @@ pub fn run() {
         match event.id().as_ref() {
           "check_updates" => {
             log::info!("Menu: Check for updates clicked");
+            println!("DEBUG: Menu check_updates clicked"); // デバッグ出力
             if let Err(e) = app.emit("manual-update-check", ()) {
               log::error!("Failed to emit update check event: {}", e);
+              println!("DEBUG: Failed to emit event: {}", e); // デバッグ出力
+            } else {
+              println!("DEBUG: Successfully emitted manual-update-check event"); // デバッグ出力
             }
           }
           "about" => {

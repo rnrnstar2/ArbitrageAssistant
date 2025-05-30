@@ -49,6 +49,12 @@ npm version $RELEASE_TYPE --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 print_success "New version: $NEW_VERSION"
 
+# Go back to root and run npm install to update package-lock.json
+cd ../..
+print_info "Updating package-lock.json..."
+npm install --package-lock-only
+cd apps/hedge-system
+
 # Update tauri.conf.json version
 print_info "Updating tauri.conf.json version..."
 cd src-tauri
@@ -87,7 +93,7 @@ cd ../..
 
 # Commit changes
 print_info "Committing version bump..."
-git add apps/hedge-system/package.json apps/hedge-system/src-tauri/tauri.conf.json
+git add apps/hedge-system/package.json apps/hedge-system/src-tauri/tauri.conf.json package-lock.json
 git commit -m "chore: bump hedge-system version to $NEW_VERSION"
 
 # Create and push tag
