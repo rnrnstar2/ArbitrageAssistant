@@ -11,26 +11,25 @@ import { useAutoUpdater } from '@/hooks/useAutoUpdater';
 
 export function UpdateNotification() {
   const [currentVersion, setCurrentVersion] = useState<string>('');
-  const [updateInfo, setUpdateInfo] = useState<{ version: string; notes: string } | null>(null);
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; notes: string; update: unknown } | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [showUpdateDialog, setShowUpdateDialog] = useState(false);
   const [showAboutDialog, setShowAboutDialog] = useState(false);
   const [showCheckingDialog, setShowCheckingDialog] = useState(false);
   const [checkingMessage, setCheckingMessage] = useState<string>('アップデートを確認中...');
 
-  // アップデーターフックを使用（ポップアップモード）
-  useAutoUpdater({
-    silent: false, // ポップアップ表示
-    checkInterval: 30 * 60 * 1000, // 30分ごと
-    initialDelay: 10 * 1000, // 10秒後
-    onUpdateAvailable: (version, notes) => {
+  // アップデーターフックを使用（通知のみモード）
+  const { downloadAndInstallUpdate } = useAutoUpdater({
+    checkInterval: 2 * 60 * 60 * 1000, // 2時間ごと
+    initialDelay: 30 * 1000, // 30秒後
+    onUpdateAvailable: (version, notes, update) => {
       setShowCheckingDialog(false);
       if (version === 'エラー') {
         // エラーの場合
         setCheckingMessage(notes);
         setTimeout(() => setShowCheckingDialog(false), 3000);
       } else {
-        setUpdateInfo({ version, notes });
+        setUpdateInfo({ version, notes, update });
         setShowUpdateDialog(true);
       }
     },
@@ -73,23 +72,22 @@ export function UpdateNotification() {
   }, []);
 
   const handleInstallUpdate = async () => {
-    if (!updateInfo) return;
+    if (!updateInfo?.update) return;
 
     setIsDownloading(true);
+    setShowUpdateDialog(false);
+    
     try {
-      // アップデートのダウンロードとインストールを実行
-      console.log('アップデートのインストールを開始します...');
+      console.log('アップデートのダウンロード・インストールを開始します...');
       
-      // 実際のアップデートは useAutoUpdater で処理される
-      // ここではユーザーに通知のみ
-      setTimeout(() => {
-        alert('アップデートが開始されました。アプリが自動的に再起動されます。');
-      }, 1000);
+      // 実際のダウンロード・インストール実行
+      await downloadAndInstallUpdate(updateInfo.update);
       
     } catch (error) {
       console.error('アップデートエラー:', error);
       alert('アップデートのインストール中にエラーが発生しました。');
       setIsDownloading(false);
+      setShowUpdateDialog(true); // ダイアログを再表示
     }
   };
 
@@ -124,7 +122,7 @@ export function UpdateNotification() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Download className="h-5 w-5 text-primary" />
-              アップデートが利用可能です
+              システムアップデートのお知らせ
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
@@ -149,7 +147,7 @@ export function UpdateNotification() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={handleLaterUpdate}>
-              後で更新
+              後で実行
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleInstallUpdate}
@@ -159,12 +157,12 @@ export function UpdateNotification() {
               {isDownloading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  インストール中...
+                  ダウンロード中...
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  今すぐ更新
+                  手動で更新実行
                 </>
               )}
             </AlertDialogAction>

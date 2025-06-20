@@ -8,12 +8,10 @@ import { listen } from '@tauri-apps/api/event';
 interface AutoUpdaterOptions {
   // アップデートチェックの間隔（ミリ秒）
   checkInterval?: number;
-  // サイレントアップデート（ユーザー確認なし）
-  silent?: boolean;
   // 起動時の初回チェックまでの遅延（ミリ秒）
   initialDelay?: number;
   // アップデート通知のコールバック
-  onUpdateAvailable?: (version: string, notes: string) => void;
+  onUpdateAvailable?: (version: string, notes: string, update: any) => void;
   // チェック開始時のコールバック
   onCheckStart?: () => void;
   // アップデートがない場合のコールバック
@@ -22,9 +20,8 @@ interface AutoUpdaterOptions {
 
 export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
   const {
-    checkInterval = 30 * 60 * 1000, // デフォルト30分
-    silent = false, // デフォルトでポップアップ表示
-    initialDelay = 10 * 1000, // デフォルト10秒
+    checkInterval = 2 * 60 * 60 * 1000, // デフォルト2時間（控えめに）
+    initialDelay = 30 * 1000, // デフォルト30秒（起動直後を避ける）
     onUpdateAvailable,
     onCheckStart,
     onNoUpdate,
@@ -70,7 +67,7 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
     }
   };
   
-  // performUpdate関数を定義
+  // performUpdate関数を定義（通知のみ）
   const performUpdate = async (isManual = false) => {
     // 既にアップデート中の場合はスキップ
     if (isUpdatingRef.current) return;
@@ -88,14 +85,9 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
       if (update?.available) {
         console.log(`新しいバージョン ${update.version} が利用可能です`);
         
-        if (silent && !isManual) {
-          // サイレントアップデート：ユーザー確認なし（手動の場合は除く）
-          await downloadAndInstallUpdate(update);
-        } else {
-          // ポップアップ通知：ユーザーに通知
-          if (onUpdateAvailable) {
-            onUpdateAvailable(update.version, update.body || 'アップデートが利用可能です');
-          }
+        // 通知のみ（自動ダウンロード・インストールは行わない）
+        if (onUpdateAvailable) {
+          onUpdateAvailable(update.version, update.body || 'アップデートが利用可能です', update);
         }
       } else {
         console.log('現在のバージョンは最新です');
@@ -107,7 +99,7 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
     } catch (error) {
       console.error('アップデートチェックエラー:', error);
       if (isManual && onUpdateAvailable) {
-        onUpdateAvailable('エラー', 'アップデートのチェック中にエラーが発生しました。');
+        onUpdateAvailable('エラー', 'アップデートのチェック中にエラーが発生しました。', null);
       }
       isUpdatingRef.current = false;
     }
@@ -147,7 +139,7 @@ export function useAutoUpdater(options: AutoUpdaterOptions = {}) {
         unlistenManualCheck();
       }
     };
-  }, [checkInterval, silent, initialDelay, onUpdateAvailable, onCheckStart, onNoUpdate]);
+  }, [checkInterval, initialDelay, onUpdateAvailable, onCheckStart, onNoUpdate]);
 
   // 手動でアップデートをチェックする関数
   const checkForUpdate = async () => {

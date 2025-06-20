@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.5",
+    "tailwindcss": "^4.1.6",
     "tw-animate-css": "^1.2.9"
   }
 }
