@@ -1,0 +1,1 @@
+export { TrailCalculator } from './TrailCalculator';
