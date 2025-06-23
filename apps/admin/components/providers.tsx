@@ -16,6 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
     isLoading: true,
     authToken: null,
+    groups: [],
   });
   
   React.useEffect(() => {

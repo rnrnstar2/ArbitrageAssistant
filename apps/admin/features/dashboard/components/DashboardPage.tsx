@@ -17,7 +17,29 @@ import { ClientStatusCard } from "./ClientStatusCard";
 import { MonitoringPanel } from "./MonitoringPanel";
 
 export function DashboardPage() {
-  const { stats, clients, isLoading } = useDashboardData();
+  const { 
+    stats, 
+    accounts, 
+    positions, 
+    actions, 
+    clients,
+    isLoading, 
+    error, 
+    refresh 
+  } = useDashboardData();
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <Alert variant="destructive">
+          <AlertDescription>
+            データの読み込みに失敗しました: {error}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={refresh}>再試行</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -29,6 +51,9 @@ export function DashboardPage() {
             アービトラージ取引の監視と基本操作を行います
           </p>
         </div>
+        <Button onClick={refresh} variant="outline" disabled={isLoading}>
+          {isLoading ? "更新中..." : "更新"}
+        </Button>
       </div>
 
       <Separator />
@@ -37,12 +62,13 @@ export function DashboardPage() {
       <Alert>
         <CheckCircle2 className="h-4 w-4" />
         <AlertDescription>
-          システムは正常に動作しています。現在 <Badge variant="secondary">5つのクライアント</Badge> が接続中です。
+          システムは正常に動作しています。現在 <Badge variant="secondary">{stats?.connectedAccounts || 0}個の口座</Badge> が接続中、
+          <Badge variant="secondary">{stats?.openPositions || 0}個のポジション</Badge> を監視中です。
         </AlertDescription>
       </Alert>
 
       {/* Stats Section */}
-      <StatsCards stats={stats} isLoading={isLoading} />
+      <StatsCards stats={stats || { connectedAccounts: 0, totalAccounts: 0, openPositions: 0, pendingActions: 0, totalVolume: 0, totalPnL: 0 }} isLoading={isLoading} />
 
       {/* Client Status */}
       <ClientStatusCard clients={clients} isLoading={isLoading} />

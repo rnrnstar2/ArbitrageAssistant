@@ -24,7 +24,7 @@ export function PositionActions({ position }: PositionActionsProps) {
   const handleClosePosition = async () => {
     if (confirm('このポジションを決済しますか？')) {
       try {
-        await closePosition(position.positionId);
+        await closePosition(position.id);
       } catch (error) {
         console.error('Failed to close position:', error);
         alert('ポジションの決済に失敗しました');

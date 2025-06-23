@@ -1,4 +1,13 @@
-import { PriceData } from '@repo/shared-types';
+// Price data interface for hedge-system
+interface PriceData {
+  symbol: string;
+  bid: number;
+  ask: number;
+  time?: string;
+  timestamp?: Date;
+  spread?: number;
+}
+import { TrailEngine } from './trail-engine';
 
 export interface PriceStatistics {
   symbol: string;
@@ -20,6 +29,15 @@ export interface PriceAlert {
   threshold: number;
 }
 
+export interface PriceUpdate {
+  symbol: string;
+  price: number;
+  timestamp: Date;
+  bid?: number;
+  ask?: number;
+  spread?: number;
+}
+
 export class PriceMonitor {
   private priceData: Map<string, PriceData> = new Map();
   private priceHistory: Map<string, PriceData[]> = new Map();
@@ -27,6 +45,8 @@ export class PriceMonitor {
   private alerts: PriceAlert[] = [];
   private maxHistorySize = 1000;
   private maxAlertsSize = 100;
+  private subscribers: Map<string, ((price: number) => void)[]> = new Map();
+  private trailEngine?: TrailEngine;
   
   // アラート設定
   private alertSettings = {
@@ -35,6 +55,112 @@ export class PriceMonitor {
     stalePriceTimeout: 60000,        // 60秒
     volatilitySpikeThreshold: 2.0    // 通常の2倍
   };
+
+  constructor(trailEngine?: TrailEngine) {
+    this.trailEngine = trailEngine;
+  }
+
+  /**
+   * 価格監視開始（task specification準拠）
+   * @param symbols 監視する通貨ペアの配列
+   */
+  async startPriceWatching(symbols: string[]): Promise<void> {
+    console.log(`🔍 Starting price watching for symbols:`, symbols);
+    
+    for (const symbol of symbols) {
+      if (!this.subscribers.has(symbol)) {
+        this.subscribers.set(symbol, []);
+      }
+    }
+    
+    console.log(`✅ Price watching started for ${symbols.length} symbols`);
+  }
+
+  /**
+   * WebSocketからの価格更新処理（task specification準拠）
+   * @param priceUpdate 価格更新データ
+   */
+  async handlePriceFromEA(priceUpdate: PriceUpdate): Promise<void> {
+    try {
+      // PriceDataに変換
+      const priceData: PriceData = {
+        symbol: priceUpdate.symbol,
+        bid: priceUpdate.bid || priceUpdate.price,
+        ask: priceUpdate.ask || priceUpdate.price,
+        spread: priceUpdate.spread || Math.abs((priceUpdate.ask || priceUpdate.price) - (priceUpdate.bid || priceUpdate.price)),
+        timestamp: priceUpdate.timestamp
+      };
+
+      // 内部価格更新処理
+      this.updatePrice(priceData);
+
+      // 購読者に通知
+      this.notifySubscribers(priceUpdate.symbol, priceUpdate.price);
+
+      // TrailEngineに価格更新を通知
+      if (this.trailEngine) {
+        await this.trailEngine.handlePriceUpdate(priceUpdate);
+      }
+
+    } catch (error) {
+      console.error(`Failed to handle price update from EA:`, error);
+    }
+  }
+
+  /**
+   * 定期価格取得（バックアップ）（task specification準拠）
+   */
+  private async fetchLatestPrices(): Promise<void> {
+    console.log('📡 Fetching latest prices as backup...');
+    // TODO: 外部APIまたはWebSocketから最新価格を取得
+    // 現在はスタブ実装
+  }
+
+  /**
+   * 価格購読（task specification準拠）
+   * @param symbol 通貨ペア
+   * @param callback 価格更新時のコールバック
+   */
+  subscribe(symbol: string, callback: (price: number) => void): void {
+    const callbacks = this.subscribers.get(symbol) || [];
+    callbacks.push(callback);
+    this.subscribers.set(symbol, callbacks);
+    
+    console.log(`📊 Subscribed to price updates for ${symbol} (${callbacks.length} subscribers)`);
+  }
+
+  /**
+   * 価格購読解除
+   * @param symbol 通貨ペア
+   * @param callback 解除するコールバック
+   */
+  unsubscribe(symbol: string, callback: (price: number) => void): void {
+    const callbacks = this.subscribers.get(symbol) || [];
+    const index = callbacks.indexOf(callback);
+    
+    if (index !== -1) {
+      callbacks.splice(index, 1);
+      this.subscribers.set(symbol, callbacks);
+      console.log(`📊 Unsubscribed from price updates for ${symbol} (${callbacks.length} subscribers remaining)`);
+    }
+  }
+
+  /**
+   * 購読者への通知
+   * @param symbol 通貨ペア
+   * @param price 価格
+   */
+  private notifySubscribers(symbol: string, price: number): void {
+    const callbacks = this.subscribers.get(symbol) || [];
+    
+    for (const callback of callbacks) {
+      try {
+        callback(price);
+      } catch (error) {
+        console.error(`Error in price subscriber callback for ${symbol}:`, error);
+      }
+    }
+  }
   
   updatePrice(priceData: PriceData): void {
     const previousPrice = this.priceData.get(priceData.symbol);
@@ -105,12 +231,12 @@ export class PriceMonitor {
     const price = this.getCurrentPrice(symbol);
     if (!price) return true;
     
-    return Date.now() - price.timestamp.getTime() > staleTimeout;
+    return Date.now() - (price.timestamp?.getTime() || 0) > staleTimeout;
   }
   
   getSpread(symbol: string): number {
     const price = this.getCurrentPrice(symbol);
-    return price ? price.spread : 0;
+    return price ? (price.spread || 0) : 0;
   }
   
   isWideSpread(symbol: string, threshold?: number): boolean {
@@ -119,7 +245,7 @@ export class PriceMonitor {
     if (!price) return false;
     
     const midPrice = (price.bid + price.ask) / 2;
-    return price.spread / midPrice > spreadThreshold;
+    return (price.spread || 0) / midPrice > spreadThreshold;
   }
   
   private updatePriceHistory(priceData: PriceData): void {
@@ -139,18 +265,18 @@ export class PriceMonitor {
     
     if (history.length === 0) return;
     
-    const spreads = history.map(h => h.spread);
+    const spreads = history.map(h => h.spread || 0).filter(s => s > 0);
     const prices = history.map(h => (h.bid + h.ask) / 2);
     
     const stats: PriceStatistics = {
       symbol: priceData.symbol,
       count: history.length,
-      avgSpread: spreads.reduce((sum, s) => sum + s, 0) / spreads.length,
-      minSpread: Math.min(...spreads),
-      maxSpread: Math.max(...spreads),
-      avgPrice: prices.reduce((sum, p) => sum + p, 0) / prices.length,
+      avgSpread: spreads.length > 0 ? spreads.reduce((sum, s) => (sum || 0) + (s || 0), 0) / spreads.length : 0,
+      minSpread: spreads.length > 0 ? Math.min(...spreads) : 0,
+      maxSpread: spreads.length > 0 ? Math.max(...spreads) : 0,
+      avgPrice: prices.reduce((sum, p) => (sum || 0) + (p || 0), 0) / prices.length,
       volatility: this.calculateVolatility(priceData.symbol),
-      lastUpdate: priceData.timestamp
+      lastUpdate: priceData.timestamp || new Date()
     };
     
     this.priceStats.set(priceData.symbol, stats);
@@ -172,7 +298,7 @@ export class PriceMonitor {
           symbol: priceData.symbol,
           type: 'significant_move',
           message: `Significant price move detected: ${(change * 100).toFixed(3)}%`,
-          timestamp: priceData.timestamp,
+          timestamp: priceData.timestamp || new Date(),
           value: change,
           threshold: this.alertSettings.significantMoveThreshold
         });
@@ -325,5 +451,15 @@ export class PriceMonitor {
   }
 }
 
-// シングルトンインスタンス
-export const priceMonitor = new PriceMonitor();
+// シングルトンインスタンス（遅延初期化）
+let _priceMonitorInstance: PriceMonitor | null = null;
+
+export function getPriceMonitor(trailEngine?: TrailEngine): PriceMonitor {
+  if (!_priceMonitorInstance) {
+    _priceMonitorInstance = new PriceMonitor(trailEngine);
+  }
+  return _priceMonitorInstance;
+}
+
+// 後方互換性のためのエクスポート
+export const priceMonitor = getPriceMonitor();

@@ -17,8 +17,12 @@ export class AuthService {
     
     // 設定チェックを遅延実行（Amplify.configure()が完了するまで待機）
     setTimeout(() => {
-      this.checkAuthState();
-    }, 100);
+      this.checkAuthState().catch((error) => {
+        console.error('Initial auth state check failed:', error);
+        this.isLoading = false;
+        this.notify();
+      });
+    }, 500);
   }
 
   private notify() {
@@ -33,38 +37,43 @@ export class AuthService {
   }
 
   async checkAuthState(): Promise<void> {
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new AuthError(AuthErrorType.NETWORK_ERROR, 'Authentication check timeout')), 10000);
-    });
-
     try {
-      const getCurrentUserPromise = getCurrentUser();
-      const currentUser = await Promise.race([getCurrentUserPromise, timeoutPromise]);
-      this.user = currentUser;
-      
-      // セッション情報を取得してグループを抽出
-      const sessionPromise = fetchAuthSession();
-      const session = await Promise.race([sessionPromise, timeoutPromise]);
+      // まずセッションを確認（認証されていない場合でもエラーにならない）
+      const session = await fetchAuthSession();
       
       if (session.tokens?.idToken) {
-        this.authToken = session.tokens.idToken.toString();
-        // JWTトークンからグループ情報を抽出
-        const payload = session.tokens.idToken.payload;
-        this.groups = (payload['cognito:groups'] as string[]) || [];
-        
-        // セッション自動更新タイマーを設定
-        this.setupSessionRefresh(session.tokens.idToken.payload.exp as number);
+        // 認証されている場合、ユーザー情報を取得
+        try {
+          this.user = await getCurrentUser();
+          this.authToken = session.tokens.idToken.toString();
+          
+          // JWTトークンからグループ情報を抽出
+          const payload = session.tokens.idToken.payload;
+          this.groups = (payload['cognito:groups'] as string[]) || [];
+          
+          // セッション自動更新タイマーを設定（expが存在する場合のみ）
+          if (payload.exp && typeof payload.exp === 'number') {
+            this.setupSessionRefresh(payload.exp);
+          }
+        } catch (userError) {
+          console.warn('Failed to get current user:', userError);
+          this.user = null;
+          this.authToken = null;
+          this.groups = [];
+        }
+      } else {
+        // 認証されていない状態（正常な状態）
+        this.user = null;
+        this.authToken = null;
+        this.groups = [];
       }
       
     } catch (error) {
+      // セッション取得エラー（ログのみ出力し、エラーを投げない）
+      console.warn('AuthService.checkAuthState session error:', error);
       this.user = null;
       this.authToken = null;
       this.groups = [];
-      
-      if (error instanceof AuthError) {
-        throw error;
-      }
-      throw new AuthError(AuthErrorType.NETWORK_ERROR, 'Authentication failed', error as Error);
     } finally {
       this.isLoading = false;
       this.notify();
@@ -91,7 +100,9 @@ export class AuthService {
         const payload = session.tokens.idToken.payload;
         this.groups = (payload['cognito:groups'] as string[]) || [];
         
-        this.setupSessionRefresh(payload.exp as number);
+        if (payload.exp && typeof payload.exp === 'number') {
+          this.setupSessionRefresh(payload.exp);
+        }
         this.notify();
       }
     } catch (error) {

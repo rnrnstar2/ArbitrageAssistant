@@ -4,10 +4,9 @@
 export type {
   Position,
   CreatePositionInput,
-  UpdatePositionInput
+  UpdatePositionInput,
+  PositionStatus
 } from '@repo/shared-types';
-
-export { PositionStatus } from '@repo/shared-types';
 
 // フィルター・ソート用の型定義
 export type PositionFilter = {

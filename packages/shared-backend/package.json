@@ -2,6 +2,11 @@
   "name": "@repo/shared-backend",
   "version": "1.0.0",
   "private": true,
+  "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./amplify/data/resource": "./amplify/data/resource.ts"
+  },
   "scripts": {
     "build": "tsc --noEmit",
     "check-types": "tsc --noEmit",

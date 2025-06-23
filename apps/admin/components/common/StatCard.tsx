@@ -3,13 +3,16 @@ import { Card } from '@repo/ui/components/ui/card';
 
 interface StatCardProps {
   title: string;
-  value: number;
+  value: number | string;
   format?: 'currency' | 'number';
   color?: 'blue' | 'green' | 'orange' | 'red' | 'purple';
 }
 
 export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'number', color = 'blue' }) => {
-  const formatValue = (value: number, format: string) => {
+  const formatValue = (value: number | string, format: string) => {
+    if (typeof value === 'string') {
+      return value;
+    }
     if (format === 'currency') {
       return new Intl.NumberFormat('ja-JP', { 
         style: 'currency', 

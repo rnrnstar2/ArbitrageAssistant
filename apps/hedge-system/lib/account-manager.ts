@@ -1,4 +1,4 @@
-import { AmplifyGraphQLClient } from './amplify-client';
+import { AmplifyClient } from './amplify-client';
 import { WebSocketHandler } from './websocket-handler';
 import { REPORT_ACCOUNT_STATUS } from './graphql/mutations';
 
@@ -23,7 +23,7 @@ interface AccountAssignment {
  * 分散アーキテクチャでの口座担当管理・接続状態管理
  */
 export class AccountManager {
-  private amplifyClient: AmplifyGraphQLClient;
+  private amplifyClient: AmplifyClient;
   private websocketHandler: WebSocketHandler;
   private assignedAccounts: Set<string> = new Set();
   private accountConnections: Map<string, ConnectionInfo> = new Map();
@@ -44,7 +44,7 @@ export class AccountManager {
   };
 
   constructor(
-    amplifyClient: AmplifyGraphQLClient,
+    amplifyClient: AmplifyClient,
     websocketHandler: WebSocketHandler,
     pcId?: string
   ) {
@@ -211,6 +211,13 @@ export class AccountManager {
    */
   async reportAccountStatus(accountId: string, status: string): Promise<void> {
     try {
+      // AmplifyClient経由でAccount状態更新
+      await this.amplifyClient.updateAccount(accountId, {
+        lastUpdated: new Date().toISOString()
+      });
+      
+      // 旧GraphQL実装をコメントアウト
+      /*
       await this.amplifyClient.client.graphql({
         query: REPORT_ACCOUNT_STATUS,
         variables: { 
@@ -219,6 +226,7 @@ export class AccountManager {
           pcId: this.pcId 
         }
       });
+      */
     } catch (error) {
       console.error(`Failed to report account status for ${accountId}:`, error);
       // 報告エラーは致命的ではないので継続

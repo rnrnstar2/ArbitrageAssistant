@@ -10,12 +10,13 @@ import { Input } from '@repo/ui/components/ui/input';
 import { Label } from '@repo/ui/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui/components/ui/dialog';
 import { Settings, TrendingUp, Plus, Play } from 'lucide-react';
-import { Position, PositionStatus } from '@repo/shared-types';
+import { Position, PositionStatus, ExecutionType, Symbol } from '@repo/shared-types';
 import { usePositions } from '../hooks/usePositions';
 import { usePositionActions } from '../hooks/usePositionActions';
 import { PositionActions } from './PositionActions';
 import { formatCurrency, formatDateTime } from '../../../lib/utils';
 import { amplifyClient } from '../../../lib/amplify-client';
+import { getCurrentUser } from 'aws-amplify/auth';
 
 interface PositionManagerProps {
   viewMode?: 'table';
@@ -28,9 +29,9 @@ interface TrailSettings {
 
 interface CreatePositionInput {
   accountId: string;
-  symbol: string;
+  symbol: Symbol;
   volume: number;
-  executionType: string;
+  executionType: ExecutionType;
   trailWidth: number;
   memo: string;
 }
@@ -56,9 +57,9 @@ export function PositionManager({
   // Position creation state
   const [createForm, setCreateForm] = useState<CreatePositionInput>({
     accountId: '',
-    symbol: 'USDJPY',
+    symbol: Symbol.USDJPY,
     volume: 1.0,
-    executionType: 'MARKET',
+    executionType: ExecutionType.ENTRY,
     trailWidth: 0,
     memo: ''
   });
@@ -110,7 +111,7 @@ export function PositionManager({
     if (!selectedPosition) return;
 
     try {
-      await updatePosition(selectedPosition.positionId, {
+      await updatePosition(selectedPosition.id, {
         trailSettings: {
           enabled: trailSettings.enabled,
           trailType: 'pip',
@@ -132,6 +133,10 @@ export function PositionManager({
   const createPosition = async (data: CreatePositionInput): Promise<void> => {
     setIsCreating(true);
     try {
+      // Get current user ID
+      const user = await getCurrentUser();
+      const userId = user.userId;
+      
       let triggerActionIds = '';
       
       // トレール設定確認
@@ -143,11 +148,12 @@ export function PositionManager({
       
       // ポジション作成
       await amplifyClient.models.Position.create({
+        userId: userId,
         accountId: data.accountId,
         symbol: data.symbol,
         volume: data.volume,
         executionType: data.executionType,
-        status: 'PENDING',
+        status: PositionStatus.PENDING,
         trailWidth: data.trailWidth,
         triggerActionIds: triggerActionIds,
         memo: data.memo
@@ -183,7 +189,7 @@ export function PositionManager({
     try {
       await amplifyClient.models.Position.update({
         id: positionId,
-        status: 'OPENING'
+        status: PositionStatus.OPENING
       });
       // Subscription経由でHedge Systemが実行
       alert('ポジションの実行を開始しました');
@@ -275,9 +281,9 @@ export function PositionManager({
           </TableHeader>
           <TableBody>
             {filteredPositions.map((position) => (
-              <TableRow key={position.positionId}>
+              <TableRow key={position.id}>
                 <TableCell className="font-mono text-sm">
-                  {position.positionId.substring(0, 8)}...
+                  {position.id.substring(0, 8)}...
                 </TableCell>
                 <TableCell>
                   <Badge variant={getStatusBadgeVariant(position.status)}>
@@ -307,7 +313,7 @@ export function PositionManager({
                       <Button 
                         size="sm" 
                         variant="default"
-                        onClick={() => executePosition(position.positionId)}
+                        onClick={() => executePosition(position.id)}
                         disabled={isExecuting}
                       >
                         <Play className="h-4 w-4 mr-1" />
@@ -402,10 +408,10 @@ export function PositionManager({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USDJPY">USDJPY</SelectItem>
-                  <SelectItem value="EURUSD">EURUSD</SelectItem>
-                  <SelectItem value="EURGBP">EURGBP</SelectItem>
-                  <SelectItem value="XAUUSD">XAUUSD</SelectItem>
+                  <SelectItem value={Symbol.USDJPY}>USDJPY</SelectItem>
+                  <SelectItem value={Symbol.EURUSD}>EURUSD</SelectItem>
+                  <SelectItem value={Symbol.EURGBP}>EURGBP</SelectItem>
+                  <SelectItem value={Symbol.XAUUSD}>XAUUSD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -434,9 +440,8 @@ export function PositionManager({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="MARKET">成行</SelectItem>
-                  <SelectItem value="LIMIT">指値</SelectItem>
-                  <SelectItem value="STOP">逆指値</SelectItem>
+                  <SelectItem value={ExecutionType.ENTRY}>エントリー</SelectItem>
+                  <SelectItem value={ExecutionType.EXIT}>エグジット</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -2,6 +2,9 @@ import { Position, PositionStatus } from './types';
 import { PositionService } from './position-service';
 import { PriceMonitor } from './price-monitor';
 import { ActionManager } from './action-manager';
+import { TrailMonitor } from './trail-monitor';
+import { ActionTrigger } from './action-trigger';
+import { AmplifyClient } from './amplify-client';
 
 interface TrailPosition {
   positionId: string;
@@ -13,18 +16,130 @@ interface TrailPosition {
   isActive: boolean;
 }
 
-export class TrailEngine {
-  private trailPositions: Map<string, TrailPosition> = new Map();
-  private priceMonitor: PriceMonitor;
-  private actionManager: ActionManager;
+export interface TrailEngineStats {
+  monitoringCount: number;
+  activePositions: string[];
+  totalTriggered: number;
+  lastUpdate: Date;
+}
 
-  constructor(priceMonitor: PriceMonitor, actionManager: ActionManager) {
+export class TrailEngine {
+  private monitoredPositions: Map<string, TrailMonitor> = new Map();
+  private priceWatchers: Map<string, PriceMonitor> = new Map();
+  private actionTrigger: ActionTrigger;
+  private amplifyClient: AmplifyClient;
+  
+  // Legacy support
+  private trailPositions: Map<string, TrailPosition> = new Map();
+  private priceMonitor?: PriceMonitor;
+  private actionManager?: ActionManager;
+  private totalTriggered: number = 0;
+
+  constructor(amplifyClient?: AmplifyClient, priceMonitor?: PriceMonitor, actionManager?: ActionManager) {
+    this.amplifyClient = amplifyClient || new AmplifyClient();
+    this.actionTrigger = new ActionTrigger(this.amplifyClient);
+    
+    // Legacy support
     this.priceMonitor = priceMonitor;
     this.actionManager = actionManager;
   }
 
   /**
-   * トレール監視追加
+   * ポジション監視追加（新実装）
+   * @param position 監視対象ポジション
+   */
+  async addPositionMonitoring(position: Position): Promise<void> {
+    if (!position.trailWidth || position.trailWidth <= 0) {
+      console.log(`Position ${position.id} has no trail width, skipping monitoring`);
+      return;
+    }
+
+    try {
+      // TrailMonitorインスタンス作成
+      const trailMonitor = new TrailMonitor(position);
+      this.monitoredPositions.set(position.id, trailMonitor);
+
+      // 価格監視設定（PriceMonitor経由）
+      if (this.priceMonitor) {
+        this.priceMonitor.subscribe(position.symbol.toString(), async (price) => {
+          await this.handlePriceUpdateForPosition(position.id, price);
+        });
+      }
+
+      console.log(`✅ Trail monitoring added for position ${position.id} (symbol: ${position.symbol}, trailWidth: ${position.trailWidth})`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to add trail monitoring for position ${position.id}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * ポジション監視停止
+   * @param positionId 停止対象ポジションID
+   */
+  async removePositionMonitoring(positionId: string): Promise<void> {
+    const trailMonitor = this.monitoredPositions.get(positionId);
+    if (trailMonitor) {
+      trailMonitor.forceStop();
+      this.monitoredPositions.delete(positionId);
+      console.log(`✅ Trail monitoring removed for position ${positionId}`);
+    } else {
+      console.log(`Position ${positionId} was not being monitored`);
+    }
+  }
+
+  /**
+   * 特定ポジションの価格更新処理
+   * @param positionId ポジションID
+   * @param price 新しい価格
+   */
+  private async handlePriceUpdateForPosition(positionId: string, price: number): Promise<void> {
+    const trailMonitor = this.monitoredPositions.get(positionId);
+    if (!trailMonitor) return;
+
+    try {
+      const isTriggered = await trailMonitor.updatePrice(price);
+      
+      if (isTriggered) {
+        // トリガー条件成立！
+        await this.executeTriggerActions(positionId, trailMonitor.getTriggerActionIds());
+        
+        // 監視停止
+        await this.removePositionMonitoring(positionId);
+        this.totalTriggered++;
+      }
+      
+    } catch (error) {
+      console.error(`❌ Failed to handle price update for position ${positionId}:`, error);
+    }
+  }
+
+  /**
+   * triggerActionIds実行
+   * @param positionId 対象ポジションID
+   * @param actionIds アクションIDs配列
+   */
+  private async executeTriggerActions(positionId: string, actionIds: string[]): Promise<void> {
+    if (!actionIds || actionIds.length === 0) {
+      console.log(`No trigger actions for position ${positionId}`);
+      return;
+    }
+
+    try {
+      const actionIdsJson = JSON.stringify(actionIds);
+      const results = await this.actionTrigger.executeTriggerActions(positionId, actionIdsJson);
+      
+      const stats = this.actionTrigger.getExecutionStats(results);
+      console.log(`🎯 Trail trigger executed for position ${positionId}: ${stats.succeeded}/${stats.total} actions succeeded`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to execute trigger actions for position ${positionId}:`, error);
+    }
+  }
+
+  /**
+   * トレール監視追加（レガシー実装）
    */
   addTrailPosition(position: Position): void {
     if (!position.trailWidth || position.trailWidth <= 0) {
@@ -63,18 +178,20 @@ export class TrailEngine {
   }
 
   /**
-   * 全監視対象ポジションのトレール監視開始
+   * 全監視対象ポジションのトレール監視開始（新実装）
    */
   async startAllTrailMonitoring(): Promise<void> {
     try {
       const trailPositions = await this.getTrailPositions();
-      console.log(`Starting trail monitoring for ${trailPositions.length} positions`);
+      console.log(`🚀 Starting trail monitoring for ${trailPositions.length} positions`);
       
       for (const position of trailPositions) {
-        this.addTrailPosition(position);
+        await this.addPositionMonitoring(position);
       }
+      
+      console.log(`✅ Trail monitoring started for ${this.monitoredPositions.size} positions`);
     } catch (error) {
-      console.error('Failed to start all trail monitoring:', error);
+      console.error('❌ Failed to start all trail monitoring:', error);
     }
   }
 
@@ -240,8 +357,13 @@ export class TrailEngine {
   /**
    * 統計情報取得（HedgeSystemCore用）
    */
-  getStats() {
-    return this.getTrailStats();
+  getStats(): TrailEngineStats {
+    return {
+      monitoringCount: this.monitoredPositions.size,
+      activePositions: Array.from(this.monitoredPositions.keys()),
+      totalTriggered: this.totalTriggered,
+      lastUpdate: new Date()
+    };
   }
 
   /**
@@ -253,10 +375,23 @@ export class TrailEngine {
   }
 
   /**
-   * 監視中ポジション一覧取得
+   * 監視中ポジション一覧取得（ポジションオブジェクト）
+   */
+  getMonitoredPositions(): Position[] {
+    const positions: Position[] = [];
+    
+    for (const trailMonitor of this.monitoredPositions.values()) {
+      positions.push(trailMonitor.getPosition());
+    }
+    
+    return positions;
+  }
+
+  /**
+   * 監視中ポジションID一覧取得（レガシー互換）
    */
   getMonitoringPositions(): string[] {
-    return Array.from(this.trailPositions.keys());
+    return Array.from(this.monitoredPositions.keys());
   }
 
   /**
@@ -273,5 +408,12 @@ export class TrailEngine {
   }
 }
 
-// シングルトンインスタンス
-export const trailEngine = new TrailEngine();
+// シングルトンインスタンス（遅延初期化）
+let _trailEngineInstance: TrailEngine | null = null;
+
+export function getTrailEngine(amplifyClient?: AmplifyGraphQLClient, priceMonitor?: PriceMonitor, actionManager?: ActionManager): TrailEngine {
+  if (!_trailEngineInstance) {
+    _trailEngineInstance = new TrailEngine(amplifyClient, priceMonitor, actionManager);
+  }
+  return _trailEngineInstance;
+}

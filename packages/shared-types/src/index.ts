@@ -1,38 +1,16 @@
 // Core MVP types exports
 
 // Position types
-export * from './position.js';
-export type {
-  Position,
-  CreatePositionInput,
-  UpdatePositionInput,
-  PositionFilter
-} from './position.js';
-export { PositionStatus, Symbol, ExecutionType } from './position.js';
+export * from './position';
 
-// Action types
-export * from './action.js';
-export type {
-  Action,
-  CreateActionInput,
-  UpdateActionInput,
-  ActionFilter,
-  ActionSubscriptionFilter
-} from './action.js';
-export { ActionType, ActionStatus } from './action.js';
+// Action types 
+export * from './action';
 
 // Account types (from trading.ts)
-export type {
-  Account,
-  UpdateAccountInput
-} from './trading.js';
+export * from './trading';
 
 // WebSocket types
-export type {
-  OpenCommand,
-  CloseCommand,
-  WSCommand
-} from './websocket.js';
+export * from './websocket';
 
 // User types (core MVP)
 export enum UserRole {

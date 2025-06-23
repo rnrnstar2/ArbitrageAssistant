@@ -19,6 +19,7 @@ import {
 import { ActionManager } from './action-manager';
 import { PositionService } from './position-service';
 import { amplifyClient } from './amplify-client';
+import { PriceMonitor, PriceUpdate } from './price-monitor';
 
 /**
  * 統合WebSocketハンドラー
@@ -28,6 +29,7 @@ export class WebSocketHandler {
   private wsServer?: HedgeWebSocketServer;
   private isInitialized = false;
   private actionManager: ActionManager;
+  private priceMonitor?: PriceMonitor;
   
   // 統計
   private messageStats = {
@@ -39,6 +41,61 @@ export class WebSocketHandler {
   
   constructor(actionManager?: ActionManager) {
     this.actionManager = actionManager || new ActionManager(this);
+  }
+
+  /**
+   * PriceMonitor設定（task specification準拠）
+   * @param priceMonitor 価格監視マネージャー
+   */
+  setPriceMonitor(priceMonitor: PriceMonitor): void {
+    this.priceMonitor = priceMonitor;
+    console.log('🔧 PriceMonitor set for WebSocket handler');
+  }
+
+  /**
+   * EAイベント処理（task specification準拠）
+   * @param event EAからのイベント
+   */
+  private async handleEAEvent(event: any): Promise<void> {
+    try {
+      switch (event.event) {
+        case 'PRICE_UPDATE':
+          if (this.priceMonitor) {
+            const priceUpdate: PriceUpdate = {
+              symbol: event.symbol,
+              price: event.price,
+              timestamp: new Date(event.timestamp || Date.now()),
+              bid: event.bid,
+              ask: event.ask,
+              spread: event.spread
+            };
+            
+            await this.priceMonitor.handlePriceFromEA(priceUpdate);
+          }
+          break;
+          
+        case 'POSITION_OPENED':
+          await this.handleOpenedEvent(event as WSOpenedEvent);
+          break;
+          
+        case 'POSITION_CLOSED':
+          await this.handleClosedEvent(event as WSClosedEvent);
+          break;
+          
+        case 'POSITION_STOPPED':
+          await this.handleStoppedEvent(event as WSStoppedEvent);
+          break;
+          
+        case 'ERROR':
+          await this.handleErrorEvent(event as WSErrorEvent);
+          break;
+          
+        default:
+          console.warn(`⚠️ Unknown EA event type: ${event.event}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to handle EA event:`, error);
+    }
   }
   
   /**
@@ -71,26 +128,34 @@ export class WebSocketHandler {
   }
 
   /**
-   * OPENED イベント処理（設計書準拠）
+   * OPENED イベント処理（MVPシステム設計準拠）
    */
   private async handleOpenedEvent(event: WSOpenedEvent): Promise<void> {
-    // 1. Position更新（mtTicket設定）
-    await this.updatePosition(event.positionId, {
-      status: 'OPEN',
-      mtTicket: event.mtTicket,
-      entryPrice: event.price,
-      entryTime: new Date(event.time)
-    });
-
-    // 2. Action完了
-    await this.updateAction(event.actionId, {
-      status: 'EXECUTED',
-      result: {
+    console.log(`📈 Position opened: ${event.positionId} @ ${event.price}`);
+    
+    try {
+      // 1. Position状態を OPEN に更新
+      await this.amplifyClient.models.Position.update({
+        id: event.positionId,
+        status: 'OPEN',
         mtTicket: event.mtTicket,
-        price: event.price,
-        time: event.time
+        entryPrice: event.price,
+        entryTime: new Date(event.time).toISOString()
+      });
+
+      // 2. Action完了（存在する場合）
+      if (event.actionId) {
+        await this.amplifyClient.models.Action.update({
+          id: event.actionId,
+          status: 'EXECUTED'
+        });
       }
-    });
+      
+      console.log(`✅ Position opened successfully: ${event.positionId}`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to handle position opened event: ${event.positionId}`, error);
+    }
   }
 
   /**
@@ -302,6 +367,9 @@ export class WebSocketHandler {
       // 設計書準拠のメッセージ処理
       if (this.isDesignCompliantMessage(message)) {
         await this.handleDesignCompliantMessage(message);
+      } else if (message.event) {
+        // EAイベント処理（価格更新等）
+        await this.handleEAEvent(message);
       } else {
         // レガシーメッセージを新フォーマットに変換
         const wsEvent = this.convertLegacyMessage(message);
@@ -359,27 +427,34 @@ export class WebSocketHandler {
   }
 
   /**
-   * CLOSED イベント処理（設計書準拠）
+   * CLOSED イベント処理（MVPシステム設計準拠）
    */
   private async handleClosedEvent(event: WSClosedEvent): Promise<void> {
-    // 1. Position状態更新
-    await this.updatePosition(event.positionId, {
-      status: 'CLOSED',
-      exitPrice: event.price,
-      profit: event.profit,
-      exitTime: new Date(event.time)
-    });
+    console.log(`📉 Position closed: ${event.positionId} @ ${event.price}`);
+    
+    try {
+      // 1. Position状態を CLOSED に更新
+      await this.amplifyClient.models.Position.update({
+        id: event.positionId,
+        status: 'CLOSED',
+        exitPrice: event.price,
+        exitTime: new Date(event.time).toISOString(),
+        exitReason: event.reason || 'MANUAL'
+      });
 
-    // 2. Action完了
-    await this.updateAction(event.actionId, {
-      status: 'EXECUTED',
-      result: {
-        mtTicket: event.mtTicket,
-        price: event.price,
-        profit: event.profit,
-        time: event.time
+      // 2. Action完了（存在する場合）
+      if (event.actionId) {
+        await this.amplifyClient.models.Action.update({
+          id: event.actionId,
+          status: 'EXECUTED'
+        });
       }
-    });
+      
+      console.log(`✅ Position closed successfully: ${event.positionId}`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to handle position closed event: ${event.positionId}`, error);
+    }
   }
 
   /**

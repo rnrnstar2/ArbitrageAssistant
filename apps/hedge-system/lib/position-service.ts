@@ -1,7 +1,7 @@
 import { CreatePositionInput, PositionStatus } from '@repo/shared-types';
-import { amplifyClient, getCurrentUserId } from './amplify-client.js';
-import { createPosition, updatePosition } from './graphql/mutations.js';
-import { listOpenPositions, listTrailPositions } from './graphql/queries.js';
+import { amplifyClient, getCurrentUserId } from './amplify-client';
+import { createPosition, updatePosition } from './graphql/mutations';
+import { listOpenPositions, listTrailPositions } from './graphql/queries';
 
 /**
  * Position Service - GraphQL操作のヘルパークラス

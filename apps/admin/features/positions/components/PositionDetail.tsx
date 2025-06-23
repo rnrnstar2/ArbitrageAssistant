@@ -66,7 +66,7 @@ export function PositionDetail({ position, open, onClose }: PositionDetailProps)
             </Button>
           </div>
           <DialogDescription>
-            ポジションID: {position.positionId}
+            ポジションID: {position.id}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,12 +92,12 @@ export function PositionDetail({ position, open, onClose }: PositionDetailProps)
                   <div className="text-lg font-semibold">{position.volume.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">ストラテジーID</div>
-                  <div className="font-mono text-sm">{position.strategyId}</div>
+                  <div className="text-sm font-medium text-gray-500">ユーザーID</div>
+                  <div className="font-mono text-sm">{position.userId}</div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">プライマリ</div>
-                  <div>{position.primary ? 'はい' : 'いいえ'}</div>
+                  <div className="text-sm font-medium text-gray-500">実行タイプ</div>
+                  <div>{position.executionType}</div>
                 </div>
               </div>
             </CardContent>
@@ -123,15 +123,9 @@ export function PositionDetail({ position, open, onClose }: PositionDetailProps)
                   </div>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-500">ストップロス</div>
+                  <div className="text-sm font-medium text-gray-500">トレール幅</div>
                   <div className="text-lg font-semibold">
-                    {position.stopLoss ? formatCurrency(position.stopLoss) : '-'}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm font-medium text-gray-500">テイクプロフィット</div>
-                  <div className="text-lg font-semibold">
-                    {position.takeProfit ? formatCurrency(position.takeProfit) : '-'}
+                    {position.trailWidth ? `${position.trailWidth} pips` : '-'}
                   </div>
                 </div>
               </div>
@@ -174,11 +168,11 @@ export function PositionDetail({ position, open, onClose }: PositionDetailProps)
               <div className="grid grid-cols-1 gap-3">
                 <div>
                   <div className="text-sm font-medium text-gray-500">作成日時</div>
-                  <div>{formatDateTime(position.createdAt)}</div>
+                  <div>{position.createdAt ? formatDateTime(position.createdAt) : '-'}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">更新日時</div>
-                  <div>{formatDateTime(position.updatedAt)}</div>
+                  <div>{position.updatedAt ? formatDateTime(position.updatedAt) : '-'}</div>
                 </div>
                 {position.entryTime && (
                   <div>
@@ -218,7 +212,7 @@ export function PositionDetail({ position, open, onClose }: PositionDetailProps)
             <CardContent>
               <div>
                 <div className="text-sm font-medium text-gray-500">所有者</div>
-                <div className="font-mono text-sm">{position.owner}</div>
+                <div className="font-mono text-sm">{position.userId}</div>
               </div>
             </CardContent>
           </Card>

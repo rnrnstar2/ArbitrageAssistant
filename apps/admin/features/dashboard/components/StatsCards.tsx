@@ -85,8 +85,8 @@ export function StatsCards({ stats, isLoading }: StatsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <StatCard
-        title="接続中クライアント"
-        value={stats.connectedClients}
+        title="接続中口座"
+        value={stats.connectedAccounts}
         icon={<Monitor className="h-4 w-4 text-blue-600" />}
         badge="オンライン"
         badgeVariant="secondary"

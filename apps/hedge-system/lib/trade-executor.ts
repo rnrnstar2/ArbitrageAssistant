@@ -1,4 +1,18 @@
-import { Position, TradeCommand, EntryParams } from '@repo/shared-types';
+import { Position } from '@repo/shared-types';
+
+// Trade execution interfaces for hedge-system
+interface TradeCommand {
+  type: 'OPEN' | 'CLOSE';
+  positionId: string;
+  accountId: string;
+}
+
+interface EntryParams {
+  symbol: string;
+  volume: number;
+  side: 'BUY' | 'SELL';
+  price?: number;
+}
 
 export interface TradeResult {
   success: boolean;

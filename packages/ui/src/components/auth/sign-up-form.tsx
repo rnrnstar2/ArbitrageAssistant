@@ -13,7 +13,6 @@ import * as z from "zod";
 // バリデーションスキーマ
 const signUpSchema = z
   .object({
-    name: z.string().min(1, 'お名前は必須です'),
     email: z.string().email('メールアドレスの形式が正しくありません'),
     password: z
       .string()
@@ -73,7 +72,6 @@ export function SignUpForm({
     async (values: SignUpFormValues) => {
       const attributes: Record<string, string> = {
         email: values.email,
-        given_name: values.name,
       };
 
       const result = await signUp({
@@ -123,23 +121,6 @@ export function SignUpForm({
                   アカウントを作成しました。確認コードをメールに送信しました。
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-700 font-medium">
-                  お名前
-                </Label>
-                <Input
-                  id="name"
-                  placeholder="管理者 太郎"
-                  className="h-11 bg-white border-gray-200 focus:border-green-500 focus:ring-green-500"
-                  {...smartForm.form.register('name')}
-                />
-                {smartForm.form.formState.errors.name && (
-                  <p className="text-sm text-red-600">
-                    {smartForm.form.formState.errors.name.message}
-                  </p>
-                )}
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-700 font-medium">

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { SystemStatus, EAConnection, SystemContextType } from '../types';
+import { DashboardSystemStatus, EAConnection, SystemContextType } from '../types';
 
 const SystemContext = createContext<SystemContextType | undefined>(undefined);
 
@@ -10,7 +10,7 @@ interface SystemProviderProps {
 }
 
 export function SystemProvider({ children }: SystemProviderProps) {
-  const [systemStatus, setSystemStatus] = useState<SystemStatus>({
+  const [systemStatus, setSystemStatus] = useState<DashboardSystemStatus>({
     totalEAs: 6,
     activeEAs: 4,
     errorCount: 0,

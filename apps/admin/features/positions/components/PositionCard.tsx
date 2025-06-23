@@ -35,7 +35,7 @@ export function PositionCard({ position }: PositionCardProps) {
           </Badge>
         </div>
         <div className="text-sm text-gray-500 font-mono">
-          ID: {position.positionId.substring(0, 8)}...
+          ID: {position.id.substring(0, 8)}...
         </div>
       </CardHeader>
       
@@ -53,17 +53,10 @@ export function PositionCard({ position }: PositionCardProps) {
             </div>
           </div>
           
-          {position.stopLoss && (
+          {position.trailWidth && position.trailWidth > 0 && (
             <div>
-              <div className="text-gray-500">ストップロス</div>
-              <div className="font-semibold">{formatCurrency(position.stopLoss)}</div>
-            </div>
-          )}
-          
-          {position.takeProfit && (
-            <div>
-              <div className="text-gray-500">テイクプロフィット</div>
-              <div className="font-semibold">{formatCurrency(position.takeProfit)}</div>
+              <div className="text-gray-500">トレール幅</div>
+              <div className="font-semibold">{position.trailWidth} pips</div>
             </div>
           )}
         </div>

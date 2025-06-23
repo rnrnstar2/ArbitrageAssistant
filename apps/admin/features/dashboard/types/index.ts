@@ -1,7 +1,10 @@
 export interface DashboardStats {
-  connectedClients: number;
+  connectedAccounts: number;
   totalAccounts: number;
   openPositions: number;
+  pendingActions: number;
+  totalVolume: number;
+  totalPnL: number;
 }
 
 export interface ClientStatus {
@@ -11,3 +14,6 @@ export interface ClientStatus {
   lastSeen: string;
   accountCount: number;
 }
+
+// Import types from shared-types
+export type { Account, Position, Action } from '@repo/shared-types';

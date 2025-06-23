@@ -136,11 +136,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
   accounts
 }) => {
   const stats = useMemo(() => ({
-    connectedAccounts: accounts.filter(acc => acc.isConnected).length,
+    connectedAccounts: accounts.filter(acc => acc.isActive).length,
     totalAccounts: accounts.length,
     openPositions: positions.filter(p => p.status === PositionStatus.OPEN).length,
     pendingActions: actions.filter(a => a.status === ActionStatus.PENDING).length,
-    systemHealth: accounts.filter(acc => acc.isConnected).length === accounts.length && accounts.length > 0 ? '正常' : '異常'
+    systemHealth: accounts.filter(acc => acc.isActive).length === accounts.length && accounts.length > 0 ? '正常' : '異常'
   }), [positions, actions, accounts]);
 
   return (

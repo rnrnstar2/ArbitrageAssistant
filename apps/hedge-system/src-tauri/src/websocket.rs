@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tauri::State;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time::{Duration, Instant};
+use tokio::time::Instant;
 use tokio_tungstenite::{
     accept_async,
-    tungstenite::{Error as WsError, Message, Result as WsResult},
+    tungstenite::Message,
 };
 use futures_util::{SinkExt, StreamExt};
 use log::{debug, error, info, warn};
@@ -45,7 +45,7 @@ pub struct EAInfo {
     pub company_name: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct WSServerConfig {
     pub port: u16,
     pub host: String,
@@ -101,7 +101,17 @@ impl WSServerManager {
             return Err("WebSocket server is already running".to_string());
         }
 
-        let config = self.config.read().await.clone();
+        let config = {
+            let config_guard = self.config.read().await;
+            WSServerConfig {
+                port: config_guard.port,
+                host: config_guard.host.clone(),
+                auth_token: config_guard.auth_token.clone(),
+                max_connections: config_guard.max_connections,
+                heartbeat_interval_seconds: config_guard.heartbeat_interval_seconds,
+                connection_timeout_seconds: config_guard.connection_timeout_seconds,
+            }
+        };
         let server_addr = format!("{}:{}", config.host, config.port);
         
         info!("Starting WebSocket server on {}", server_addr);
@@ -340,6 +350,10 @@ impl WSServerManager {
                 Ok(Message::Close(_)) => {
                     info!("Client {} disconnected", client_id);
                     break;
+                }
+                Ok(Message::Frame(_)) => {
+                    // Frame messages are handled internally by tungstenite
+                    debug!("Frame message from {}", client_id);
                 }
                 Err(e) => {
                     error!("WebSocket error for {}: {}", client_id, e);

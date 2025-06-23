@@ -1,13 +1,12 @@
 {
   "auth": {
-    "user_pool_id": "ap-northeast-1_xNhS3Nemg",
+    "user_pool_id": "ap-northeast-1_eRG6xdIkB",
     "aws_region": "ap-northeast-1",
-    "user_pool_client_id": "3ur3e3ersmfjn5an7pntbbf7k0",
-    "identity_pool_id": "ap-northeast-1:e6acb4ab-37b4-488e-8fc6-e2d43fb9dc75",
+    "user_pool_client_id": "5h29t0kpu4bt45oucntq4i9n2u",
+    "identity_pool_id": "ap-northeast-1:adfa5e61-97c3-41f9-8daf-b912e9058d39",
     "mfa_methods": [],
     "standard_required_attributes": [
-      "email",
-      "given_name"
+      "email"
     ],
     "username_attributes": [
       "email"
@@ -17,12 +16,12 @@
     ],
     "groups": [
       {
-        "CLIENT": {
+        "ADMIN": {
           "precedence": 0
         }
       },
       {
-        "ADMIN": {
+        "CLIENT": {
           "precedence": 1
         }
       }
@@ -38,7 +37,7 @@
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://qxj5ikewlfdezozpkbxiilgtai.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+    "url": "https://og2u2erz3zekzf7vm5mksfhwjy.appsync-api.ap-northeast-1.amazonaws.com/graphql",
     "aws_region": "ap-northeast-1",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
@@ -77,14 +76,7 @@
               "type": {
                 "enum": "UserRole"
               },
-              "isRequired": false,
-              "attributes": []
-            },
-            "pcName": {
-              "name": "pcName",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "pcStatus": {
@@ -96,32 +88,11 @@
               "isRequired": false,
               "attributes": []
             },
-            "lastSeen": {
-              "name": "lastSeen",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
             "isActive": {
               "name": "isActive",
               "isArray": false,
               "type": "Boolean",
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
             "accounts": {
@@ -139,6 +110,20 @@
                   "userId"
                 ]
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
             }
           },
           "syncable": true,
@@ -158,15 +143,27 @@
                     "allow": "owner",
                     "operations": [
                       "read",
-                      "update",
-                      "delete"
+                      "update"
                     ],
                     "identityClaim": "cognito:username"
                   },
                   {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  },
+                  {
                     "allow": "private",
                     "operations": [
-                      "read",
                       "create"
                     ]
                   }
@@ -193,8 +190,71 @@
             "userId": {
               "name": "userId",
               "isArray": false,
-              "type": "ID",
+              "type": "String",
               "isRequired": true,
+              "attributes": []
+            },
+            "brokerType": {
+              "name": "brokerType",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "accountNumber": {
+              "name": "accountNumber",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "serverName": {
+              "name": "serverName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "displayName": {
+              "name": "displayName",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
+            "balance": {
+              "name": "balance",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "credit": {
+              "name": "credit",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "equity": {
+              "name": "equity",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "isActive": {
+              "name": "isActive",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "lastUpdated": {
+              "name": "lastUpdated",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
               "attributes": []
             },
             "user": {
@@ -212,90 +272,6 @@
                 ]
               }
             },
-            "name": {
-              "name": "name",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "broker": {
-              "name": "broker",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "accountNumber": {
-              "name": "accountNumber",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "balance": {
-              "name": "balance",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "equity": {
-              "name": "equity",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "margin": {
-              "name": "margin",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "freeMargin": {
-              "name": "freeMargin",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "marginLevel": {
-              "name": "marginLevel",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "bonusAmount": {
-              "name": "bonusAmount",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "isActive": {
-              "name": "isActive",
-              "isArray": false,
-              "type": "Boolean",
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
             "positions": {
               "name": "positions",
               "isArray": true,
@@ -312,11 +288,11 @@
                 ]
               }
             },
-            "closeRecords": {
-              "name": "closeRecords",
+            "actions": {
+              "name": "actions",
               "isArray": true,
               "type": {
-                "model": "CloseRecord"
+                "model": "Action"
               },
               "isRequired": false,
               "attributes": [],
@@ -327,6 +303,20 @@
                   "accountId"
                 ]
               }
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
             }
           },
           "syncable": true,
@@ -337,6 +327,16 @@
               "properties": {}
             },
             {
+              "type": "key",
+              "properties": {
+                "name": "accountsByUserId",
+                "queryField": "listAccountByUserId",
+                "fields": [
+                  "userId"
+                ]
+              }
+            },
+            {
               "type": "auth",
               "properties": {
                 "rules": [
@@ -345,11 +345,49 @@
                     "ownerField": "owner",
                     "allow": "owner",
                     "operations": [
+                      "create",
                       "read",
                       "update",
                       "delete"
                     ],
                     "identityClaim": "cognito:username"
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read",
+                      "update"
+                    ],
+                    "groups": [
+                      "operator"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "viewer"
+                    ]
                   }
                 ]
               }
@@ -371,11 +409,115 @@
               "isRequired": true,
               "attributes": []
             },
+            "userId": {
+              "name": "userId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": true,
+              "attributes": []
+            },
             "accountId": {
               "name": "accountId",
               "isArray": false,
-              "type": "ID",
+              "type": "String",
               "isRequired": true,
+              "attributes": []
+            },
+            "executionType": {
+              "name": "executionType",
+              "isArray": false,
+              "type": {
+                "enum": "ExecutionType"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": {
+                "enum": "PositionStatus"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "symbol": {
+              "name": "symbol",
+              "isArray": false,
+              "type": {
+                "enum": "Symbol"
+              },
+              "isRequired": true,
+              "attributes": []
+            },
+            "volume": {
+              "name": "volume",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "mtTicket": {
+              "name": "mtTicket",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "entryPrice": {
+              "name": "entryPrice",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "entryTime": {
+              "name": "entryTime",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "exitPrice": {
+              "name": "exitPrice",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "exitTime": {
+              "name": "exitTime",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "exitReason": {
+              "name": "exitReason",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "trailWidth": {
+              "name": "trailWidth",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "triggerActionIds": {
+              "name": "triggerActionIds",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "memo": {
+              "name": "memo",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
               "attributes": []
             },
             "account": {
@@ -393,72 +535,37 @@
                 ]
               }
             },
-            "symbol": {
-              "name": "symbol",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "volume": {
-              "name": "volume",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "openPrice": {
-              "name": "openPrice",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "currentPrice": {
-              "name": "currentPrice",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "type": {
-              "name": "type",
-              "isArray": false,
+            "actions": {
+              "name": "actions",
+              "isArray": true,
               "type": {
-                "enum": "PositionType"
+                "model": "Action"
               },
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "positionId"
+                ]
+              }
             },
-            "openTime": {
-              "name": "openTime",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": true,
-              "attributes": []
-            },
-            "closeTime": {
-              "name": "closeTime",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "profit": {
-              "name": "profit",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "status": {
-              "name": "status",
-              "isArray": false,
+            "triggerActions": {
+              "name": "triggerActions",
+              "isArray": true,
               "type": {
-                "enum": "PositionStatus"
+                "model": "Action"
               },
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "triggerPositionId"
+                ]
+              }
             },
             "createdAt": {
               "name": "createdAt",
@@ -483,6 +590,28 @@
               "properties": {}
             },
             {
+              "type": "key",
+              "properties": {
+                "name": "positionsByUserIdAndStatus",
+                "queryField": "listPositionByUserIdAndStatus",
+                "fields": [
+                  "userId",
+                  "status"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "positionsByAccountIdAndStatus",
+                "queryField": "listPositionByAccountIdAndStatus",
+                "fields": [
+                  "accountId",
+                  "status"
+                ]
+              }
+            },
+            {
               "type": "auth",
               "properties": {
                 "rules": [
@@ -491,11 +620,49 @@
                     "ownerField": "owner",
                     "allow": "owner",
                     "operations": [
+                      "create",
                       "read",
                       "update",
                       "delete"
                     ],
                     "identityClaim": "cognito:username"
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read",
+                      "update"
+                    ],
+                    "groups": [
+                      "operator"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "viewer"
+                    ]
                   }
                 ]
               }
@@ -507,8 +674,8 @@
             "sortKeyFieldNames": []
           }
         },
-        "Entry": {
-          "name": "Entry",
+        "Action": {
+          "name": "Action",
           "fields": {
             "id": {
               "name": "id",
@@ -517,47 +684,40 @@
               "isRequired": true,
               "attributes": []
             },
-            "accountId": {
-              "name": "accountId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "symbol": {
-              "name": "symbol",
+            "userId": {
+              "name": "userId",
               "isArray": false,
               "type": "String",
               "isRequired": true,
               "attributes": []
             },
-            "volume": {
-              "name": "volume",
+            "accountId": {
+              "name": "accountId",
               "isArray": false,
-              "type": "Float",
+              "type": "String",
               "isRequired": true,
               "attributes": []
             },
-            "price": {
-              "name": "price",
+            "positionId": {
+              "name": "positionId",
               "isArray": false,
-              "type": "Float",
+              "type": "String",
               "isRequired": true,
+              "attributes": []
+            },
+            "triggerPositionId": {
+              "name": "triggerPositionId",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
               "attributes": []
             },
             "type": {
               "name": "type",
               "isArray": false,
               "type": {
-                "enum": "PositionType"
+                "enum": "ActionType"
               },
-              "isRequired": false,
-              "attributes": []
-            },
-            "executedAt": {
-              "name": "executedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
               "isRequired": true,
               "attributes": []
             },
@@ -565,79 +725,8 @@
               "name": "status",
               "isArray": false,
               "type": {
-                "enum": "EntryStatus"
+                "enum": "ActionStatus"
               },
-              "isRequired": false,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            }
-          },
-          "syncable": true,
-          "pluralName": "Entries",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "provider": "userPools",
-                    "ownerField": "owner",
-                    "allow": "owner",
-                    "operations": [
-                      "read",
-                      "update",
-                      "delete"
-                    ],
-                    "identityClaim": "cognito:username"
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
-        "CloseRecord": {
-          "name": "CloseRecord",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "positionId": {
-              "name": "positionId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "accountId": {
-              "name": "accountId",
-              "isArray": false,
-              "type": "ID",
               "isRequired": true,
               "attributes": []
             },
@@ -656,91 +745,35 @@
                 ]
               }
             },
-            "symbol": {
-              "name": "symbol",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "type": {
-              "name": "type",
+            "position": {
+              "name": "position",
               "isArray": false,
               "type": {
-                "enum": "PositionType"
+                "model": "Position"
               },
               "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "positionId"
+                ]
+              }
             },
-            "lots": {
-              "name": "lots",
+            "triggerPosition": {
+              "name": "triggerPosition",
               "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "openPrice": {
-              "name": "openPrice",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "closePrice": {
-              "name": "closePrice",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "profit": {
-              "name": "profit",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "swapCost": {
-              "name": "swapCost",
-              "isArray": false,
-              "type": "Float",
+              "type": {
+                "model": "Position"
+              },
               "isRequired": false,
-              "attributes": []
-            },
-            "holdingDays": {
-              "name": "holdingDays",
-              "isArray": false,
-              "type": "Int",
-              "isRequired": false,
-              "attributes": []
-            },
-            "closeType": {
-              "name": "closeType",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "status": {
-              "name": "status",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "executedAt": {
-              "name": "executedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "error": {
-              "name": "error",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "triggerPositionId"
+                ]
+              }
             },
             "createdAt": {
               "name": "createdAt",
@@ -758,11 +791,44 @@
             }
           },
           "syncable": true,
-          "pluralName": "CloseRecords",
+          "pluralName": "Actions",
           "attributes": [
             {
               "type": "model",
               "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "actionsByUserIdAndStatus",
+                "queryField": "listActionByUserIdAndStatus",
+                "fields": [
+                  "userId",
+                  "status"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "actionsByAccountIdAndStatus",
+                "queryField": "listActionByAccountIdAndStatus",
+                "fields": [
+                  "accountId",
+                  "status"
+                ]
+              }
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "actionsByPositionIdAndType",
+                "queryField": "listActionByPositionIdAndType",
+                "fields": [
+                  "positionId",
+                  "type"
+                ]
+              }
             },
             {
               "type": "auth",
@@ -773,11 +839,49 @@
                     "ownerField": "owner",
                     "allow": "owner",
                     "operations": [
+                      "create",
                       "read",
                       "update",
                       "delete"
                     ],
                     "identityClaim": "cognito:username"
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "create",
+                      "read",
+                      "update",
+                      "delete"
+                    ],
+                    "groups": [
+                      "admin"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read",
+                      "update"
+                    ],
+                    "groups": [
+                      "operator"
+                    ]
+                  },
+                  {
+                    "groupClaim": "cognito:groups",
+                    "provider": "userPools",
+                    "allow": "groups",
+                    "operations": [
+                      "read"
+                    ],
+                    "groups": [
+                      "viewer"
+                    ]
                   }
                 ]
               }
@@ -791,11 +895,55 @@
         }
       },
       "enums": {
+        "Symbol": {
+          "name": "Symbol",
+          "values": [
+            "USDJPY",
+            "EURUSD",
+            "EURGBP",
+            "XAUUSD"
+          ]
+        },
+        "PositionStatus": {
+          "name": "PositionStatus",
+          "values": [
+            "PENDING",
+            "OPENING",
+            "OPEN",
+            "CLOSING",
+            "CLOSED",
+            "STOPPED",
+            "CANCELED"
+          ]
+        },
+        "ActionType": {
+          "name": "ActionType",
+          "values": [
+            "ENTRY",
+            "CLOSE"
+          ]
+        },
+        "ActionStatus": {
+          "name": "ActionStatus",
+          "values": [
+            "PENDING",
+            "EXECUTING",
+            "EXECUTED",
+            "FAILED"
+          ]
+        },
+        "ExecutionType": {
+          "name": "ExecutionType",
+          "values": [
+            "ENTRY",
+            "EXIT"
+          ]
+        },
         "UserRole": {
           "name": "UserRole",
           "values": [
-            "ADMIN",
-            "CLIENT"
+            "CLIENT",
+            "ADMIN"
           ]
         },
         "PCStatus": {
@@ -803,27 +951,6 @@
           "values": [
             "ONLINE",
             "OFFLINE"
-          ]
-        },
-        "PositionType": {
-          "name": "PositionType",
-          "values": [
-            "BUY",
-            "SELL"
-          ]
-        },
-        "PositionStatus": {
-          "name": "PositionStatus",
-          "values": [
-            "OPEN",
-            "CLOSED"
-          ]
-        },
-        "EntryStatus": {
-          "name": "EntryStatus",
-          "values": [
-            "SUCCESS",
-            "FAILED"
           ]
         }
       },

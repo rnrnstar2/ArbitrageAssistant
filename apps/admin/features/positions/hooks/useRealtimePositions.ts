@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '@repo/shared-backend/amplify/data/resource';
+import type { Position, Account } from '@repo/shared-types';
 
-const client = generateClient<Schema>();
-
-type Position = Schema['Position']['type'];
-type Account = Schema['Account']['type'];
+const client = generateClient();
 
 interface PositionWithAccount extends Position {
   account?: Account;
@@ -180,10 +177,23 @@ export function useRealtimePositions({
       next: ({ items, isSynced }) => {
         if (isSynced) {
           const sortedItems = items.sort((a, b) => {
-            if (a.isActive !== b.isActive) {
-              return a.isActive ? -1 : 1;
+            // アクティブ（OPEN）ポジションを上位に表示
+            const aIsActive = a.status === 'OPEN';
+            const bIsActive = b.status === 'OPEN';
+            
+            if (aIsActive !== bIsActive) {
+              return aIsActive ? -1 : 1;
             }
-            return new Date(b.openTime).getTime() - new Date(a.openTime).getTime();
+            
+            // entryTimeがある場合は新しい順、ない場合はcreatedAtで比較
+            const aTime = a.entryTime || a.createdAt;
+            const bTime = b.entryTime || b.createdAt;
+            
+            if (aTime && bTime) {
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
+            }
+            
+            return 0;
           });
           
           setPositions(sortedItems);
@@ -199,8 +209,8 @@ export function useRealtimePositions({
     return () => subscription.unsubscribe();
   }, [accountId]);
   
-  // 計算値
-  const inactiveCount = positions.filter(p => !p.isActive).length;
+  // 計算値 - CLOSEDまたはCANCELEDステータスのポジション数
+  const inactiveCount = positions.filter(p => p.status === 'CLOSED' || p.status === 'CANCELED').length;
   
   return {
     positions,
@@ -219,11 +229,11 @@ export function useRealtimePositions({
  * 利益計算は削除（リアルタイムデータとして別途取得）
  */
 export function usePositionStats(positions: PositionWithAccount[]) {
-  const activePositions = positions.filter(p => p.isActive);
-  const inactivePositions = positions.filter(p => !p.isActive);
+  const activePositions = positions.filter(p => p.status === 'OPEN');
+  const inactivePositions = positions.filter(p => p.status === 'CLOSED' || p.status === 'CANCELED');
   
-  const buyPositions = activePositions.filter(p => p.type === 'BUY');
-  const sellPositions = activePositions.filter(p => p.type === 'SELL');
+  const entryPositions = activePositions.filter(p => p.executionType === 'ENTRY');
+  const exitPositions = activePositions.filter(p => p.executionType === 'EXIT');
   
   const totalVolume = activePositions.reduce((sum, p) => sum + (p.volume || 0), 0);
   
@@ -247,8 +257,8 @@ export function usePositionStats(positions: PositionWithAccount[]) {
     total: positions.length,
     active: activePositions.length,
     inactive: inactivePositions.length,
-    buy: buyPositions.length,
-    sell: sellPositions.length,
+    entry: entryPositions.length,
+    exit: exitPositions.length,
     totalVolume,
     symbolStats: Array.from(symbolStats.entries()).map(([symbol, stats]) => ({
       symbol,

@@ -104,3 +104,20 @@ export const updateAccount = `
     }
   }
 `;
+
+// Account Status Report (for PC-Account assignment)
+export const REPORT_ACCOUNT_STATUS = `
+  mutation ReportAccountStatus(
+    $accountId: String!,
+    $status: String!,
+    $pcId: String!
+  ) {
+    updateAccount(input: {
+      id: $accountId,
+      lastUpdated: "${new Date().toISOString()}"
+    }) {
+      id
+      lastUpdated
+    }
+  }
+`;

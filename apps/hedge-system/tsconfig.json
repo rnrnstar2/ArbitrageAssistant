@@ -25,17 +25,6 @@
     "src-tauri/bindings/*",
     "out/types/**/*.ts"
   ],
-  "references": [
-    {
-      "path": "../../packages/shared-types"
-    },
-    {
-      "path": "../../packages/shared-auth"
-    },
-    {
-      "path": "../../packages/ui"
-    }
-  ],
   "exclude": [
     "node_modules"
   ]

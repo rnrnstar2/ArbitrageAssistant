@@ -8,6 +8,7 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   authToken: string | null;
+  groups: string[];
   signIn: (email: string, password: string) => Promise<unknown>;
   signOut: () => Promise<void>;
   checkAuthState: () => Promise<void>;

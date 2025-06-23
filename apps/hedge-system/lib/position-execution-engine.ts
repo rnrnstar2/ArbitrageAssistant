@@ -1,4 +1,5 @@
-import { Position, PositionStatus, ExecutionType, WSCommand, OpenCommand, CloseCommand } from '@repo/shared-types';
+import { Position, PositionStatus, ExecutionType, Symbol as SymbolEnum } from '@repo/shared-types';
+import { WSOpenCommand, WSCloseCommand, WSCommand, WSMessageType } from './types';
 import { getCurrentUserId } from './amplify-client.js';
 import type { WebSocketHandler } from './websocket-handler.js';
 
@@ -47,7 +48,7 @@ export class PositionExecutionEngine {
       type: WSMessageType.OPEN,
       accountId: position.accountId,
       positionId: position.id,
-      symbol: position.symbol,
+      symbol: position.symbol as SymbolEnum,
       side: this.determinePositionSide(position),
       volume: position.volume,
       trailWidth: position.trailWidth,
@@ -70,7 +71,7 @@ export class PositionExecutionEngine {
       type: WSMessageType.CLOSE,
       accountId: position.accountId,
       positionId: position.id,
-      symbol: position.symbol,
+      symbol: position.symbol as SymbolEnum,
       side: this.getOppositePositionSide(position),
       volume: position.volume,
       timestamp: new Date().toISOString(),

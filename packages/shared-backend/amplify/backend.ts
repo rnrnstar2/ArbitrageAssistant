@@ -6,7 +6,7 @@ import { postConfirmation } from './auth/post-confirmation/resource';
 const backend = defineBackend({
   auth,
   data,
-  postConfirmation,
+  postConfirmation
 });
 
 // カスタムパスワードポリシーを設定
@@ -20,3 +20,4 @@ cfnUserPool.addPropertyOverride('Policies', {
     RequireSymbols: false, // 記号は任意
   },
 });
+

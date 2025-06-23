@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "tauri dev",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@aws-amplify/ui-react": "^6.11.2",
     "@repo/shared-auth": "*",
+    "@repo/shared-backend": "*",
     "@repo/shared-types": "*",
     "@repo/ui": "*",
     "@tauri-apps/api": "^2.5.0",

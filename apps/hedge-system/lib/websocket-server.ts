@@ -1,4 +1,5 @@
-import { WebSocketServer, WebSocket } from 'ws';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { 
   WSMessage, 
   WSCommand, 
@@ -7,7 +8,6 @@ import {
   WSPingMessage,
   WSPongMessage 
 } from './types';
-import { EAConnectionManager, EAConnection } from './ea-connection-manager';
 
 export interface WSServerConfig {
   port: number;
@@ -27,18 +27,33 @@ export interface WSServerStats {
   errors: number;
 }
 
+export interface EAConnection {
+  connectionId: string;
+  accountId?: string;
+  sessionId?: string;
+  authenticated: boolean;
+  connectedAt: Date;
+  lastHeartbeat: Date;
+  eaInfo?: {
+    version: string;
+    platform: string;
+    account: string;
+    serverName?: string;
+    companyName?: string;
+  };
+}
+
 /**
- * Hedge System WebSocket Server
- * MT4/MT5 EAとの通信を管理するWebSocketサーバー
+ * Hedge System WebSocket Server (Tauri Integration)
+ * MT4/MT5 EAとの通信を管理するWebSocketサーバー（Tauri統合版）
  */
 export class HedgeWebSocketServer {
-  private wss?: WebSocketServer;
-  private connectionManager: EAConnectionManager;
   private isRunning = false;
   private startTime?: Date;
-  private heartbeatTimer?: NodeJS.Timeout;
+  private eventUnsubscribe?: () => void;
+  private onMessageHandler?: (message: WSEvent, clientId: string) => Promise<void>;
   
-  // 統計情報
+  // 統計情報（ローカルキャッシュ）
   private stats = {
     totalMessagesReceived: 0,
     totalMessagesSent: 0,
@@ -48,11 +63,11 @@ export class HedgeWebSocketServer {
   constructor(
     private config: WSServerConfig
   ) {
-    this.connectionManager = new EAConnectionManager(config);
+    this.setupEventListeners();
   }
 
   /**
-   * WebSocketサーバー開始
+   * WebSocketサーバー開始（Tauri統合）
    */
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -60,21 +75,17 @@ export class HedgeWebSocketServer {
     }
 
     try {
-      this.wss = new WebSocketServer({
+      // Tauri WebSocketサーバーを開始
+      await invoke('start_websocket_server', {
         port: this.config.port,
         host: this.config.host,
-        maxPayload: 64 * 1024 // 64KB max message size
+        authToken: this.config.authToken
       });
-
-      this.setupEventHandlers();
-      this.startHeartbeat();
       
       this.isRunning = true;
       this.startTime = new Date();
       
-      console.log(`🚀 Hedge WebSocket Server started on ${this.config.host}:${this.config.port}`);
-
-      console.log(`🚀 Hedge WebSocket Server started on ${this.config.host}:${this.config.port}`);
+      console.log(`🚀 Hedge WebSocket Server started on ${this.config.host}:${this.config.port} (Tauri)`);
       
     } catch (error) {
       console.error('❌ Failed to start WebSocket server:', error);
@@ -83,7 +94,7 @@ export class HedgeWebSocketServer {
   }
 
   /**
-   * WebSocketサーバー停止
+   * WebSocketサーバー停止（Tauri統合）
    */
   async stop(): Promise<void> {
     if (!this.isRunning) {
@@ -91,18 +102,18 @@ export class HedgeWebSocketServer {
     }
 
     try {
-      this.stopHeartbeat();
-      await this.connectionManager.disconnectAll();
+      // Tauri WebSocketサーバーを停止
+      await invoke('stop_websocket_server');
       
-      if (this.wss) {
-        this.wss.close();
-        this.wss = undefined;
+      // イベントリスナーを削除
+      if (this.eventUnsubscribe) {
+        this.eventUnsubscribe();
+        this.eventUnsubscribe = undefined;
       }
 
       this.isRunning = false;
       
-      console.log('🛑 Hedge WebSocket Server stopped');
-      console.log('🛑 Hedge WebSocket Server stopped');
+      console.log('🛑 Hedge WebSocket Server stopped (Tauri)');
 
     } catch (error) {
       console.error('❌ Error stopping WebSocket server:', error);
@@ -111,87 +122,74 @@ export class HedgeWebSocketServer {
   }
 
   /**
-   * イベントハンドラー設定
+   * イベントリスナー設定（Tauri統合）
    */
-  private setupEventHandlers(): void {
-    if (!this.wss) return;
-
-    this.wss.on('connection', this.handleConnection.bind(this));
-    this.wss.on('error', (error) => {
-      console.error('❌ WebSocket server error:', error);
-    });
-    
-    // 接続数制限チェック
-    this.wss.on('connection', (ws, request) => {
-      if (this.connectionManager.getConnectionCount() >= this.config.maxConnections) {
-        ws.close(1013, 'Server overloaded');
-        console.warn(`🚫 Connection rejected: max connections exceeded (${this.config.maxConnections})`);
-      }
-    });
+  private async setupEventListeners(): Promise<void> {
+    try {
+      // Tauri WebSocketイベントを受信
+      this.eventUnsubscribe = await listen('websocket-event', (event) => {
+        this.handleWebSocketEvent(event.payload);
+      });
+      
+      console.log('🔧 WebSocket event listeners setup (Tauri)');
+      
+    } catch (error) {
+      console.error('❌ Failed to setup event listeners:', error);
+    }
   }
 
   /**
-   * 新規接続処理（設計書6-2準拠の認証・接続シーケンス）
+   * WebSocketイベント処理
    */
-  private async handleConnection(ws: WebSocket, request: any): Promise<void> {
-    const connectionId = this.generateConnectionId();
-    const clientIP = request.socket.remoteAddress;
-    
+  private handleWebSocketEvent(payload: any): void {
     try {
-      // 1. 認証情報確認
-      const authToken = this.extractAuthToken(request);
-      if (!authToken || !await this.validateAuthToken(authToken)) {
-        ws.close(4001, 'Authentication failed');
-        console.warn(`🚫 Authentication failed for ${connectionId} from ${clientIP}`);
+      this.stats.totalMessagesReceived++;
+      
+      switch (payload.type) {
+        case 'connection':
+          console.log(`🔗 New EA connection: ${payload.clientId}`);
+          break;
+        case 'disconnection':
+          console.log(`🔌 EA disconnected: ${payload.clientId}`);
+          break;
+        case 'message':
+          this.handleMessage(payload.message, payload.clientId);
+          break;
+        case 'error':
+          this.stats.errors++;
+          console.error(`❌ WebSocket error:`, payload.error);
+          break;
+      }
+      
+    } catch (error) {
+      this.stats.errors++;
+      console.error('❌ Error handling WebSocket event:', error);
+    }
+  }
+
+  /**
+   * メッセージ処理（MVPシステム設計準拠）
+   */
+  private async handleMessage(message: string, clientId: string): Promise<void> {
+    try {
+      const parsedMessage = JSON.parse(message);
+      
+      // MVPシステム設計準拠のメッセージフォーマット検証
+      if (!this.validateMessage(parsedMessage)) {
+        console.warn(`⚠️ Invalid message format from ${clientId}:`, parsedMessage);
         return;
       }
 
-      // 2. 接続情報抽出
-      const accountId = this.extractAccountId(request);
-      const sessionId = this.generateSessionId();
-
-      // 3. 接続受諾メッセージ送信
-      const acceptMessage = {
-        type: 'ACCEPT',
-        sessionId,
-        timestamp: new Date().toISOString()
-      };
-      ws.send(JSON.stringify(acceptMessage));
-
-      // 4. 口座状態更新
-      await this.updateAccountStatus(accountId, {
-        pcId: sessionId,
-        status: 'ONLINE',
-        lastUpdated: new Date()
-      });
-
-      // 接続をマネージャーに追加
-      const connection = await this.connectionManager.addConnection(connectionId, ws);
+      console.log(`📨 Message from ${clientId}: ${parsedMessage.type}`, parsedMessage);
       
-      // 追加情報を接続に設定
-      if (connection) {
-        connection.sessionId = sessionId;
-        connection.accountId = accountId;
-        connection.authenticated = true;
+      // TODO: カスタムメッセージ処理ハンドラーを呼び出し
+      if (this.onMessageHandler) {
+        await this.onMessageHandler(parsedMessage, clientId);
       }
       
-      // WebSocketイベントリスナー設定
-      ws.on('message', (data) => this.handleMessage(data, connectionId));
-      ws.on('close', () => this.handleDisconnection(connectionId, accountId));
-      ws.on('error', (error) => this.handleConnectionError(error, connectionId));
-      ws.on('pong', () => this.handlePong(connectionId));
-
-      console.log(`🔗 EA connected: ${accountId} (${sessionId})`, {
-        connectionId,
-        clientIP,
-        totalConnections: this.connectionManager.getConnectionCount()
-      });
-
-      console.log(`🔗 EA connected: ${accountId} (${sessionId})`);
-
     } catch (error) {
-      console.error(`❌ Connection error for ${connectionId}:`, error);
-      ws.close(1011, 'Unexpected error');
+      this.stats.errors++;
+      console.error(`❌ Message processing error for ${clientId}:`, error);
     }
   }
 
@@ -240,94 +238,28 @@ export class HedgeWebSocketServer {
   }
 
   /**
-   * メッセージ受信処理
+   * エラー応答送信（Tauri統合では簡素化）
    */
-  private async handleMessage(data: any, connectionId: string): Promise<void> {
-    this.stats.totalMessagesReceived++;
-    
-    try {
-      const message: WSEvent = JSON.parse(data.toString());
-      
-      // メッセージバリデーション
-      if (!this.validateMessage(message)) {
-        throw new Error('Invalid message format');
-      }
-
-      // 接続認証状態チェック
-      const connection = this.connectionManager.getConnection(connectionId);
-      if (!connection?.authenticated && message.type !== WSMessageType.INFO) {
-        throw new Error('Connection not authenticated');
-      }
-
-      // heartbeat更新
-      this.connectionManager.updateHeartbeat(connectionId);
-
-      // メッセージ処理 (簡素化版)
-      console.log(`💬 Message received from ${connectionId}: ${message.type}`);
-
-    } catch (error) {
-      this.stats.errors++;
-      console.error(`❌ Message processing error for ${connectionId}:`, error);
-      
-      // エラー応答送信
-      await this.sendError(connectionId, 'Message processing failed');
-    }
+  private async sendError(connectionId: string, errorMessage: string): Promise<void> {
+    console.error(`❌ Error for client ${connectionId}: ${errorMessage}`);
+    // Tauri統合版では、エラーは主にログ出力のみ
+    // TODO: 必要に応じてTauri経由でエラー応答送信を実装
   }
 
   /**
-   * 接続切断処理
-   */
-  private handleDisconnection(connectionId: string, accountId?: string): void {
-    this.connectionManager.removeConnection(connectionId);
-    
-    // 口座状態をオフラインに更新
-    if (accountId) {
-      this.updateAccountStatus(accountId, {
-        pcId: '',
-        status: 'OFFLINE',
-        lastUpdated: new Date()
-      }).catch(error => {
-        console.error(`❌ Failed to update account status for ${accountId}:`, error);
-      });
-    }
-    
-    console.log(`🔌 Connection closed: ${connectionId} (${accountId})`, {
-      remainingConnections: this.connectionManager.getConnectionCount()
-    });
-  }
-
-  /**
-   * 接続エラー処理
-   */
-  private handleConnectionError(error: Error, connectionId: string): void {
-    this.stats.errors++;
-    console.error(`❌ Connection error for ${connectionId}:`, error);
-    this.connectionManager.removeConnection(connectionId);
-  }
-
-  /**
-   * Pong応答処理
-   */
-  private handlePong(connectionId: string): void {
-    this.connectionManager.updateHeartbeat(connectionId);
-  }
-
-  /**
-   * EAにコマンド送信
+   * EAにコマンド送信（Tauri統合）
    */
   async sendCommand(connectionId: string, command: WSCommand): Promise<boolean> {
     try {
-      const connection = this.connectionManager.getConnection(connectionId);
-      if (!connection || !connection.authenticated) {
-        throw new Error(`Connection not found or not authenticated: ${connectionId}`);
-      }
-
+      // Tauri経由でコマンドを送信（実装待ち - 現在は直接送信不可）
+      // TODO: Tauri側にクライアント指定のメッセージ送信機能を実装
+      
       const message = JSON.stringify(command);
-      connection.ws.send(message);
       
       this.stats.totalMessagesSent++;
       
-      console.log(`🗣️ Command sent to ${connectionId}: ${command.type}`);
+      console.log(`🗣️ Command queued for ${connectionId}: ${command.type}`);
+      console.warn(`⚠️ Direct client messaging not yet implemented in Tauri WebSocket server`);
 
       return true;
 
@@ -339,115 +271,100 @@ export class HedgeWebSocketServer {
   }
 
   /**
-   * 全接続にメッセージブロードキャスト
+   * 全接続にメッセージブロードキャスト（Tauri統合版では簡素化）
    */
-  broadcast(message: WSMessage): void {
-    const connections = this.connectionManager.getActiveConnections();
-    const messageStr = JSON.stringify(message);
-    
-    let sentCount = 0;
-    connections.forEach(connection => {
-      try {
-        connection.ws.send(messageStr);
-        sentCount++;
-      } catch (error) {
-        console.error(`❌ Broadcast error for ${connection.connectionId}:`, error);
-      }
-    });
-
-    this.stats.totalMessagesSent += sentCount;
-    console.log(`📡 Broadcast ${message.type} to ${sentCount} connections`);
+  async broadcast(message: WSMessage): Promise<void> {
+    console.log(`📡 Broadcasting ${message.type} message (Tauri managed)`);
+    // Tauri WebSocketサーバーが自動的にheartbeatと接続管理を行うため
+    // ブロードキャスト機能は必要に応じて後で実装
   }
 
   /**
-   * エラー応答送信
+   * サーバー統計取得（Tauri統合）
    */
-  private async sendError(connectionId: string, errorMessage: string): Promise<void> {
-    const errorEvent: WSEvent = {
-      type: WSMessageType.ERROR,
-      timestamp: new Date().toISOString(),
-      message: errorMessage
-    };
-
-    await this.sendCommand(connectionId, errorEvent as any);
-  }
-
-  /**
-   * heartbeat開始
-   */
-  private startHeartbeat(): void {
-    this.heartbeatTimer = setInterval(() => {
-      this.pingAllConnections();
-      this.connectionManager.checkHeartbeats();
-    }, this.config.heartbeatInterval);
-  }
-
-  /**
-   * heartbeat停止  
-   */
-  private stopHeartbeat(): void {
-    if (this.heartbeatTimer) {
-      clearInterval(this.heartbeatTimer);
-      this.heartbeatTimer = undefined;
+  async getStats(): Promise<WSServerStats> {
+    try {
+      // Tauri WebSocketサーバーから統計を取得
+      const tauriStats = await invoke('get_websocket_server_status') as any;
+      
+      return {
+        isRunning: tauriStats.is_running || this.isRunning,
+        activeConnections: tauriStats.connected_clients || 0,
+        totalMessagesReceived: tauriStats.total_messages_received || this.stats.totalMessagesReceived,
+        totalMessagesSent: tauriStats.total_messages_sent || this.stats.totalMessagesSent,
+        uptime: tauriStats.uptime_seconds ? tauriStats.uptime_seconds * 1000 : (this.startTime ? Date.now() - this.startTime.getTime() : 0),
+        errors: tauriStats.errors || this.stats.errors
+      };
+      
+    } catch (error) {
+      console.error('❌ Failed to get stats from Tauri WebSocket server:', error);
+      
+      // フォールバック: ローカル統計を返す
+      return {
+        isRunning: this.isRunning,
+        activeConnections: 0,
+        totalMessagesReceived: this.stats.totalMessagesReceived,
+        totalMessagesSent: this.stats.totalMessagesSent,
+        uptime: this.startTime ? Date.now() - this.startTime.getTime() : 0,
+        errors: this.stats.errors
+      };
     }
   }
 
   /**
-   * 全接続にPing送信
+   * アクティブ接続取得（Tauri統合）
    */
-  private pingAllConnections(): void {
-    const pingMessage: WSPingMessage = {
-      type: WSMessageType.PING,
-      timestamp: new Date().toISOString()
-    };
-
-    const connections = this.connectionManager.getActiveConnections();
-    connections.forEach(connection => {
-      try {
-        connection.ws.ping();
-        this.sendCommand(connection.connectionId, pingMessage);
-      } catch (error) {
-        console.error(`❌ Broadcast error for ${connection.connectionId}:`, error);
-      }
-    });
+  async getActiveConnections(): Promise<EAConnection[]> {
+    try {
+      // Tauri WebSocketサーバーからクライアント一覧を取得
+      const tauriClients = await invoke('get_websocket_clients') as any[];
+      
+      return tauriClients.map(client => ({
+        connectionId: client.id,
+        accountId: client.ea_info?.account,
+        sessionId: client.id, // セッションIDとしてclient IDを使用
+        authenticated: client.authenticated,
+        connectedAt: new Date(client.connected_at),
+        lastHeartbeat: new Date(client.last_heartbeat),
+        eaInfo: client.ea_info ? {
+          version: client.ea_info.version,
+          platform: client.ea_info.platform,
+          account: client.ea_info.account,
+          serverName: client.ea_info.server_name,
+          companyName: client.ea_info.company_name
+        } : undefined
+      }));
+      
+    } catch (error) {
+      console.error('❌ Failed to get active connections from Tauri WebSocket server:', error);
+      return [];
+    }
   }
 
   /**
-   * サーバー統計取得
+   * メッセージハンドラー設定
    */
-  getStats(): WSServerStats {
-    return {
-      isRunning: this.isRunning,
-      activeConnections: this.connectionManager.getConnectionCount(),
-      totalMessagesReceived: this.stats.totalMessagesReceived,
-      totalMessagesSent: this.stats.totalMessagesSent,
-      uptime: this.startTime ? Date.now() - this.startTime.getTime() : 0,
-      errors: this.stats.errors
-    };
+  setMessageHandler(handler: (message: WSEvent, clientId: string) => Promise<void>): void {
+    this.onMessageHandler = handler;
   }
 
   /**
-   * アクティブ接続取得
+   * 接続切断（Tauri統合）
    */
-  getActiveConnections(): EAConnection[] {
-    return this.connectionManager.getActiveConnections();
+  async disconnectClient(clientId: string): Promise<boolean> {
+    try {
+      await invoke('disconnect_websocket_client', { clientId });
+      console.log(`🔌 Client ${clientId} disconnected`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Failed to disconnect client ${clientId}:`, error);
+      return false;
+    }
   }
 
   /**
    * ユーティリティメソッド
    */
-  private generateConnectionId(): string {
-    return `ea_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  private extractAuthToken(request: any): string | null {
-    return request.headers.authorization?.replace('Bearer ', '') || null;
-  }
-
-  private validateAuthTokenSync(token: string | null): boolean {
-    return token === this.config.authToken;
-  }
-
   private validateMessage(message: any): message is WSEvent {
     return (
       typeof message === 'object' &&
@@ -455,5 +372,20 @@ export class HedgeWebSocketServer {
       typeof message.timestamp === 'string' &&
       Object.values(WSMessageType).includes(message.type)
     );
+  }
+
+  /**
+   * 設定更新（Tauri統合）
+   */
+  async updateConfig(config: Partial<WSServerConfig>): Promise<void> {
+    try {
+      const newConfig = { ...this.config, ...config };
+      await invoke('update_websocket_config', { config: newConfig });
+      this.config = newConfig;
+      console.log('🔧 WebSocket configuration updated (Tauri)');
+    } catch (error) {
+      console.error('❌ Failed to update WebSocket configuration:', error);
+      throw error;
+    }
   }
 }

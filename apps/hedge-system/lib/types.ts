@@ -1,91 +1,46 @@
 /**
- * MVPシステム用基本型定義
- * @repo/shared-types の代替
+ * Hedge System固有の型定義
+ * 共通型は @repo/shared-types から import
  */
 
-// Position関連
-export enum PositionStatus {
-  PENDING = 'PENDING',
-  OPENING = 'OPENING', 
-  OPEN = 'OPEN',
-  CLOSING = 'CLOSING',
-  CLOSED = 'CLOSED',
-  CANCELED = 'CANCELED',
-  STOPPED = 'STOPPED'
-}
+// shared-types からの型をre-export
+export type {
+  Position,
+  CreatePositionInput,
+  UpdatePositionInput,
+  Action,
+  CreateActionInput,
+  UpdateActionInput,
+  Account,
+  UpdateAccountInput,
+  User
+} from '@repo/shared-types';
 
-export enum Symbol {
-  USDJPY = 'USDJPY',
-  EURUSD = 'EURUSD',
-  EURGBP = 'EURGBP',
-  XAUUSD = 'XAUUSD'
-}
+export {
+  PositionStatus,
+  Symbol as SymbolEnum,
+  ExecutionType,
+  ActionType,
+  ActionStatus,
+  UserRole,
+  PCStatus
+} from '@repo/shared-types';
 
-export enum ExecutionType {
-  MARKET = 'MARKET',
-  LIMIT = 'LIMIT',
-  STOP = 'STOP'
-}
-
-export interface Position {
-  id: string;
-  accountId: string;
-  symbol: Symbol;
-  volume: number;
-  executionType: ExecutionType;
-  status: PositionStatus;
+// Hedge System 固有のフィルター型
+export interface PositionFilter {
   userId?: string;
-  trailWidth?: number;
-  triggerActionIds?: string;
-  memo?: string;
-  mtTicket?: string;
-  entryPrice?: number;
-  entryTime?: string;
-  exitPrice?: number;
-  exitTime?: string;
-  exitReason?: string;
+  accountId?: string;
+  status?: PositionStatus;
+  symbol?: import('@repo/shared-types').Symbol;
+  executionType?: ExecutionType;
 }
 
-export interface CreatePositionInput {
-  accountId: string;
-  symbol: Symbol;
-  volume: number;
-  executionType: ExecutionType;
-  status: PositionStatus;
-  trailWidth?: number;
-  triggerActionIds?: string;
-  memo?: string;
-}
-
-// Action関連
-export enum ActionType {
-  ENTRY = 'ENTRY',
-  CLOSE = 'CLOSE'
-}
-
-export enum ActionStatus {
-  PENDING = 'PENDING',
-  EXECUTING = 'EXECUTING',
-  EXECUTED = 'EXECUTED',
-  FAILED = 'FAILED'
-}
-
-export interface Action {
-  id: string;
-  accountId: string;
-  positionId?: string;
-  triggerPositionId?: string;
-  type: ActionType;
-  status: ActionStatus;
+export interface ActionFilter {
   userId?: string;
-}
-
-export interface CreateActionInput {
-  accountId: string;
+  accountId?: string;
   positionId?: string;
-  triggerPositionId?: string;
-  type: ActionType;
-  status: ActionStatus;
+  status?: ActionStatus;
+  type?: ActionType;
 }
 
 // WebSocket関連
@@ -127,12 +82,13 @@ export interface WSPongMessage extends WSMessage {
 export interface WSOpenCommand extends WSCommand {
   type: WSMessageType.OPEN;
   positionId: string;
-  symbol: Symbol;
+  symbol: import('@repo/shared-types').Symbol;
   side: 'BUY' | 'SELL';
   volume: number;
   trailWidth?: number;
   metadata?: {
     strategyId?: string;
+    executionType?: ExecutionType;
     timestamp: string;
   };
 }
@@ -140,10 +96,17 @@ export interface WSOpenCommand extends WSCommand {
 export interface WSCloseCommand extends WSCommand {
   type: WSMessageType.CLOSE;
   positionId: string;
+  symbol?: import('@repo/shared-types').Symbol;
+  side?: 'BUY' | 'SELL';
+  volume?: number;
+  metadata?: {
+    executionType?: ExecutionType;
+    timestamp: string;
+  };
 }
 
 export interface WSModifyStopCommand extends WSCommand {
-  type: 'MODIFY_STOP';
+  type: WSMessageType.CLOSE; // MODIFY_STOP は CLOSE に統合
   positionId: string;
   stopLoss: number;
 }
@@ -182,7 +145,7 @@ export interface WSErrorEvent extends WSEvent {
 }
 
 export interface WSPriceEvent extends WSEvent {
-  type: 'PRICE';
+  type: WSMessageType.INFO; // PRICE は INFO に統合
   symbol: string;
   price: number;
   timestamp: string;

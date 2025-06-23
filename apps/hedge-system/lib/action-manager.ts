@@ -5,7 +5,7 @@ import {
   ActionStatus, 
   CreateActionInput,
   Position,
-  Symbol,
+  SymbolEnum,
   ExecutionType
 } from './types';
 import { amplifyClient, getCurrentUserId } from './amplify-client';
@@ -19,7 +19,10 @@ export class ActionManager {
 
   constructor(wsHandler?: WebSocketHandler) {
     this.wsHandler = wsHandler || new WebSocketHandler();
-    this.initializeUserId();
+    // 認証状態を確認してから初期化
+    this.initializeUserId().catch(error => {
+      console.log('User not authenticated, ActionManager will initialize after login');
+    });
   }
 
   /**
@@ -28,8 +31,10 @@ export class ActionManager {
   private async initializeUserId(): Promise<void> {
     try {
       this.currentUserId = await getCurrentUserId();
+      console.log('✅ ActionManager user ID initialized:', this.currentUserId);
     } catch (error) {
-      console.error('Failed to get current user ID:', error);
+      // 認証されていない場合は静かに処理
+      this.currentUserId = undefined;
     }
   }
 
@@ -58,6 +63,7 @@ export class ActionManager {
     status?: ActionStatus;
   }): Promise<Action> {
     const actionInput = {
+      userId: this.currentUserId!,
       accountId: params.accountId,
       positionId: params.positionId,
       triggerPositionId: params.triggerPositionId,
@@ -162,7 +168,7 @@ export class ActionManager {
       const result = await this.wsHandler.sendOpenCommand({
         accountId: action.accountId,
         positionId: position.id,
-        symbol: position.symbol,
+        symbol: position.symbol as any,
         volume: position.volume,
         executionType: position.executionType
       });
@@ -273,16 +279,17 @@ export class ActionManager {
       throw new Error('User not authenticated');
     }
     
+    // TODO: Fix schema mismatch - regenerate amplify_outputs.json
     // userIdベースのサブスクリプション
-    const subscription = this.amplifyClient.models.Action.observeQuery({
+    const subscription = (this.amplifyClient as any).models?.Action?.observeQuery({
       filter: { userId: { eq: this.currentUserId } }
-    }).subscribe({
-      next: (data) => {
-        data.items.forEach(action => {
+    })?.subscribe({
+      next: (data: any) => {
+        data?.items?.forEach((action: any) => {
           this.handleActionSubscription(action);
         });
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Action subscription error:', error);
       }
     });

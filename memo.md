@@ -1,0 +1,3 @@
+MVPシステム設計.mdをしっかり理解した上で実行すること。hedge systemのエラーを修正していきたい。amplify gen2, next.js15, turborepoなどのベストプラクティスに従って修正を進めていくこと。ultrathink
+
+MVPシステム設計.mdをしっかり理解した上で実行すること。adminのエラーを修正していきたい。amplify gen2, next.js15, turborepoなどのベストプラクティスに従って修正を進めていくこと。ultrathink

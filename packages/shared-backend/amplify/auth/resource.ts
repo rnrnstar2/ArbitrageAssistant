@@ -15,14 +15,6 @@ export const auth = defineAuth({
       required: true,
       mutable: false,
     },
-    givenName: {
-      required: true,
-      mutable: true,
-    },
-    familyName: {
-      required: false,
-      mutable: true,
-    },
   },
   groups: ['ADMIN', 'CLIENT'],
   accountRecovery: 'EMAIL_ONLY',

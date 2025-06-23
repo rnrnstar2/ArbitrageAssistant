@@ -11,7 +11,7 @@ export interface EAConnection {
   openPositions: number;
 }
 
-export interface SystemStatus {
+export interface DashboardSystemStatus {
   totalEAs: number;
   activeEAs: number;
   errorCount: number;
@@ -28,7 +28,7 @@ export interface SystemHealthStatus {
 }
 
 export interface SystemContextType {
-  systemStatus: SystemStatus;
+  systemStatus: DashboardSystemStatus;
   eaConnections: EAConnection[];
   isRefreshing: boolean;
   showSettings: boolean;
