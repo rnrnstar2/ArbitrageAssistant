@@ -45,7 +45,7 @@ export function UpdateNotification() {
 
   // アプリ起動時にバージョンを取得
   useEffect(() => {
-    getVersion().then(setCurrentVersion).catch(console.error);
+    getVersion().then(setCurrentVersion).catch(() => {});
   }, []);
 
   // About ダイアログのイベントをリッスン
@@ -57,8 +57,8 @@ export function UpdateNotification() {
         unlistenAbout = await listen('show-about', () => {
           setShowAboutDialog(true);
         });
-      } catch (error) {
-        console.error('Failed to setup about listener:', error);
+      } catch {
+        // Error: Failed to setup about listener
       }
     };
 
@@ -78,13 +78,13 @@ export function UpdateNotification() {
     setShowUpdateDialog(false);
     
     try {
-      console.log('アップデートのダウンロード・インストールを開始します...');
+      // アップデートのダウンロード・インストールを開始
       
       // 実際のダウンロード・インストール実行
       await downloadAndInstallUpdate(updateInfo.update);
       
-    } catch (error) {
-      console.error('アップデートエラー:', error);
+    } catch {
+      // アップデートエラー
       alert('アップデートのインストール中にエラーが発生しました。');
       setIsDownloading(false);
       setShowUpdateDialog(true); // ダイアログを再表示

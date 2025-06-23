@@ -36,3 +36,42 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Build outputs
+apps/*/out/
+apps/*/dist/
+apps/*/.next/
+
+# Tauri build
+src-tauri/target/
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+*.lcov
+
+# Temporary folders
+tmp/
+temp/

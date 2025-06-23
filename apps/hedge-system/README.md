@@ -112,12 +112,12 @@ NEXT_PUBLIC_API_URL=http://localhost:3001
 ### 自動リリース（推奨）
 ```bash
 # 🚨 重要: 必ずこのスクリプトを使用すること
-npm run release:hedge-system
+npm run release:hedge
 
 # または特定のバージョンタイプを指定
-npm run release:hedge-system patch  # バグ修正
-npm run release:hedge-system minor  # 新機能
-npm run release:hedge-system major  # 破壊的変更
+npm run release:hedge patch  # バグ修正
+npm run release:hedge minor  # 新機能
+npm run release:hedge major  # 破壊的変更
 ```
 
 ### 手動リリース（非推奨）

@@ -13,7 +13,7 @@ npm run build  # 必要に応じて
 ### リリース手順
 ユーザーが「リリースして」と言った場合：
 ```bash
-npm run release:hedge-system [patch|minor|major]
+npm run release:hedge [patch|minor|major]
 ```
 手動でタグ作成禁止！スクリプトが自動化済み。
 
@@ -113,7 +113,23 @@ npm run test:coverage   # カバレッジ
 実行済みの時、このタスクファイルを削除すること。"
 ```
 
+### 型チェック競合対処
+並列タスク実行時、同じファイルを複数タスクが編集すると型チェックエラーが発生する可能性あり。
+
+**対処法**:
+```bash
+# 1. 段階的実行（推奨）
+# - 全タスクのファイル編集完了後に型チェック実行
+
+# 2. 緊急時スキップ  
+npm run lint --no-typescript-check
+
+# 3. ワークスペース別チェック
+npm run check-types --workspace=apps/admin
+```
+
 ## 品質基準
 - ESLint: --max-warnings 0
 - TypeScript: strict mode
 - Zero warnings policy
+- **shadcn/ui コンポーネントは編集禁止** - 標準版を信頼して使用

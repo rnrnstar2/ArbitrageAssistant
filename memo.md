@@ -1,0 +1,1 @@
+mvpの範囲内で、package-architecture-refinement.mdのタスクを実行して。実行後このタスクファイルは削除。ultrathink

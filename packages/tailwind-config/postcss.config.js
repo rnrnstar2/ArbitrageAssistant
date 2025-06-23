@@ -1,6 +1,8 @@
-// Optional PostCSS configuration for applications that need it
-export const postcssConfig = {
+export default {
   plugins: {
-    "@tailwindcss/postcss": {},
+    '@tailwindcss/postcss': {},
+    ...(process.env.NODE_ENV === 'production' ? {
+      'cssnano': { preset: 'default' },
+    } : {}),
   },
 };

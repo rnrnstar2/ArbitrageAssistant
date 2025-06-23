@@ -24,7 +24,7 @@
 
 ```bash
 # 🚨 重要: 必ずこのスクリプトを使用すること
-npm run release:hedge-system
+npm run release:hedge
 ```
 
 ## 削除予定について

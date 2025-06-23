@@ -1,3 +1,74 @@
 @import "tailwindcss";
 @import "@repo/tailwind-config";
-@import "@repo/ui/styles.css";
+@import "@repo/ui/dist/index.css";
+
+/* A8ネット風カスタムカラーテーマ */
+:root {
+  --a8-primary: #E60012;
+  --a8-primary-hover: #CC0010;
+  --a8-primary-light: #FF3332;
+  --a8-secondary: #FF6B35;
+  --a8-accent: #FFE6E6;
+}
+
+/* A8ネットテーマをTailwind CSS v4のテーマに統合 */
+@theme {
+  --color-a8-primary: var(--a8-primary);
+  --color-a8-primary-hover: var(--a8-primary-hover);
+  --color-a8-primary-light: var(--a8-primary-light);
+  --color-a8-secondary: var(--a8-secondary);
+  --color-a8-accent: var(--a8-accent);
+}
+
+/* A8ネットテーマのユーティリティクラス（後方互換性のため保持） */
+.bg-a8-primary {
+  background-color: var(--a8-primary);
+}
+
+.bg-a8-primary-hover {
+  background-color: var(--a8-primary-hover);
+}
+
+.bg-a8-primary-light {
+  background-color: var(--a8-primary-light);
+}
+
+.bg-a8-secondary {
+  background-color: var(--a8-secondary);
+}
+
+.bg-a8-accent {
+  background-color: var(--a8-accent);
+}
+
+.text-a8-primary {
+  color: var(--a8-primary);
+}
+
+.text-a8-primary-hover {
+  color: var(--a8-primary-hover);
+}
+
+.text-a8-primary-light {
+  color: var(--a8-primary-light);
+}
+
+.text-a8-secondary {
+  color: var(--a8-secondary);
+}
+
+.border-a8-primary {
+  border-color: var(--a8-primary);
+}
+
+.border-a8-primary-hover {
+  border-color: var(--a8-primary-hover);
+}
+
+.hover\:bg-a8-primary-hover:hover {
+  background-color: var(--a8-primary-hover);
+}
+
+.hover\:text-a8-primary-hover:hover {
+  color: var(--a8-primary-hover);
+}

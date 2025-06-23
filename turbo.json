@@ -5,10 +5,12 @@
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**", "out/**", ".next/**"]
+      "outputs": ["dist/**", "out/**", ".next/**"],
+      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^lint"],
+      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
     },
     "check-types": {
       "dependsOn": ["^check-types"]
@@ -20,6 +22,14 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": ["coverage/**"]
+    },
+    "build:css": {
+      "dependsOn": ["^build:css"],
+      "outputs": ["dist/**/*.css"]
+    },
+    "dev:css": {
+      "cache": false,
+      "persistent": true
     }
   }
 }

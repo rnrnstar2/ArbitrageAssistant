@@ -114,7 +114,7 @@ ArbitrageAssistant/
 - `npm run format` - Prettierでコードをフォーマット
 - `npm run test` - すべてのテストを実行
 - `npm run test:watch` - テストをウォッチモードで実行
-- `npm run release:hedge-system` - Hedge Systemのリリースを実行
+- `npm run release:hedge` - Hedge Systemのリリースを実行
 
 ## リリースプロセス
 
@@ -122,12 +122,12 @@ ArbitrageAssistant/
 
 ```bash
 # 🚨 重要: 必ずこのスクリプトを使用すること
-npm run release:hedge-system
+npm run release:hedge
 
 # または特定のバージョンタイプを指定
-npm run release:hedge-system patch  # バグ修正
-npm run release:hedge-system minor  # 新機能
-npm run release:hedge-system major  # 破壊的変更
+npm run release:hedge patch  # バグ修正
+npm run release:hedge minor  # 新機能
+npm run release:hedge major  # 破壊的変更
 ```
 
 **注意**: 手動でのタグ作成・プッシュは推奨されません。自動スクリプトが以下を実行します：

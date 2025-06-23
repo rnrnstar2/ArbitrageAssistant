@@ -9,8 +9,9 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "dev:hedge": "cd apps/hedge-system && npm run tauri:dev",
     "dev:admin": "turbo dev --filter=admin",
+    "dev:hedge": "turbo dev --filter=hedge-system",
+    "dev:ui": "turbo dev --filter=@repo/ui",
     "lint": "turbo lint",
     "test": "vitest",
     "test:watch": "vitest watch",
@@ -18,7 +19,9 @@
     "aws:check": "echo '🔍 AWS Account Check:' && aws sts get-caller-identity --query Account --output text && echo '✅ Expected: 183048365370'",
     "sandbox": "npm run aws:check && cd packages/shared-backend && npx ampx sandbox",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "release:hedge-system": "./scripts/release-hedge-system.sh"
+    "build:css": "turbo build:css",
+    "dev:css": "turbo dev:css",
+    "release:hedge": "./scripts/release-hedge-system.sh"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

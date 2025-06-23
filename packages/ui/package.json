@@ -99,26 +99,73 @@
       "import": "./dist/components/ui/popover.js",
       "require": "./dist/components/ui/popover.js",
       "types": "./dist/components/ui/popover.d.ts"
+    },
+    "./components/ui/switch": {
+      "import": "./dist/components/ui/switch.js",
+      "require": "./dist/components/ui/switch.js",
+      "types": "./dist/components/ui/switch.d.ts"
+    },
+    "./components/ui/dialog": {
+      "import": "./dist/components/ui/dialog.js",
+      "require": "./dist/components/ui/dialog.js",
+      "types": "./dist/components/ui/dialog.d.ts"
+    },
+    "./components/ui/textarea": {
+      "import": "./dist/components/ui/textarea.js",
+      "require": "./dist/components/ui/textarea.js",
+      "types": "./dist/components/ui/textarea.d.ts"
+    },
+    "./components/ui/separator": {
+      "import": "./dist/components/ui/separator.js",
+      "require": "./dist/components/ui/separator.js",
+      "types": "./dist/components/ui/separator.d.ts"
+    },
+    "./components/ui/table": {
+      "import": "./dist/components/ui/table.js",
+      "require": "./dist/components/ui/table.js",
+      "types": "./dist/components/ui/table.d.ts"
+    },
+    "./components/auth": {
+      "import": "./dist/components/auth/index.js",
+      "require": "./dist/components/auth/index.js",
+      "types": "./dist/components/auth/index.d.ts"
+    },
+    "./hooks/use-smart-form": {
+      "import": "./dist/hooks/use-smart-form.js",
+      "require": "./dist/hooks/use-smart-form.js",
+      "types": "./dist/hooks/use-smart-form.d.ts"
+    },
+    "./lib/error-handler": {
+      "import": "./dist/lib/error-handler.js",
+      "require": "./dist/lib/error-handler.js",
+      "types": "./dist/lib/error-handler.d.ts"
     }
   },
   "license": "MIT",
   "scripts": {
-    "build": "tsc && npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
+    "build": "tsc && npm run build:css",
     "build:tsc": "tsc",
-    "build:css": "npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --minify",
-    "dev": "tsc --watch & npx tailwindcss -i ../tailwind-config/shared-styles.css -o ./dist/index.css --watch",
+    "build:css": "NODE_ENV=production postcss ../tailwind-config/shared-styles.css -o ./dist/index.css --config ./postcss.config.mjs",
+    "predev": "mkdir -p dist && touch dist/index.css",
+    "dev": "concurrently \"tsc --watch\" \"npm run dev:css\"",
+    "dev:css": "postcss ../tailwind-config/shared-styles.css -o ./dist/index.css --watch --config ./postcss.config.mjs",
     "lint": "eslint . --max-warnings 0",
     "generate:component": "turbo gen react-component"
   },
   "peerDependencies": {
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@parcel/watcher": "^2.4.1",
+    "@repo/eslint-config": "*",
     "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",
-    "@tailwindcss/cli": "^4.1.6",
     "@tailwindcss/postcss": "^4.1.6",
+    "concurrently": "^9.1.0",
+    "postcss": "^8.5.3",
+    "postcss-cli": "^11.0.0",
+    "cssnano": "^7.0.0",
     "@types/node": "^22.15.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -130,6 +177,7 @@
     "typescript": "5.5.4"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.2",
@@ -140,13 +188,17 @@
     "@radix-ui/react-popover": "^1.1.14",
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-select": "^2.2.5",
+    "@radix-ui/react-separator": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
+    "@radix-ui/react-switch": "^1.2.5",
     "@radix-ui/react-tabs": "^1.1.12",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.510.0",
     "react": "^19.0.0",
     "react-day-picker": "^9.7.0",
     "react-dom": "^19.0.0",
-    "sonner": "^2.0.3"
+    "react-hook-form": "^7.53.2",
+    "sonner": "^2.0.3",
+    "zod": "^3.24.1"
   }
 }

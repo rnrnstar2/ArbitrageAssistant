@@ -1,9 +1,18 @@
 {
   "name": "@repo/typescript-config",
   "version": "0.0.0",
+  "type": "module",
   "private": true,
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
+  "exports": {
+    "./base.json": "./base.json",
+    "./nextjs.json": "./nextjs.json",
+    "./react-library.json": "./react-library.json"
+  },
+  "files": [
+    "*.json"
+  ],
+  "devDependencies": {
+    "typescript": "5.5.4"
   }
 }

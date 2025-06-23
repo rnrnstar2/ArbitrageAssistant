@@ -5,12 +5,10 @@ import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, 
   Monitor, 
-  TrendingUp, 
-  Settings, 
-  FileText,
+  TrendingUp,
   LogOut
 } from "lucide-react";
-import { useAuth } from "@/features/auth/auth-provider";
+import { useAuth } from "@repo/ui/components/auth";
 import { Button } from "@repo/ui/components/ui/button";
 
 interface NavItem {
@@ -27,23 +25,13 @@ const navItems: NavItem[] = [
   },
   {
     href: "/clients",
-    label: "クライアントPC",
+    label: "口座管理",
     icon: Monitor,
   },
   {
     href: "/trading",
-    label: "トレード操作",
+    label: "取引操作",
     icon: TrendingUp,
-  },
-  {
-    href: "/settings",
-    label: "システム設定",
-    icon: Settings,
-  },
-  {
-    href: "/logs",
-    label: "ログ・履歴",
-    icon: FileText,
   },
 ];
 

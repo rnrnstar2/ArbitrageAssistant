@@ -4,6 +4,7 @@
     "baseUrl": ".",
     "outDir": "dist",
     "rootDir": "src",
+    "composite": true,
     "paths": {
       "@repo/ui/*": ["src/*"]
     }

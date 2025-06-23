@@ -1,5 +1,9 @@
+import { Amplify } from 'aws-amplify';
+import outputs from '../amplify_outputs.json';
 import { I18n } from 'aws-amplify/utils';
 import { translations } from '@aws-amplify/ui-react';
+
+Amplify.configure(outputs);
 
 // AWS Amplifyの標準翻訳を適用
 I18n.putVocabularies(translations);

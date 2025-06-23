@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/features/auth/auth-provider";
+import { useAuth } from "@repo/ui/components/auth";
 import { Avatar, AvatarFallback } from "@repo/ui/components/ui/avatar";
 import { Button } from "@repo/ui/components/ui/button";
 import { 

@@ -1,14 +1,16 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
-import "../lib/amplify";
-import { AuthProvider } from "@/features/auth/auth-provider";
+import { Providers } from "@/components/providers";
+import { AuthGuard, AuthContainer } from "@repo/ui/components/auth";
 import { AdminLayout } from "@/components/layout/admin-layout";
-import { ProtectedRoute } from "@/features/auth/protected-route";
 
 export const metadata: Metadata = {
-  title: "Arbitrage Assistant - 管理画面",
-  description: "ArbitrageAssistant Hedge System 管理画面",
+  title: {
+    template: '%s | ArbitrageAssistant Admin',
+    default: 'ArbitrageAssistant Admin',
+  },
+  description: 'Trading management system for arbitrage operations',
 };
 
 export const viewport = {
@@ -31,13 +33,25 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} min-h-screen font-sans antialiased`}
       >
-        <AuthProvider>
-          <ProtectedRoute>
+        <Providers>
+          <AuthGuard
+            fallback={
+              <AuthContainer
+                loginTitle="管理者ログイン"
+                loginDescription="Arbitrage Assistant 管理画面にログインしてください"
+                emailPlaceholder="admin@example.com"
+                signUpTitle="管理者アカウント作成"
+                signUpDescription="新しい管理者アカウントを作成してください"
+                enableSignUp={true}
+                enableForgotPassword={true}
+              />
+            }
+          >
             <AdminLayout>
               {children}
             </AdminLayout>
-          </ProtectedRoute>
-        </AuthProvider>
+          </AuthGuard>
+        </Providers>
       </body>
     </html>
   );

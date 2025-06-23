@@ -11,25 +11,33 @@
     "test": "vitest",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "build:css": "echo 'CSS is built through globals.css import in Next.js'",
+    "dev:css": "echo 'CSS is watched through Next.js dev server'"
   },
   "dependencies": {
-    "@aws-amplify/ui-react": "^6.11.2",
-    "@repo/ui": "*",
+    "@apollo/client": "^3.13.8",
+    "@hookform/resolvers": "^3.10.0",
+    "@repo/shared-auth": "*",
+    "@repo/shared-types": "*",
+    "@repo/ui": "^0.0.0",
     "aws-amplify": "^6.15.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.510.0",
     "next": "15.3.2",
     "react": "19.0.0",
-    "react-dom": "19.0.0"
+    "react-dom": "19.0.0",
+    "react-hook-form": "^7.54.0",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
-    "@repo/tailwind-config": "*",
     "@repo/typescript-config": "*",
+    "@repo/prettier-config": "*",
     "@types/node": "^20",
     "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
+    "@tailwindcss/postcss": "^4.1.6",
+    "postcss": "^8.5.3",
     "tailwindcss": "^4.1.6",
     "typescript": "5.5.4"
   }
