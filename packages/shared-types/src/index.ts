@@ -1,150 +1,55 @@
-// 共通型定義のメインエクスポート
+// Core MVP types exports
 
-export * from './trading.js';
-export * from './monitoring.js';
-export * from './risk-management.js';
-export * from './validation.js';
+// Position types
 export * from './position.js';
-export * from './strategy.js';
-export * from './websocket.js';
-
-// 再エクスポート用の型定義統合
-export type {
-  TradeCommand,
-  TrailSettings,
-  HedgeSettings,
-  HedgeGroup,
-  TradeStatus,
-  PriceData,
-  MarketConditions,
-  EntryParams,
-  RiskAssessment,
-  TradingRiskMetrics,
-  RiskLimits
-} from './trading.js';
-
 export type {
   Position,
   CreatePositionInput,
-  UpdatePositionInput
+  UpdatePositionInput,
+  PositionFilter
 } from './position.js';
-
-export { PositionStatus } from './position.js';
-
-export type {
-  Strategy,
-  EntryStrategy,
-  ExitStrategy,
-  BaseStrategy,
-  LegacyStrategy,
-  PositionSpec,
-  CreateStrategyInput,
-  CreateEntryStrategyInput,
-  CreateExitStrategyInput,
-  CreateLegacyStrategyInput,
-  UpdateStrategyInput,
-  StrategyType
-} from './strategy.js';
-
-// Common types - specific symbols to avoid conflicts
-export type {
-  ApiResponse,
-  PaginationParams,
-  PaginatedResponse,
-  TimeRange,
-  WebSocketMessage,
-  Currency,
-  EventType
-} from './common.js';
-export type { Symbol as CommonSymbol } from './common.js';
+export { PositionStatus, Symbol, ExecutionType } from './position.js';
 
 // Action types
+export * from './action.js';
 export type {
   Action,
-  ActionType
+  CreateActionInput,
+  UpdateActionInput,
+  ActionFilter,
+  ActionSubscriptionFilter
 } from './action.js';
-export { ActionStatus, Symbol as ActionSymbol } from './action.js';
+export { ActionType, ActionStatus } from './action.js';
+
+// Account types (from trading.ts)
+export type {
+  Account,
+  UpdateAccountInput
+} from './trading.js';
 
 // WebSocket types
-export { WSMessageType } from './websocket.js';
 export type {
-  WSBaseMessage,
-  WSCommand,
-  WSEvent,
-  WSMessage,
-  WSOpenCommand,
-  WSCloseCommand,
-  WSModifyStopCommand,
-  WSPingMessage,
-  WSOpenedEvent,
-  WSClosedEvent,
-  WSErrorEvent,
-  WSPriceEvent,
-  WSPongMessage,
-  WSInfoEvent,
-  WSStopModifiedEvent
+  OpenCommand,
+  CloseCommand,
+  WSCommand
 } from './websocket.js';
 
-export type {
-  AccountInfo,
-  MarketData,
-  Alert,
-  SystemMetrics,
-  ConnectionStatus,
-  AlertLevel,
-  ConnectionState
-} from './monitoring.js';
+// User types (core MVP)
+export enum UserRole {
+  CLIENT = 'CLIENT',
+  ADMIN = 'ADMIN'
+}
 
-export type {
-  RiskMetrics,
-  RiskAlert,
-  LossCutSettings,
-  BalanceThreshold,
-  RiskLevel,
-  RiskAction
-} from './risk-management.js';
+export enum PCStatus {
+  ONLINE = 'ONLINE',
+  OFFLINE = 'OFFLINE'
+}
 
-
-// Import types for use in this file
-import type { TrailSettings, HedgeSettings } from './trading.js';
-
-// Amplify Generated型との統合
-export type AmplifyPosition = {
+export interface User {
   id: string;
-  account: string;
-  symbol: string;
-  volume: number;
-  openPrice: number;
-  currentPrice?: number;
-  profit?: number;
-  trailSettings?: TrailSettings;
-  hedgeSettings?: HedgeSettings;
-  createdAt: string;
-  updatedAt: string;
-  owner?: string;
-};
-
-// 型ガード関数追加
-export const isValidTrailSettings = (obj: any): obj is TrailSettings => {
-  return (
-    typeof obj === 'object' &&
-    typeof obj.enabled === 'boolean' &&
-    ['percentage', 'pip', 'price'].includes(obj.trailType) &&
-    typeof obj.trailValue === 'number'
-  );
-};
-
-export const isValidHedgeSettings = (obj: any): obj is HedgeSettings => {
-  return (
-    typeof obj === 'object' &&
-    ['cross_account', 'single_account', 'correlation_based'].includes(obj.strategy) &&
-    typeof obj.ratio === 'number' &&
-    Array.isArray(obj.correlationPairs)
-  );
-};
-
-// Validation schemas exports
-export {
-  TrailSettingsSchema,
-  HedgeSettingsSchema
-} from './validation.js';
+  email: string;
+  name: string;
+  role: UserRole;
+  pcStatus?: PCStatus;
+  isActive?: boolean;
+}

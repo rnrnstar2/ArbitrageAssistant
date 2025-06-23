@@ -29,12 +29,16 @@ const navigationItems = [
     href: "/dashboard",
   },
   {
-    title: "トレーディング",
-    href: "/trading",
-  },
-  {
     title: "クライアント",
     href: "/clients",
+  },
+  {
+    title: "ポジション",
+    href: "/positions",
+  },
+  {
+    title: "アクション",
+    href: "/actions",
   },
 ];
 

@@ -1,359 +1,277 @@
-import { AmplifyGraphQLClient } from './amplify-client';
-import { Position, PositionStatus } from '@repo/shared-types';
-import { CREATE_TRAIL_ACTION, UPDATE_POSITION_STATUS } from './graphql/mutations';
+import { Position, PositionStatus } from './types';
+import { PositionService } from './position-service';
+import { PriceMonitor } from './price-monitor';
+import { ActionManager } from './action-manager';
 
-interface TrailConfig {
+interface TrailPosition {
   positionId: string;
+  symbol: string;
   trailWidth: number;
+  triggerActionIds: string[];
   lastPrice: number;
-  bestPrice: number;
+  highWaterMark: number;
   isActive: boolean;
-  startTime: Date;
-  symbol: string;
-  direction: 'BUY' | 'SELL';
 }
 
-interface PriceUpdate {
-  symbol: string;
-  bid: number;
-  ask: number;
-  timestamp: Date;
-}
-
-/**
- * トレール判定エンジン
- * MVPデザイン仕様3-3に基づくトレール監視・実行
- */
 export class TrailEngine {
-  private amplifyClient: AmplifyGraphQLClient;
-  private monitoredPositions: Map<string, TrailConfig> = new Map();
-  private priceSubscriptions: Map<string, any> = new Map();
-  private isRunning = false;
-  
-  // 統計・監視
-  private stats = {
-    totalTrailsStarted: 0,
-    totalTrailsExecuted: 0,
-    totalLossCutsHandled: 0,
-    activeTrails: 0
-  };
+  private trailPositions: Map<string, TrailPosition> = new Map();
+  private priceMonitor: PriceMonitor;
+  private actionManager: ActionManager;
 
-  constructor(amplifyClient: AmplifyGraphQLClient) {
-    this.amplifyClient = amplifyClient;
+  constructor(priceMonitor: PriceMonitor, actionManager: ActionManager) {
+    this.priceMonitor = priceMonitor;
+    this.actionManager = actionManager;
   }
 
   /**
-   * トレール監視開始
-   * ポジション毎のトレール設定で価格監視開始
+   * トレール監視追加
    */
-  async startTrailMonitoring(position: Position, trailWidth: number): Promise<void> {
-    console.log(`🎯 Starting trail monitoring for position: ${position.positionId}`);
-    
-    if (this.monitoredPositions.has(position.positionId)) {
-      console.warn(`Trail already exists for position: ${position.positionId}`);
-      return;
+  addTrailPosition(position: Position): void {
+    if (!position.trailWidth || position.trailWidth <= 0) {
+      return; // トレール設定なし
     }
 
-    const config: TrailConfig = {
-      positionId: position.positionId,
-      trailWidth,
-      lastPrice: position.currentPrice || position.entryPrice || 0,
-      bestPrice: position.currentPrice || position.entryPrice || 0,
-      isActive: true,
-      startTime: new Date(),
-      symbol: position.symbol,
-      direction: this.getPositionDirection(position)
+    const trailPosition: TrailPosition = {
+      positionId: position.id,
+      symbol: position.symbol.toString(),
+      trailWidth: position.trailWidth,
+      triggerActionIds: JSON.parse(position.triggerActionIds || '[]'),
+      lastPrice: position.entryPrice || 0,
+      highWaterMark: position.entryPrice || 0, // エントリー価格から開始
+      isActive: true
     };
 
-    this.monitoredPositions.set(position.positionId, config);
-    this.stats.totalTrailsStarted++;
-    this.stats.activeTrails++;
+    this.trailPositions.set(position.id, trailPosition);
     
-    // シンボル別価格監視開始
-    await this.startPriceMonitoring(position.symbol);
-    
-    console.log(`✅ Trail monitoring started for ${position.positionId} with trail width: ${trailWidth}`);
-  }
-
-  /**
-   * シンボル別価格監視開始
-   */
-  private async startPriceMonitoring(symbol: string): Promise<void> {
-    if (this.priceSubscriptions.has(symbol)) {
-      return; // 既に監視中
-    }
-
-    // 実際の実装では価格配信システムとの統合が必要
-    // ここではサンプル実装
-    console.log(`📊 Starting price monitoring for symbol: ${symbol}`);
-    
-    // WebSocketやMT4からの価格配信を監視
-    // 実装は価格配信システムに依存
-    this.priceSubscriptions.set(symbol, true);
-  }
-
-  /**
-   * 価格更新処理
-   * 外部から呼び出される価格更新ハンドラー
-   */
-  async handlePriceUpdate(priceUpdate: PriceUpdate): Promise<void> {
-    if (!this.isRunning) return;
-
-    // 該当シンボルのトレール設定を取得
-    const relevantTrails = Array.from(this.monitoredPositions.values())
-      .filter(config => config.symbol === priceUpdate.symbol && config.isActive);
-
-    for (const config of relevantTrails) {
-      await this.evaluateTrailCondition(config, priceUpdate);
-    }
-  }
-
-  /**
-   * トレール条件判定（設計書3-3準拠）
-   * 価格変動に基づくトレール実行判定
-   */
-  private async evaluateTrailCondition(
-    config: TrailConfig,
-    priceUpdate: PriceUpdate
-  ): Promise<void> {
-    const currentPrice = config.direction === 'BUY' ? priceUpdate.bid : priceUpdate.ask;
-    
-    try {
-      // 1. 最良価格更新判定
-      const isProfitable = this.isProfitableMove(config, currentPrice);
-      
-      if (isProfitable) {
-        config.bestPrice = currentPrice;
-        console.log(`📈 Best price updated for ${config.positionId}: ${currentPrice}`);
-      }
-
-      // 2. トレール条件判定
-      const shouldTriggerTrail = this.shouldTriggerTrail(config, currentPrice);
-      
-      if (shouldTriggerTrail) {
-        console.log(`🚨 Trail condition triggered for position: ${config.positionId}`);
-        await this.executeTrail(config, currentPrice);
-      }
-
-      // 3. 価格情報更新
-      config.lastPrice = currentPrice;
-
-    } catch (error) {
-      console.error(`Trail evaluation error for ${config.positionId}:`, error);
-    }
-  }
-
-  /**
-   * 利益方向の価格変動判定
-   */
-  private isProfitableMove(config: TrailConfig, currentPrice: number): boolean {
-    if (config.direction === 'BUY') {
-      return currentPrice > config.bestPrice;
-    } else {
-      return currentPrice < config.bestPrice;
-    }
-  }
-
-  /**
-   * トレール実行判定
-   */
-  private shouldTriggerTrail(config: TrailConfig, currentPrice: number): boolean {
-    const priceMove = Math.abs(currentPrice - config.bestPrice);
-    const trailThreshold = config.trailWidth * this.getPipValue(config.symbol);
-    
-    // 不利な方向への価格変動がトレール幅を超えた場合
-    if (config.direction === 'BUY') {
-      return (config.bestPrice - currentPrice) >= trailThreshold;
-    } else {
-      return (currentPrice - config.bestPrice) >= trailThreshold;
-    }
-  }
-
-  /**
-   * pips値取得（シンボル別）
-   */
-  private getPipValue(symbol: string): number {
-    // JPY通貨ペアは0.01、その他は0.0001
-    if (symbol.includes('JPY')) {
-      return 0.01;
-    }
-    return 0.0001;
-  }
-
-  /**
-   * トレール実行
-   */
-  private async executeTrail(config: TrailConfig, triggerPrice: number): Promise<void> {
-    try {
-      // 1. トレール設定を非アクティブ化
-      config.isActive = false;
-      this.stats.activeTrails--;
-
-      // 2. トレール用Action作成
-      await this.createTrailAction(config.positionId, triggerPrice);
-
-      // 3. ポジション状態更新
-      await this.updatePositionStatus(config.positionId, PositionStatus.CLOSING);
-
-      this.stats.totalTrailsExecuted++;
-      console.log(`✅ Trail executed for position: ${config.positionId} at price: ${triggerPrice}`);
-
-    } catch (error) {
-      console.error(`Failed to execute trail for ${config.positionId}:`, error);
-      // エラー時はトレール設定を再アクティブ化
-      config.isActive = true;
-      this.stats.activeTrails++;
-      throw error;
-    }
-  }
-
-  /**
-   * ロスカット対応（設計書3-3準拠）
-   * MT4からのロスカット通知に対する対応
-   */
-  async handleLossCut(positionId: string, lossCutPrice: number): Promise<void> {
-    console.log(`💥 Handling loss cut for position: ${positionId} at price: ${lossCutPrice}`);
-    
-    try {
-      // 1. ポジション情報取得
-      const position = await this.getPosition(positionId);
-      if (!position) {
-        console.error(`Position not found: ${positionId}`);
-        return;
-      }
-
-      // 2. ポジション状態をSTOPPEDに更新
-      await this.updatePositionStatus(positionId, PositionStatus.STOPPED);
-
-      // 3. トレール設定確認
-      if (position.trailWidth && position.trailWidth > 0) {
-        console.log(`🎯 Creating trail action for loss cut position: ${positionId}`);
-        
-        // 4. トレール実行用Action作成
-        await this.createTrailAction(positionId, lossCutPrice);
-      }
-
-      // 5. 監視中のトレール設定削除
-      if (this.monitoredPositions.has(positionId)) {
-        this.monitoredPositions.delete(positionId);
-        this.stats.activeTrails--;
-      }
-
-      this.stats.totalLossCutsHandled++;
-      console.log(`✅ Loss cut handled for position: ${positionId}`);
-
-    } catch (error) {
-      console.error(`Failed to handle loss cut for ${positionId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * トレール用Action作成
-   */
-  private async createTrailAction(positionId: string, triggerPrice: number): Promise<void> {
-    const actionInput = {
-      strategyId: '', // トレールActionは戦略外実行
-      type: 'TRAIL',
-      positionId,
-      params: {
-        triggerPrice,
-        triggerType: 'TRAIL',
-        reason: 'trail_execution',
-        comment: `Trail execution at ${triggerPrice}`
-      }
-    };
-
-    await this.amplifyClient.client.graphql({
-      query: CREATE_TRAIL_ACTION,
-      variables: { input: actionInput }
+    // 価格監視開始
+    this.priceMonitor.subscribe(position.symbol.toString(), (price) => {
+      this.checkTrailCondition(position.id, price);
     });
-  }
-
-  /**
-   * ポジション取得
-   */
-  private async getPosition(positionId: string): Promise<Position | null> {
-    return await this.amplifyClient.getPosition(positionId);
-  }
-
-  /**
-   * ポジション状態更新
-   */
-  private async updatePositionStatus(
-    positionId: string, 
-    status: PositionStatus
-  ): Promise<void> {
-    await this.amplifyClient.client.graphql({
-      query: UPDATE_POSITION_STATUS,
-      variables: { positionId, status }
-    });
-  }
-
-  /**
-   * ポジション方向取得
-   */
-  private getPositionDirection(position: Position): 'BUY' | 'SELL' {
-    // 実際の実装ではPositionの詳細情報から方向を取得
-    // 暫定的にvolumeの符号で判定
-    return position.volume > 0 ? 'BUY' : 'SELL';
+    
+    console.log(`Trail monitoring added for position ${position.id} (width: ${position.trailWidth})`);
   }
 
   /**
    * トレール監視停止
    */
-  async stopTrailMonitoring(positionId: string): Promise<void> {
-    const config = this.monitoredPositions.get(positionId);
-    if (config) {
-      config.isActive = false;
-      this.monitoredPositions.delete(positionId);
-      this.stats.activeTrails--;
-      console.log(`⏹️ Trail monitoring stopped for position: ${positionId}`);
+  stopTrailMonitoring(positionId: string): void {
+    const trailPos = this.trailPositions.get(positionId);
+    if (trailPos) {
+      this.trailPositions.delete(positionId);
+      console.log(`Trail monitoring stopped for position ${positionId}`);
     }
+  }
+
+  /**
+   * 全監視対象ポジションのトレール監視開始
+   */
+  async startAllTrailMonitoring(): Promise<void> {
+    try {
+      const trailPositions = await this.getTrailPositions();
+      console.log(`Starting trail monitoring for ${trailPositions.length} positions`);
+      
+      for (const position of trailPositions) {
+        this.addTrailPosition(position);
+      }
+    } catch (error) {
+      console.error('Failed to start all trail monitoring:', error);
+    }
+  }
+
+  /**
+   * トレール条件判定（各ポジション独立）
+   */
+  private checkTrailCondition(positionId: string, currentPrice: number): void {
+    const trailPos = this.trailPositions.get(positionId);
+    if (!trailPos || !trailPos.isActive) return;
+
+    // 高値更新確認
+    if (currentPrice > trailPos.highWaterMark) {
+      trailPos.highWaterMark = currentPrice;
+    }
+
+    // トレール条件判定
+    const dropFromHigh = trailPos.highWaterMark - currentPrice;
+    if (dropFromHigh >= trailPos.trailWidth) {
+      // トレール発動！
+      this.triggerTrailActions(trailPos);
+    }
+
+    trailPos.lastPrice = currentPrice;
+  }
+
+
+  /**
+   * pipsを価格差に変換
+   */
+  private convertPipsToPrice(symbol: string, pips: number): number {
+    switch (symbol) {
+      case 'USDJPY':
+        return pips * 0.01;  // JPY銘柄
+      case 'EURUSD':
+      case 'EURGBP':
+        return pips * 0.0001; // 通常銘柄
+      case 'XAUUSD':
+        return pips * 0.1;    // ゴールド
+      default:
+        return pips * 0.0001; // デフォルト
+    }
+  }
+
+  /**
+   * トレール発動時のAction実行
+   */
+  private async triggerTrailActions(trailPos: TrailPosition): Promise<void> {
+    try {
+      // 監視停止
+      trailPos.isActive = false;
+
+      // 各triggerActionIdを実行状態に変更
+      for (const actionId of trailPos.triggerActionIds) {
+        await this.actionManager.triggerAction(actionId);
+      }
+
+      // 監視リストから削除
+      this.trailPositions.delete(trailPos.positionId);
+      
+      console.log(`Trail actions triggered for position ${trailPos.positionId}`);
+      
+    } catch (error) {
+      console.error('Trail trigger failed:', error);
+      // エラー時も監視停止
+      trailPos.isActive = false;
+    }
+  }
+
+  /**
+   * 即時実行（trailWidth = 0）
+   */
+  async checkImmediateExecution(position: Position): Promise<void> {
+    if (position.trailWidth === 0 && position.triggerActionIds) {
+      // 即座にトリガー
+      const actionIds = JSON.parse(position.triggerActionIds);
+      for (const actionId of actionIds) {
+        await this.actionManager.triggerAction(actionId);
+      }
+      console.log(`Immediate execution triggered for position ${position.id}`);
+    }
+  }
+
+  /**
+   * ロスカット時のアクション実行
+   */
+  async triggerStopOutActions(positionId: string): Promise<void> {
+    try {
+      // ポジション取得
+      const position = await this.getPosition(positionId);
+      if (!position) {
+        console.log(`Position ${positionId} not found for stop out`);
+        return;
+      }
+
+      // トレールアクションと同じロジックで実行
+      await this.triggerTrailActions(position);
+      
+    } catch (error) {
+      console.error(`Failed to trigger stop out actions for ${positionId}:`, error);
+    }
+  }
+
+
+  /**
+   * ポジション情報取得
+   */
+  private async getPosition(positionId: string): Promise<Position | null> {
+    try {
+      // PositionServiceを使用してポジション取得
+      const result = await PositionService.listOpen();
+      const positions = result.data.listPositions.items;
+      return positions.find((p: Position) => p.id === positionId) || null;
+    } catch (error) {
+      console.error(`Failed to get position ${positionId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * トレール対象ポジション取得
+   */
+  private async getTrailPositions(): Promise<Position[]> {
+    try {
+      // PositionServiceを使用してトレール対象ポジション取得
+      const result = await PositionService.listTrailPositions();
+      return result.data.listPositions.items;
+    } catch (error) {
+      console.error('Failed to get trail positions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * TrailEngineエンジン開始
+   */
+  async start(): Promise<void> {
+    console.log('🚀 Trail Engine started');
+  }
+
+  /**
+   * 価格更新イベント処理（HedgeSystemCore用）
+   */
+  async handlePriceUpdate(priceUpdate: any): Promise<void> {
+    this.updatePrice(priceUpdate.symbol, priceUpdate.price);
+  }
+
+  /**
+   * ロスカット処理（HedgeSystemCore用）
+   */
+  async handleLossCut(positionId: string, lossCutPrice: number): Promise<void> {
+    await this.triggerStopOutActions(positionId);
+  }
+
+  /**
+   * 価格更新イベント処理
+   */
+  updatePrice(symbol: string, price: number): void {
+    // PriceMonitor経由で価格更新を処理
+    // 実際の処理はcheckTrailConditionで行われる
+    console.log(`Price updated for ${symbol}: ${price}`);
+  }
+
+  /**
+   * 統計情報取得（HedgeSystemCore用）
+   */
+  getStats() {
+    return this.getTrailStats();
   }
 
   /**
    * 全トレール監視停止
    */
-  async stopAllTrailMonitoring(): Promise<void> {
-    console.log('🛑 Stopping all trail monitoring...');
-    
-    for (const [positionId] of this.monitoredPositions) {
-      await this.stopTrailMonitoring(positionId);
-    }
-    
-    // 価格監視停止
-    this.priceSubscriptions.clear();
-    this.isRunning = false;
-    
-    console.log('✅ All trail monitoring stopped');
+  stopAllTrailMonitoring(): void {
+    this.trailPositions.clear();
+    console.log('All trail monitoring stopped');
   }
 
   /**
-   * トレールエンジン開始
+   * 監視中ポジション一覧取得
    */
-  async start(): Promise<void> {
-    this.isRunning = true;
-    console.log('🚀 Trail Engine started');
+  getMonitoringPositions(): string[] {
+    return Array.from(this.trailPositions.keys());
   }
 
   /**
-   * 統計情報取得
+   * トレール統計取得
    */
-  getStats() {
+  getTrailStats(): {
+    monitoringCount: number;
+    activePositions: string[];
+  } {
     return {
-      ...this.stats,
-      isRunning: this.isRunning,
-      monitoredPositions: this.monitoredPositions.size,
-      priceSubscriptions: this.priceSubscriptions.size
+      monitoringCount: this.trailPositions.size,
+      activePositions: Array.from(this.trailPositions.keys())
     };
   }
-
-  /**
-   * アクティブなトレール一覧取得
-   */
-  getActiveTrails(): TrailConfig[] {
-    return Array.from(this.monitoredPositions.values())
-      .filter(config => config.isActive);
-  }
 }
+
+// シングルトンインスタンス
+export const trailEngine = new TrailEngine();

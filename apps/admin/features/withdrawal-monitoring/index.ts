@@ -1,1 +1,0 @@
-// Withdrawal Monitoring Feature\n// 出金監視機能のメインエクスポート\n\nexport { WithdrawalDashboard } from './components/WithdrawalDashboard';\nexport { useWithdrawalData, useWithdrawalStats } from './hooks/useWithdrawalData';\n\n// Types re-export\nexport type {\n  WithdrawalDashboardData,\n  WithdrawalScore,\n  WithdrawalRisk,\n  ManualTradeRecommendation\n} from '@repo/shared-types';"

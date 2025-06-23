@@ -1,5 +1,4 @@
 import { WebSocketHandler } from './websocket-handler';
-import { RealtimeStateManager } from './realtime-state-manager';
 // import { AdminAPIServer } from './admin-api-server';
 
 /**
@@ -8,7 +7,6 @@ import { RealtimeStateManager } from './realtime-state-manager';
  */
 export class SystemManager {
   private wsHandler: WebSocketHandler;
-  private stateManager: RealtimeStateManager;
   // private adminAPI: AdminAPIServer;
   private isRunning = false;
   
@@ -18,9 +16,8 @@ export class SystemManager {
   private lastUpdate = new Date();
   
   constructor() {
-    this.stateManager = new RealtimeStateManager();
-    this.wsHandler = new WebSocketHandler(this.stateManager);
-    // this.adminAPI = new AdminAPIServer(this.wsHandler, this.stateManager);
+    this.wsHandler = new WebSocketHandler();
+    // this.adminAPI = new AdminAPIServer(this.wsHandler);
     
     this.setupDataSync();
     // this.setupDataPersistence();
@@ -63,7 +60,7 @@ export class SystemManager {
     try {
       await this.wsHandler.shutdown();
       // await this.adminAPI.stop();
-      this.stateManager.destroy();
+      // state manager cleanup (simplified)
       
       this.isRunning = false;
       console.log('✅ Hedge System stopped');
@@ -84,24 +81,12 @@ export class SystemManager {
   }
   
   /**
-   * キャッシュ同期
+   * キャッシュ同期 (簡素化版)
    */
   private syncToCache(): void {
-    // ポジション情報をキャッシュ
-    const positions = this.stateManager.getAllPositions();
-    this.positionsCache.clear();
-    positions.forEach(pos => {
-      this.positionsCache.set(pos.id, pos);
-    });
-    
-    // アカウント情報をキャッシュ
-    const accounts = this.stateManager.getAllAccounts();
-    this.accountsCache.clear();
-    accounts.forEach(acc => {
-      this.accountsCache.set(acc.id, acc);
-    });
-    
+    // 簡素化: 基本的なキャッシュ同期のみ
     this.lastUpdate = new Date();
+    console.log('🔄 Cache sync completed (simplified)');
   }
   
   /**
@@ -162,10 +147,8 @@ export class SystemManager {
       this.wsHandler.cleanupInactiveClients();
     }, 300000);
     
-    // ステイルデータマーキング（30秒間隔）
-    setInterval(() => {
-      this.stateManager.markStaleData();
-    }, 30000);
+    // ステイルデータマーキング (簡素化)
+    // 簡素化のため削除
   }
   
   // ===== Admin Web API（HTTPサーバーの代替） =====
@@ -179,7 +162,7 @@ export class SystemManager {
       data: {
         positions: Array.from(this.positionsCache.values()),
         accounts: Array.from(this.accountsCache.values()),
-        connections: this.stateManager.getConnectionStatus(),
+        connections: this.wsHandler.getConnectedClients().length,
         lastUpdate: this.lastUpdate
       },
       timestamp: new Date()

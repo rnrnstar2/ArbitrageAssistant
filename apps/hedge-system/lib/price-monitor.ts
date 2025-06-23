@@ -305,4 +305,25 @@ export class PriceMonitor {
   clearAlerts(): void {
     this.alerts = [];
   }
+  
+  /**
+   * 全ての購読を解除
+   */
+  clearAllSubscriptions(): void {
+    this.subscribers.clear();
+    console.log('All price subscriptions cleared');
+  }
+  
+  /**
+   * 購読者の統計情報取得
+   */
+  getSubscriptionStats(): { symbol: string; subscriberCount: number }[] {
+    return Array.from(this.subscribers.entries()).map(([symbol, callbacks]) => ({
+      symbol,
+      subscriberCount: callbacks.length
+    }));
+  }
 }
+
+// シングルトンインスタンス
+export const priceMonitor = new PriceMonitor();

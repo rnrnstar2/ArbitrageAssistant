@@ -1,7 +1,5 @@
-export { SystemHeader } from './SystemHeader';
-export { SystemSummaryCard } from './SystemSummaryCard';
-export { EAConnectionList } from './EAConnectionList';
-export { QuickActionPanel } from './QuickActionPanel';
-export { SettingsModal } from './SettingsModal';
-export { SystemFooter } from './SystemFooter';
-export { ControlBar } from './ControlBar';
+// MVPシステム設計の4つのコア表示コンポーネントのみ
+export { SystemStatus } from './SystemStatus';
+export { ConnectionManager } from './ConnectionManager';
+export { TrailMonitor } from './TrailMonitor';
+export { ActionQueue } from './ActionQueue';

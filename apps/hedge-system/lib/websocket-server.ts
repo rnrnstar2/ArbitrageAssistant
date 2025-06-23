@@ -6,10 +6,8 @@ import {
   WSMessageType,
   WSPingMessage,
   WSPongMessage 
-} from '@repo/shared-types';
+} from './types';
 import { EAConnectionManager, EAConnection } from './ea-connection-manager';
-import { MessageProcessor } from './message-processor';
-import { WSErrorHandler } from './ws-error-handler';
 
 export interface WSServerConfig {
   port: number;
@@ -36,7 +34,6 @@ export interface WSServerStats {
 export class HedgeWebSocketServer {
   private wss?: WebSocketServer;
   private connectionManager: EAConnectionManager;
-  private messageProcessor: MessageProcessor;
   private isRunning = false;
   private startTime?: Date;
   private heartbeatTimer?: NodeJS.Timeout;
@@ -49,11 +46,9 @@ export class HedgeWebSocketServer {
   };
 
   constructor(
-    private config: WSServerConfig,
-    messageProcessor?: MessageProcessor
+    private config: WSServerConfig
   ) {
     this.connectionManager = new EAConnectionManager(config);
-    this.messageProcessor = messageProcessor || new MessageProcessor();
   }
 
   /**
@@ -77,15 +72,12 @@ export class HedgeWebSocketServer {
       this.isRunning = true;
       this.startTime = new Date();
       
-      WSErrorHandler.logEvent('SERVER_STARTED', { 
-        port: this.config.port, 
-        host: this.config.host 
-      });
+      console.log(`🚀 Hedge WebSocket Server started on ${this.config.host}:${this.config.port}`);
 
       console.log(`🚀 Hedge WebSocket Server started on ${this.config.host}:${this.config.port}`);
       
     } catch (error) {
-      WSErrorHandler.handleConnectionError(error as Error, 'SERVER_START');
+      console.error('❌ Failed to start WebSocket server:', error);
       throw error;
     }
   }
@@ -109,11 +101,11 @@ export class HedgeWebSocketServer {
 
       this.isRunning = false;
       
-      WSErrorHandler.logEvent('SERVER_STOPPED', {});
+      console.log('🛑 Hedge WebSocket Server stopped');
       console.log('🛑 Hedge WebSocket Server stopped');
 
     } catch (error) {
-      WSErrorHandler.handleConnectionError(error as Error, 'SERVER_STOP');
+      console.error('❌ Error stopping WebSocket server:', error);
       throw error;
     }
   }
@@ -126,17 +118,14 @@ export class HedgeWebSocketServer {
 
     this.wss.on('connection', this.handleConnection.bind(this));
     this.wss.on('error', (error) => {
-      WSErrorHandler.handleConnectionError(error, 'WSS_ERROR');
+      console.error('❌ WebSocket server error:', error);
     });
     
     // 接続数制限チェック
     this.wss.on('connection', (ws, request) => {
       if (this.connectionManager.getConnectionCount() >= this.config.maxConnections) {
         ws.close(1013, 'Server overloaded');
-        WSErrorHandler.logEvent('CONNECTION_REJECTED', { 
-          reason: 'max_connections_exceeded',
-          maxConnections: this.config.maxConnections 
-        });
+        console.warn(`🚫 Connection rejected: max connections exceeded (${this.config.maxConnections})`);
       }
     });
   }
@@ -153,7 +142,7 @@ export class HedgeWebSocketServer {
       const authToken = this.extractAuthToken(request);
       if (!authToken || !await this.validateAuthToken(authToken)) {
         ws.close(4001, 'Authentication failed');
-        WSErrorHandler.logEvent('AUTH_FAILED', { connectionId, clientIP });
+        console.warn(`🚫 Authentication failed for ${connectionId} from ${clientIP}`);
         return;
       }
 
@@ -192,10 +181,8 @@ export class HedgeWebSocketServer {
       ws.on('error', (error) => this.handleConnectionError(error, connectionId));
       ws.on('pong', () => this.handlePong(connectionId));
 
-      WSErrorHandler.logEvent('CONNECTION_ESTABLISHED', { 
-        connectionId, 
-        accountId,
-        sessionId,
+      console.log(`🔗 EA connected: ${accountId} (${sessionId})`, {
+        connectionId,
         clientIP,
         totalConnections: this.connectionManager.getConnectionCount()
       });
@@ -203,7 +190,7 @@ export class HedgeWebSocketServer {
       console.log(`🔗 EA connected: ${accountId} (${sessionId})`);
 
     } catch (error) {
-      WSErrorHandler.handleConnectionError(error as Error, connectionId);
+      console.error(`❌ Connection error for ${connectionId}:`, error);
       ws.close(1011, 'Unexpected error');
     }
   }
@@ -275,17 +262,12 @@ export class HedgeWebSocketServer {
       // heartbeat更新
       this.connectionManager.updateHeartbeat(connectionId);
 
-      // メッセージ処理
-      await this.messageProcessor.processIncomingMessage(connectionId, message);
-
-      WSErrorHandler.logEvent('MESSAGE_PROCESSED', { 
-        connectionId, 
-        messageType: message.type 
-      });
+      // メッセージ処理 (簡素化版)
+      console.log(`💬 Message received from ${connectionId}: ${message.type}`);
 
     } catch (error) {
       this.stats.errors++;
-      WSErrorHandler.handleMessageError(error as Error, { connectionId, data });
+      console.error(`❌ Message processing error for ${connectionId}:`, error);
       
       // エラー応答送信
       await this.sendError(connectionId, 'Message processing failed');
@@ -305,13 +287,11 @@ export class HedgeWebSocketServer {
         status: 'OFFLINE',
         lastUpdated: new Date()
       }).catch(error => {
-        WSErrorHandler.logEvent('ACCOUNT_STATUS_UPDATE_FAILED', { accountId, error });
+        console.error(`❌ Failed to update account status for ${accountId}:`, error);
       });
     }
     
-    WSErrorHandler.logEvent('CONNECTION_CLOSED', { 
-      connectionId,
-      accountId,
+    console.log(`🔌 Connection closed: ${connectionId} (${accountId})`, {
       remainingConnections: this.connectionManager.getConnectionCount()
     });
   }
@@ -321,7 +301,7 @@ export class HedgeWebSocketServer {
    */
   private handleConnectionError(error: Error, connectionId: string): void {
     this.stats.errors++;
-    WSErrorHandler.handleConnectionError(error, connectionId);
+    console.error(`❌ Connection error for ${connectionId}:`, error);
     this.connectionManager.removeConnection(connectionId);
   }
 
@@ -347,16 +327,13 @@ export class HedgeWebSocketServer {
       
       this.stats.totalMessagesSent++;
       
-      WSErrorHandler.logEvent('COMMAND_SENT', { 
-        connectionId, 
-        commandType: command.type 
-      });
+      console.log(`🗣️ Command sent to ${connectionId}: ${command.type}`);
 
       return true;
 
     } catch (error) {
       this.stats.errors++;
-      WSErrorHandler.handleMessageError(error as Error, { connectionId, command });
+      console.error(`❌ Command send error for ${connectionId}:`, error);
       return false;
     }
   }
@@ -374,15 +351,12 @@ export class HedgeWebSocketServer {
         connection.ws.send(messageStr);
         sentCount++;
       } catch (error) {
-        WSErrorHandler.handleConnectionError(error as Error, connection.connectionId);
+        console.error(`❌ Broadcast error for ${connection.connectionId}:`, error);
       }
     });
 
     this.stats.totalMessagesSent += sentCount;
-    WSErrorHandler.logEvent('MESSAGE_BROADCAST', { 
-      messageType: message.type, 
-      sentTo: sentCount 
-    });
+    console.log(`📡 Broadcast ${message.type} to ${sentCount} connections`);
   }
 
   /**
@@ -433,7 +407,7 @@ export class HedgeWebSocketServer {
         connection.ws.ping();
         this.sendCommand(connection.connectionId, pingMessage);
       } catch (error) {
-        WSErrorHandler.handleConnectionError(error as Error, connection.connectionId);
+        console.error(`❌ Broadcast error for ${connection.connectionId}:`, error);
       }
     });
   }

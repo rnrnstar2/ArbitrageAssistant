@@ -1,8 +1,4 @@
-import { RealtimeStateManager } from './realtime-state-manager';
 import { HedgeWebSocketServer, WSServerConfig } from './websocket-server';
-import { MessageProcessor, MessageProcessorDependencies } from './message-processor';
-import { loadConfig } from './websocket-config';
-import { WSErrorHandler } from './ws-error-handler';
 import { 
   WSMessage, 
   WSEvent, 
@@ -16,19 +12,22 @@ import {
   WSPongMessage,
   WSOpenCommand,
   WSCloseCommand,
-  WSModifyStopCommand 
-} from '@repo/shared-types';
-import type { RealtimePosition, RealtimeAccount } from '@repo/shared-types';
+  WSModifyStopCommand,
+  RealtimePosition, 
+  RealtimeAccount
+} from './types';
+import { ActionManager } from './action-manager';
+import { PositionService } from './position-service';
+import { amplifyClient } from './amplify-client';
 
 /**
  * 統合WebSocketハンドラー
  * 新しいWebSocketサーバーと既存のRealtimeStateManagerを統合
  */
 export class WebSocketHandler {
-  private stateManager: RealtimeStateManager;
   private wsServer?: HedgeWebSocketServer;
-  private messageProcessor: MessageProcessor;
   private isInitialized = false;
+  private actionManager: ActionManager;
   
   // 統計
   private messageStats = {
@@ -38,16 +37,8 @@ export class WebSocketHandler {
     lastMessage: new Date()
   };
   
-  constructor(stateManager: RealtimeStateManager) {
-    this.stateManager = stateManager;
-    
-    // MessageProcessorに依存関係を注入
-    const dependencies: MessageProcessorDependencies = {
-      positionManager: this.createPositionManager(),
-      // strategyEngine と awsAmplifyClient は必要に応じて後で注入
-    };
-    
-    this.messageProcessor = new MessageProcessor(dependencies);
+  constructor(actionManager?: ActionManager) {
+    this.actionManager = actionManager || new ActionManager(this);
   }
   
   /**
@@ -103,22 +94,39 @@ export class WebSocketHandler {
   }
 
   /**
-   * ロスカット処理（設計書3-3準拠）
+   * ロスカット処理（設計書3-3準拠 + TrailEngine連携）
    */
   private async handleStoppedEvent(event: WSStoppedEvent): Promise<void> {
-    // 1. Position状態更新
-    await this.updatePosition(event.positionId, {
-      status: 'STOPPED',
-      exitPrice: event.price,
-      exitTime: new Date(event.time),
-      exitReason: event.reason
-    });
+    try {
+      // 1. Position状態更新
+      await amplifyClient.models.Position.update({
+        id: event.positionId,
+        status: 'STOPPED',
+        exitPrice: event.price,
+        exitTime: new Date(event.time).toISOString()
+      });
 
-    // 2. トレール設定確認
-    const position = await this.getPosition(event.positionId);
-    if (position && position.trailWidth && position.trailWidth > 0) {
-      // 3. トレール実行Action作成
-      await this.createTrailAction(position, event.price);
+      // 2. ポジション情報取得
+      const position = await this.getPositionFromAmplify(event.positionId);
+      if (!position) {
+        console.warn(`Position not found for stop-out: ${event.positionId}`);
+        return;
+      }
+
+      // 3. トレール設定があればアクション実行
+      if (position.triggerActionIds) {
+        console.log(`Stop-out triggered for position ${event.positionId}, executing trail actions`);
+        
+        const actionIds = JSON.parse(position.triggerActionIds);
+        for (const actionId of actionIds) {
+          await this.actionManager.triggerAction(actionId);
+        }
+        
+        console.log(`${actionIds.length} trail actions triggered for stop-out position ${event.positionId}`);
+      }
+      
+    } catch (error) {
+      console.error(`Failed to handle stop-out event for position ${event.positionId}:`, error);
     }
   }
 
@@ -141,11 +149,18 @@ export class WebSocketHandler {
   }
 
   /**
-   * Position更新
+   * Position更新（Amplify経由）
    */
   private async updatePosition(positionId: string, updates: any): Promise<void> {
-    // 実装: Position更新ロジック
-    console.log(`📊 Position updated: ${positionId}`, updates);
+    try {
+      await amplifyClient.models.Position.update({
+        id: positionId,
+        ...updates
+      });
+      console.log(`📊 Position updated: ${positionId}`, updates);
+    } catch (error) {
+      console.error(`Failed to update position ${positionId}:`, error);
+    }
   }
 
   /**
@@ -157,11 +172,24 @@ export class WebSocketHandler {
   }
 
   /**
-   * Position取得
+   * Position取得（Amplify経由）
+   */
+  private async getPositionFromAmplify(positionId: string): Promise<any> {
+    try {
+      const result = await PositionService.listOpen();
+      const positions = result.data.listPositions.items;
+      return positions.find((p: any) => p.id === positionId) || null;
+    } catch (error) {
+      console.error(`Failed to get position ${positionId}:`, error);
+      return null;
+    }
+  }
+  
+  /**
+   * Position取得（レガシー互換）
    */
   private async getPosition(positionId: string): Promise<any> {
-    // 実装: Position取得ロジック
-    return null; // 実装待ち
+    return this.getPositionFromAmplify(positionId);
   }
 
   /**
@@ -177,18 +205,16 @@ export class WebSocketHandler {
    */
   async initializeServer(port: number = 8080): Promise<void> {
     try {
-      const config = loadConfig();
-      
       const wsConfig: WSServerConfig = {
         port,
-        host: config.websocket.host,
-        authToken: config.websocket.authToken,
-        maxConnections: config.websocket.maxConnections,
-        heartbeatInterval: config.websocket.heartbeatInterval,
-        connectionTimeout: config.websocket.connectionTimeout
+        host: 'localhost',
+        authToken: 'default-token',
+        maxConnections: 10,
+        heartbeatInterval: 30000,
+        connectionTimeout: 60000
       };
 
-      this.wsServer = new HedgeWebSocketServer(wsConfig, this.messageProcessor);
+      this.wsServer = new HedgeWebSocketServer(wsConfig);
       
       // カスタムメッセージ処理ハンドラーを設定
       this.setupMessageProcessorCallbacks();
@@ -196,28 +222,21 @@ export class WebSocketHandler {
       await this.wsServer.start();
       this.isInitialized = true;
       
-      WSErrorHandler.logEvent('WEBSOCKET_HANDLER_INITIALIZED', { port });
+      console.log(`🚀 WebSocket handler initialized on port ${port}`);
       console.log(`🚀 WebSocket server started on port ${port}`);
       
     } catch (error) {
-      WSErrorHandler.handleCriticalError(error as Error, {
-        action: 'websocket_handler_initialize',
-        port
-      });
+      console.error(`❌ Failed to initialize WebSocket handler on port ${port}:`, error);
       throw error;
     }
   }
 
   /**
-   * MessageProcessorにカスタムコールバックを設定
+   * コールバック設定 (簡素化版)
    */
   private setupMessageProcessorCallbacks(): void {
-    // MessageProcessorの依存関係を更新
-    this.messageProcessor.updateDependencies({
-      positionManager: this.createPositionManager(),
-      strategyEngine: this.createStrategyEngine(),
-      // awsAmplifyClient: クライアント実装時に追加
-    });
+    // 簡素化: コールバックは最小限に
+    console.log('🔧 Message processor callbacks setup (simplified)');
   }
 
   /**
@@ -226,33 +245,21 @@ export class WebSocketHandler {
   private createPositionManager() {
     return {
       updatePositionOpened: async (positionId: string, orderId: number, price: number, time: string) => {
-        // RealtimeStateManagerと連携したポジション更新
-        const position: Omit<RealtimePosition, 'lastUpdate' | 'isStale'> = {
-          id: positionId,
-          accountId: this.extractAccountFromPositionId(positionId),
-          symbol: this.extractSymbolFromPositionId(positionId),
-          type: 'buy', // EA からのデータで判定
-          volume: 1.0, // EA からのデータで取得
-          openPrice: price,
-          currentPrice: price,
-          profit: 0,
-          openTime: new Date(time)
-        };
-        
-        this.stateManager.updatePositionFromWebSocket(position);
+        // ポジション更新 (簡素化版)
+        console.log(`📊 Position opened (simplified): ${positionId} @ ${price}`);
         console.log(`📊 Position opened: ${positionId} @ ${price}`);
       },
 
       updatePositionClosed: async (positionId: string, price: number, profit: number, time: string) => {
         // ポジションクローズ処理
         console.log(`📊 Position closed: ${positionId} @ ${price}, profit: ${profit}`);
-        // 必要に応じてRealtimeStateManagerでポジションステータスを更新
+        // ポジションクローズ処理 (簡素化版)
       },
 
       updatePositionPrice: async (positionId: string, currentPrice: number) => {
         // 現在価格更新
         const accountId = this.extractAccountFromPositionId(positionId);
-        // RealtimeStateManagerで価格更新
+        // 価格更新 (簡素化版)
       },
 
       getPosition: async (positionId: string) => {
@@ -276,10 +283,8 @@ export class WebSocketHandler {
         // ポジションイベント処理
         console.log(`🎯 Position event: ${event}`, data);
         
-        // RealtimeStateManagerと連携
-        if (event === 'opened' || event === 'closed') {
-          this.updateMessageStats();
-        }
+        // イベント処理 (簡素化版)
+        this.updateMessageStats();
       }
     };
   }
@@ -302,8 +307,8 @@ export class WebSocketHandler {
         const wsEvent = this.convertLegacyMessage(message);
         
         if (wsEvent) {
-          // 新しいMessageProcessorで処理
-          this.messageProcessor.processIncomingMessage(clientId, wsEvent);
+          // 新フォーマットメッセージ処理 (簡素化版)
+          console.log(`💬 Processing new format message: ${wsEvent.type}`);
         } else {
           // 従来のメッセージ処理
           this.handleLegacyMessage(message, clientId);
@@ -315,7 +320,7 @@ export class WebSocketHandler {
     } catch (error) {
       console.error('❌ Failed to process WebSocket message:', error);
       this.messageStats.errors++;
-      WSErrorHandler.handleMessageError(error as Error, { clientId, rawMessage });
+      console.error(`❌ Message processing error for client ${clientId}:`, error);
     }
   }
 
@@ -381,9 +386,8 @@ export class WebSocketHandler {
    * ERROR イベント処理（設計書準拠）
    */
   private async handleErrorEvent(event: WSErrorEvent): Promise<void> {
-    // エラーハンドラーに委譲
-    await WSErrorHandler.handleError(event, {
-      positionId: event.positionId,
+    // エラー処理 (簡素化版)
+    console.error(`❌ WebSocket error for position ${event.positionId}:`, {
       message: event.message,
       errorCode: event.errorCode
     });
@@ -458,50 +462,28 @@ export class WebSocketHandler {
   private handlePositionUpdate(message: any): void {
     const { accountId, data } = message;
     
-    const position: Omit<RealtimePosition, 'lastUpdate' | 'isStale'> = {
-      id: data.id,
-      accountId,
-      symbol: data.symbol,
-      type: data.type,
-      volume: data.volume,
-      openPrice: data.openPrice,
-      currentPrice: data.currentPrice,
-      profit: data.profit,
-      openTime: new Date(data.openTime)
-    };
-    
-    this.stateManager.updatePositionFromWebSocket(position);
+    // ポジション更新 (簡素化版)
     console.log(`📊 Position update processed: ${data.symbol} (${accountId})`);
   }
   
   private handleAccountUpdate(message: any): void {
     const { accountId, data } = message;
     
-    const account: Omit<RealtimeAccount, 'lastUpdate' | 'positions'> = {
-      id: accountId,
-      balance: data.balance,
-      equity: data.equity,
-      margin: data.margin,
-      freeMargin: data.freeMargin,
-      marginLevel: data.marginLevel,
-      connectionStatus: 'connected'
-    };
-    
-    this.stateManager.updateAccountFromWebSocket(account);
+    // アカウント更新 (簡素化版)
     console.log(`💰 Account update processed: ${accountId}`);
   }
   
   private handleHeartbeat(message: any, clientId: string): void {
     const { accountId } = message;
     
-    this.stateManager.updateMT4Connection(accountId, 'connected');
+    // MT4接続状態更新 (簡素化版)
     console.log(`💓 Heartbeat received from ${accountId}`);
   }
   
   private handleConnectionStatus(message: any): void {
     const { accountId, data } = message;
     
-    this.stateManager.updateMT4Connection(accountId, data.status, data.endpoint);
+    // MT4接続状態更新 (簡素化版)
     console.log(`🔗 Connection status updated: ${accountId} - ${data.status}`);
   }
   
@@ -547,19 +529,24 @@ export class WebSocketHandler {
 
     switch (command.action) {
       case 'open':
-        wsCommand = this.messageProcessor.createOpenCommand({
+        wsCommand = {
+          type: 'OPEN' as any,
+          timestamp: new Date().toISOString(),
+          accountId,
           positionId: `${accountId}_${Date.now()}`,
           symbol: command.symbol,
           side: command.type === 'buy' ? 'BUY' : 'SELL',
-          volume: command.volume,
-          // 必要に応じてstopLoss, takeProfitを設定
-        });
+          volume: command.volume
+        } as WSCommand;
         break;
         
       case 'close':
-        wsCommand = this.messageProcessor.createCloseCommand({
+        wsCommand = {
+          type: 'CLOSE' as any,
+          timestamp: new Date().toISOString(),
+          accountId,
           positionId: accountId // 実際のポジションIDが必要
-        });
+        } as WSCommand;
         break;
         
       default:
@@ -661,6 +648,51 @@ export class WebSocketHandler {
   }
 
   /**
+   * OPEN命令送信（PositionManager用）
+   */
+  async sendOpenCommand(params: {
+    accountId: string;
+    positionId: string;
+    symbol: Symbol;
+    volume: number;
+    executionType: ExecutionType;
+  }): Promise<any> {
+    const command: WSOpenCommand = {
+      type: WSMessageType.OPEN,
+      timestamp: new Date().toISOString(),
+      accountId: params.accountId,
+      positionId: params.positionId,
+      symbol: params.symbol,
+      side: 'BUY', // executionTypeから決定
+      volume: params.volume,
+      metadata: {
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    await this.sendCommand(params.accountId, command);
+    return { success: true };
+  }
+
+  /**
+   * CLOSE命令送信（PositionManager用）
+   */
+  async sendCloseCommand(params: {
+    accountId: string;
+    positionId: string;
+  }): Promise<any> {
+    const command: WSCloseCommand = {
+      type: WSMessageType.CLOSE,
+      timestamp: new Date().toISOString(),
+      accountId: params.accountId,
+      positionId: params.positionId
+    };
+
+    await this.sendCommand(params.accountId, command);
+    return { success: true };
+  }
+
+  /**
    * 設定更新
    */
   async updateConfiguration(updates: Partial<WSServerConfig>): Promise<void> {
@@ -671,16 +703,20 @@ export class WebSocketHandler {
     // サーバーを再起動して新しい設定を適用
     await this.wsServer.stop();
     
-    const config = loadConfig();
     const newConfig: WSServerConfig = {
-      ...config.websocket,
+      port: 8080,
+      host: 'localhost',
+      authToken: 'default-token',
+      maxConnections: 10,
+      heartbeatInterval: 30000,
+      connectionTimeout: 60000,
       ...updates
     };
 
-    this.wsServer = new HedgeWebSocketServer(newConfig, this.messageProcessor);
+    this.wsServer = new HedgeWebSocketServer(newConfig);
     await this.wsServer.start();
     
-    WSErrorHandler.logEvent('WEBSOCKET_CONFIG_UPDATED', updates);
+    console.log('🔧 WebSocket configuration updated:', updates);
   }
 
   /**

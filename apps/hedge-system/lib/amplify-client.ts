@@ -1,363 +1,186 @@
 import { generateClient } from 'aws-amplify/api';
-import { Amplify } from 'aws-amplify';
-import { 
-  Position, 
-  Strategy, 
-  Action,
-  CreatePositionInput,
-  UpdatePositionInput,
-  CreateStrategyInput,
-  UpdateStrategyInput,
-  PositionStatus
-} from '@repo/shared-types';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { Position, PositionStatus, Action, ActionStatus } from './types';
 
-interface CreateActionInput {
-  strategyId: string;
-  type: string;
-  positionId?: string;
-  params: Record<string, any>;
-}
+export const amplifyClient = generateClient();
 
-interface UpdateActionInput {
-  actionId: string;
-  status?: string;
-  params?: Record<string, any>;
-}
+export const getCurrentUserId = async (): Promise<string> => {
+  try {
+    const user = await getCurrentUser();
+    return user.userId;
+  } catch (error) {
+    throw new Error('User not authenticated');
+  }
+};
 
-export class AmplifyGraphQLClient {
-  public client: any;
-  private connected: boolean = false;
+/**
+ * AmplifyClient - userIdベースの高速操作
+ * MVPシステム設計書に基づく実装
+ */
+export class AmplifyClient {
+  private client = amplifyClient;
+  private currentUserId?: string;
   
   constructor() {
-    this.client = generateClient();
+    this.initializeUserId();
   }
-  
-  async initialize(config: any): Promise<void> {
-    Amplify.configure(config);
-    this.connected = true;
+
+  /**
+   * userId初期化
+   */
+  private async initializeUserId(): Promise<void> {
+    try {
+      this.currentUserId = await getCurrentUserId();
+    } catch (error) {
+      console.error('Failed to initialize user ID:', error);
+    }
   }
-  
-  // Position operations
-  async createPosition(input: CreatePositionInput): Promise<Position> {
-    const mutation = /* GraphQL */ `
-      mutation CreatePosition($input: CreatePositionInput!) {
-        createPosition(input: $input) {
-          positionId
-          strategyId
-          status
-          symbol
-          volume
-          trailWidth
-          primary
-          owner
-          createdAt
-          updatedAt
-        }
+
+  /**
+   * 自分担当のポジション取得
+   */
+  async listMyPositions(status?: PositionStatus): Promise<Position[]> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+    
+    const filter: any = {
+      userId: { eq: this.currentUserId }
+    };
+    
+    if (status) {
+      filter.status = { eq: status };
+    }
+    
+    const result = await this.client.models.Position.list({
+      filter
+    });
+    
+    return result.data as Position[];
+  }
+
+  /**
+   * 自分担当のアクション取得
+   */
+  async listMyActions(status?: ActionStatus): Promise<Action[]> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+    
+    const filter: any = {
+      userId: { eq: this.currentUserId }
+    };
+    
+    if (status) {
+      filter.status = { eq: status };
+    }
+    
+    const result = await this.client.models.Action.list({
+      filter
+    });
+    
+    return result.data as Action[];
+  }
+
+  /**
+   * Position Subscription（userIdベース）
+   */
+  subscribeToMyPositions(callback: (position: Position) => void) {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+    
+    return this.client.models.Position.observeQuery({
+      filter: { userId: { eq: this.currentUserId } }
+    }).subscribe({
+      next: (data) => {
+        data.items.forEach(position => {
+          callback(position as Position);
+        });
+      },
+      error: (error) => {
+        console.error('Position subscription error:', error);
       }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
     });
-    
-    return result.data.createPosition;
   }
-  
-  async updatePosition(input: UpdatePositionInput): Promise<Position> {
-    const mutation = /* GraphQL */ `
-      mutation UpdatePosition($input: UpdatePositionInput!) {
-        updatePosition(input: $input) {
-          positionId
-          strategyId
-          status
-          symbol
-          volume
-          entryPrice
-          entryTime
-          exitPrice
-          exitTime
-          exitReason
-          stopLoss
-          takeProfit
-          trailWidth
-          primary
-          owner
-          updatedAt
-        }
+
+  /**
+   * Action Subscription（userIdベース）
+   */
+  subscribeToMyActions(callback: (action: Action) => void) {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+    
+    return this.client.models.Action.observeQuery({
+      filter: { userId: { eq: this.currentUserId } }
+    }).subscribe({
+      next: (data) => {
+        data.items.forEach(action => {
+          callback(action as Action);
+        });
+      },
+      error: (error) => {
+        console.error('Action subscription error:', error);
       }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
-    });
-    
-    return result.data.updatePosition;
-  }
-  
-  async getPosition(positionId: string): Promise<Position | null> {
-    const query = /* GraphQL */ `
-      query GetPosition($positionId: ID!) {
-        getPosition(positionId: $positionId) {
-          positionId
-          strategyId
-          status
-          symbol
-          volume
-          entryPrice
-          entryTime
-          exitPrice
-          exitTime
-          exitReason
-          stopLoss
-          takeProfit
-          trailWidth
-          primary
-          owner
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: query,
-      variables: { positionId }
-    });
-    
-    return result.data.getPosition;
-  }
-  
-  async listPositions(filter?: any): Promise<Position[]> {
-    const query = /* GraphQL */ `
-      query ListPositions($filter: ModelPositionFilterInput) {
-        listPositions(filter: $filter) {
-          items {
-            positionId
-            strategyId
-            status
-            symbol
-            volume
-            entryPrice
-            entryTime
-            exitPrice
-            exitTime
-            exitReason
-            stopLoss
-            takeProfit
-            trailWidth
-            primary
-            owner
-            createdAt
-            updatedAt
-          }
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: query,
-      variables: { filter }
-    });
-    
-    return result.data.listPositions.items;
-  }
-  
-  async listActivePositions(): Promise<Position[]> {
-    return this.listPositions({
-      status: { eq: PositionStatus.OPEN }
     });
   }
-  
-  async listPendingPositions(): Promise<Position[]> {
-    return this.listPositions({
-      status: { eq: PositionStatus.PENDING }
-    });
-  }
-  
-  // Strategy operations
-  async createStrategy(input: CreateStrategyInput): Promise<Strategy> {
-    const mutation = /* GraphQL */ `
-      mutation CreateStrategy($input: CreateStrategyInput!) {
-        createStrategy(input: $input) {
-          strategyId
-          name
-          trailWidth
-          symbol
-          maxRisk
-          owner
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
+
+  /**
+   * Position作成
+   */
+  async createPosition(input: any): Promise<Position> {
+    const result = await this.client.models.Position.create({
+      ...input,
+      userId: this.currentUserId
     });
     
-    return result.data.createStrategy;
+    return result.data as Position;
   }
-  
-  async getStrategy(strategyId: string): Promise<Strategy | null> {
-    const query = /* GraphQL */ `
-      query GetStrategy($strategyId: ID!) {
-        getStrategy(strategyId: $strategyId) {
-          strategyId
-          name
-          trailWidth
-          symbol
-          maxRisk
-          owner
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: query,
-      variables: { strategyId }
+
+  /**
+   * Action作成
+   */
+  async createAction(input: any): Promise<Action> {
+    const result = await this.client.models.Action.create({
+      ...input,
+      userId: this.currentUserId
     });
     
-    return result.data.getStrategy;
+    return result.data as Action;
   }
-  
-  async listStrategies(): Promise<Strategy[]> {
-    const query = /* GraphQL */ `
-      query ListStrategies {
-        listStrategies {
-          items {
-            strategyId
-            name
-            trailWidth
-            symbol
-            maxRisk
-            owner
-            createdAt
-            updatedAt
-          }
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: query
+
+  /**
+   * Position更新
+   */
+  async updatePosition(id: string, updates: any): Promise<Position> {
+    const result = await this.client.models.Position.update({
+      id,
+      ...updates
     });
     
-    return result.data.listStrategies.items;
+    return result.data as Position;
   }
-  
-  async updateStrategy(input: UpdateStrategyInput): Promise<Strategy> {
-    const mutation = /* GraphQL */ `
-      mutation UpdateStrategy($input: UpdateStrategyInput!) {
-        updateStrategy(input: $input) {
-          strategyId
-          name
-          trailWidth
-          symbol
-          maxRisk
-          owner
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
+
+  /**
+   * Action更新
+   */
+  async updateAction(id: string, updates: any): Promise<Action> {
+    const result = await this.client.models.Action.update({
+      id,
+      ...updates
     });
     
-    return result.data.updateStrategy;
+    return result.data as Action;
   }
-  
-  // Action operations
-  async createAction(input: CreateActionInput): Promise<Action> {
-    const mutation = /* GraphQL */ `
-      mutation CreateAction($input: CreateActionInput!) {
-        createAction(input: $input) {
-          actionId
-          strategyId
-          type
-          positionId
-          params
-          status
-          owner
-          createdAt
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
-    });
-    
-    return result.data.createAction;
-  }
-  
-  async updateAction(input: UpdateActionInput): Promise<Action> {
-    const mutation = /* GraphQL */ `
-      mutation UpdateAction($input: UpdateActionInput!) {
-        updateAction(input: $input) {
-          actionId
-          strategyId
-          type
-          positionId
-          params
-          status
-          owner
-          updatedAt
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: mutation,
-      variables: { input }
-    });
-    
-    return result.data.updateAction;
-  }
-  
-  async listActions(filter?: any): Promise<Action[]> {
-    const query = /* GraphQL */ `
-      query ListActions($filter: ModelActionFilterInput) {
-        listActions(filter: $filter) {
-          items {
-            actionId
-            strategyId
-            type
-            positionId
-            params
-            status
-            owner
-            createdAt
-            updatedAt
-          }
-        }
-      }
-    `;
-    
-    const result = await this.client.graphql({
-      query: query,
-      variables: { filter }
-    });
-    
-    return result.data.listActions.items;
-  }
-  
-  // Connection status
-  isConnected(): boolean {
-    return this.connected;
-  }
-  
-  // Error handling
-  private handleError(error: any): never {
-    console.error('AmplifyGraphQLClient Error:', error);
-    throw new Error(`GraphQL operation failed: ${error.message}`);
+
+  /**
+   * 現在のuserId取得
+   */
+  getCurrentUserId(): string | undefined {
+    return this.currentUserId;
   }
 }
+
+// シングルトンインスタンス
+export const amplifyClientInstance = new AmplifyClient();

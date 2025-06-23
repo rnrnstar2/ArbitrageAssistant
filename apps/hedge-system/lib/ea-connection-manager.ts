@@ -1,5 +1,4 @@
 import { WebSocket } from 'ws';
-import { WSErrorHandler } from './ws-error-handler';
 
 export interface EAInfo {
   version: string;
@@ -67,8 +66,7 @@ export class EAConnectionManager {
     // 接続タイムアウト設定
     this.setConnectionTimeout(connectionId);
 
-    WSErrorHandler.logEvent('CONNECTION_ADDED', { 
-      connectionId, 
+    console.log(`🔗 Connection added: ${connectionId}`, { 
       clientIP,
       totalConnections: this.connections.size 
     });
@@ -91,7 +89,7 @@ export class EAConnectionManager {
         connection.ws.close(1000, 'Connection removed');
       }
     } catch (error) {
-      WSErrorHandler.handleConnectionError(error as Error, connectionId);
+      console.error(`❌ Connection error for ${connectionId}:`, error);
     }
 
     // タイムアウトタイマーをクリア
@@ -100,8 +98,7 @@ export class EAConnectionManager {
     // 接続を削除
     this.connections.delete(connectionId);
 
-    WSErrorHandler.logEvent('CONNECTION_REMOVED', { 
-      connectionId,
+    console.log(`🔌 Connection removed: ${connectionId}`, {
       remainingConnections: this.connections.size 
     });
 
@@ -117,28 +114,19 @@ export class EAConnectionManager {
   }): boolean {
     const connection = this.connections.get(connectionId);
     if (!connection) {
-      WSErrorHandler.logEvent('AUTH_FAILED', { 
-        connectionId, 
-        reason: 'connection_not_found' 
-      });
+      console.warn(`🚫 Authentication failed for ${connectionId}: connection not found`);
       return false;
     }
 
     // トークン検証
     if (authData.token !== this.config.authToken) {
-      WSErrorHandler.logEvent('AUTH_FAILED', { 
-        connectionId, 
-        reason: 'invalid_token' 
-      });
+      console.warn(`🚫 Authentication failed for ${connectionId}: invalid token`);
       return false;
     }
 
     // EA情報検証
     if (!this.validateEAInfo(authData.eaInfo)) {
-      WSErrorHandler.logEvent('AUTH_FAILED', { 
-        connectionId, 
-        reason: 'invalid_ea_info' 
-      });
+      console.warn(`🚫 Authentication failed for ${connectionId}: invalid EA info`);
       return false;
     }
 
@@ -150,8 +138,7 @@ export class EAConnectionManager {
     // 接続タイムアウトをクリア（認証完了）
     this.clearConnectionTimeout(connectionId);
 
-    WSErrorHandler.logEvent('CONNECTION_AUTHENTICATED', { 
-      connectionId,
+    console.log(`✅ Connection authenticated: ${connectionId}`, {
       platform: authData.eaInfo.platform,
       account: authData.eaInfo.account,
       version: authData.eaInfo.version
@@ -215,9 +202,7 @@ export class EAConnectionManager {
       this.checkHeartbeats();
     }, this.config.heartbeatInterval);
 
-    WSErrorHandler.logEvent('HEARTBEAT_STARTED', { 
-      interval: this.config.heartbeatInterval 
-    });
+    console.log(`💓 Heartbeat started with interval: ${this.config.heartbeatInterval}ms`);
   }
 
   /**
@@ -228,7 +213,7 @@ export class EAConnectionManager {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
       
-      WSErrorHandler.logEvent('HEARTBEAT_STOPPED', {});
+      console.log('💓 Heartbeat stopped');
     }
   }
 
@@ -259,8 +244,7 @@ export class EAConnectionManager {
         connection.isActive = false;
         toRemove.push(connectionId);
         
-        WSErrorHandler.logEvent('HEARTBEAT_TIMEOUT', { 
-          connectionId,
+        console.warn(`💔 Heartbeat timeout for ${connectionId}`, {
           timeSinceLastHeartbeat,
           timeoutMs,
           account: connection.eaInfo?.account
@@ -274,10 +258,7 @@ export class EAConnectionManager {
     });
 
     if (toRemove.length > 0) {
-      WSErrorHandler.logEvent('CONNECTIONS_CLEANED_UP', { 
-        removedCount: toRemove.length,
-        remainingConnections: this.connections.size 
-      });
+      console.log(`🧹 Cleaned up ${toRemove.length} timed out connections, ${this.connections.size} remaining`);
     }
   }
 
@@ -294,7 +275,7 @@ export class EAConnectionManager {
         try {
           connection.ws.close(1001, 'Server shutting down');
         } catch (error) {
-          WSErrorHandler.handleConnectionError(error as Error, connectionId);
+          console.error(`❌ Connection error for ${connectionId}:`, error);
         }
       }
     }
@@ -309,9 +290,7 @@ export class EAConnectionManager {
 
     this.stopHeartbeat();
 
-    WSErrorHandler.logEvent('ALL_CONNECTIONS_DISCONNECTED', { 
-      disconnectedCount: connectionIds.length 
-    });
+    console.log(`🔌 All connections disconnected: ${connectionIds.length} connections`);
   }
 
   /**
@@ -390,7 +369,7 @@ export class EAConnectionManager {
     const timeout = setTimeout(() => {
       const connection = this.connections.get(connectionId);
       if (connection && !connection.authenticated) {
-        WSErrorHandler.logEvent('CONNECTION_AUTH_TIMEOUT', { connectionId });
+        console.warn(`⏰ Connection authentication timeout: ${connectionId}`);
         this.removeConnection(connectionId);
       }
     }, this.config.connectionTimeout);

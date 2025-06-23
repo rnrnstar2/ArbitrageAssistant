@@ -1,11 +1,9 @@
 import { AmplifyGraphQLClient } from './amplify-client';
 import { WebSocketHandler } from './websocket-handler';
-import { RealtimeStateManager } from './realtime-state-manager';
-import { ActionSyncEngine } from './action-sync-engine';
-import { StrategyExecutionEngine } from './strategy-execution-engine';
+import { ActionManager } from './action-manager';
 import { TrailEngine } from './trail-engine';
 import { AccountManager } from './account-manager';
-import { Strategy, EntryStrategy, ExitStrategy } from '@repo/shared-types';
+import { PositionManager } from './position-manager';
 import amplifyOutputs from '../amplify_outputs.json';
 
 interface SystemConfig {
@@ -25,47 +23,34 @@ interface SystemStatus {
 
 /**
  * Hedge System Core
- * MVPデザイン仕様に基づく統合システム管理
+ * MVPシステム設計の6つのコア機能のみに集約
  */
 export class HedgeSystemCore {
+  // MVPシステム設計の6つのコア機能
+  private accountManager: AccountManager;
+  private positionExecutionEngine: PositionManager;
+  private trailEngine: TrailEngine;
+  private actionSyncEngine: ActionManager;
+  private wsServer: WebSocketHandler;
+  
   // Core components
   private amplifyClient: AmplifyGraphQLClient;
-  private websocketHandler: WebSocketHandler;
-  private realtimeStateManager: RealtimeStateManager;
-  
-  // Engine components  
-  private actionSyncEngine: ActionSyncEngine;
-  private strategyExecutionEngine: StrategyExecutionEngine;
-  private trailEngine: TrailEngine;
-  private accountManager: AccountManager;
   
   // System state
   private isInitialized = false;
   private isRunning = false;
   private systemConfig?: SystemConfig;
-  
-  // Statistics
-  private stats = {
-    initTime: new Date(),
-    totalStrategiesExecuted: 0,
-    totalActionsProcessed: 0,
-    totalTrailsExecuted: 0,
-    uptime: 0
-  };
 
   constructor() {
-    // Initialize core components
+    // MVPシステム設計の6つのコア機能を初期化
     this.amplifyClient = new AmplifyGraphQLClient();
-    this.realtimeStateManager = new RealtimeStateManager();
-    this.websocketHandler = new WebSocketHandler(this.realtimeStateManager);
+    this.accountManager = new AccountManager(this.amplifyClient, {} as WebSocketHandler);
+    this.positionExecutionEngine = new PositionManager();
+    this.actionSyncEngine = new ActionManager({} as WebSocketHandler);
+    this.trailEngine = new TrailEngine();
+    this.wsServer = new WebSocketHandler();
     
-    // Initialize engine components
-    this.actionSyncEngine = new ActionSyncEngine(this.amplifyClient, this.websocketHandler);
-    this.strategyExecutionEngine = new StrategyExecutionEngine(this.amplifyClient);
-    this.trailEngine = new TrailEngine(this.amplifyClient);
-    this.accountManager = new AccountManager(this.amplifyClient, this.websocketHandler);
-    
-    console.log('🏗️ Hedge System Core components initialized');
+    console.log('🏗️ Hedge System Core - 6つのコア機能を初期化完了');
   }
 
   /**
@@ -88,17 +73,16 @@ export class HedgeSystemCore {
       // 2. 担当口座設定
       await this.accountManager.assignAccounts(config.assignedAccounts);
       
-      // 3. Action Subscription開始
-      await this.actionSyncEngine.startActionSubscription(config.assignedAccounts);
+      // 3. WebSocket サーバー開始
+      await this.wsServer.initializeServer();
       
-      // 4. WebSocket サーバー開始
-      await this.websocketHandler.initializeServer();
-      
-      // 5. Trail Engine開始
+      // 4. Trail Engine開始
       await this.trailEngine.start();
       
+      // 5. 既存のトレール監視対象を復旧
+      await this.trailEngine.startAllTrailMonitoring();
+      
       this.isInitialized = true;
-      this.stats.initTime = new Date();
       
       console.log('✅ Hedge System Core initialized successfully');
       
@@ -143,52 +127,10 @@ export class HedgeSystemCore {
 
     console.log('▶️ Starting Hedge System Core...');
     
-    try {
-      // 各コンポーネントの状態確認
-      await this.performHealthCheck();
-      
-      this.isRunning = true;
-      console.log('🟢 Hedge System Core started successfully');
-      
-    } catch (error) {
-      console.error('❌ Failed to start Hedge System Core:', error);
-      throw error;
-    }
+    this.isRunning = true;
+    console.log('🟢 Hedge System Core started successfully');
   }
 
-  /**
-   * 戦略実行要求処理
-   * Admin画面からの戦略実行要求を処理
-   */
-  async handleStrategyExecution(strategy: Strategy): Promise<void> {
-    if (!this.isRunning) {
-      throw new Error('System not running. Call start() first.');
-    }
-
-    console.log(`📋 Processing strategy execution: ${strategy.name} (${strategy.type})`);
-    
-    try {
-      switch (strategy.type) {
-        case 'ENTRY':
-          await this.strategyExecutionEngine.executeEntryStrategy(strategy as EntryStrategy);
-          break;
-          
-        case 'EXIT':
-          await this.strategyExecutionEngine.executeExitStrategy(strategy as ExitStrategy);
-          break;
-          
-        default:
-          throw new Error(`Unknown strategy type: ${(strategy as any).type}`);
-      }
-      
-      this.stats.totalStrategiesExecuted++;
-      console.log(`✅ Strategy ${strategy.name} executed successfully`);
-      
-    } catch (error) {
-      console.error(`❌ Strategy execution failed for ${strategy.name}:`, error);
-      throw error;
-    }
-  }
 
   /**
    * 価格更新ハンドリング
@@ -222,54 +164,29 @@ export class HedgeSystemCore {
   }
 
   /**
-   * ヘルスチェック実行
-   */
-  async performHealthCheck(): Promise<boolean> {
-    const checks = {
-      amplify: this.amplifyClient.isConnected(),
-      actionEngine: this.actionSyncEngine.isHealthy(),
-      accountManager: this.accountManager.isHealthy(),
-      websocket: true // WebSocketHandlerのヘルスチェック実装依存
-    };
-
-    const isHealthy = Object.values(checks).every(check => check);
-    
-    if (!isHealthy) {
-      console.warn('⚠️ System health check failed:', checks);
-    } else {
-      console.log('💚 System health check passed');
-    }
-
-    return isHealthy;
-  }
-
-  /**
-   * システム統計取得
+   * システム統計取得（簡素版）
    */
   getSystemStats() {
     return {
-      ...this.stats,
-      uptime: Date.now() - this.stats.initTime.getTime(),
-      actionSyncStats: this.actionSyncEngine.getStats(),
-      trailEngineStats: this.trailEngine.getStats(),
+      isInitialized: this.isInitialized,
+      isRunning: this.isRunning,
       accountManagerStats: this.accountManager.getStats(),
-      systemStatus: this.getSystemStatus()
+      trailEngineStats: this.trailEngine.getStats()
     };
   }
 
   /**
-   * システム状態取得
+   * システム状態取得（簡素版）
    */
   getSystemStatus(): SystemStatus {
     const accountStats = this.accountManager.getStats();
-    const actionStats = this.actionSyncEngine.getStats();
     
     return {
       isInitialized: this.isInitialized,
       isRunning: this.isRunning,
       connectedAccounts: accountStats.connectedAccounts,
       totalAccounts: accountStats.assignedAccounts,
-      activeSubscriptions: actionStats.activeSubscriptions || 0,
+      activeSubscriptions: 0, // 簡素化
       lastUpdate: new Date()
     };
   }
@@ -297,8 +214,7 @@ export class HedgeSystemCore {
     
     try {
       // 各コンポーネントの停止処理
-      await this.actionSyncEngine.stopAllSubscriptions();
-      await this.trailEngine.stopAllTrailMonitoring();
+      this.trailEngine.stopAllTrailMonitoring();
       await this.accountManager.shutdown();
       
       this.isRunning = false;
@@ -345,16 +261,16 @@ export class HedgeSystemCore {
   }
 
   /**
-   * リアルタイム状態マネージャー取得（外部アクセス用）
+   * WebSocketサーバー取得（外部アクセス用）
    */
-  getRealtimeStateManager(): RealtimeStateManager {
-    return this.realtimeStateManager;
+  getWebSocketHandler(): WebSocketHandler {
+    return this.wsServer;
   }
 
   /**
-   * WebSocketハンドラー取得（外部アクセス用）
+   * ポジション実行エンジン取得（外部アクセス用）
    */
-  getWebSocketHandler(): WebSocketHandler {
-    return this.websocketHandler;
+  getPositionExecutionEngine(): PositionManager {
+    return this.positionExecutionEngine;
   }
 }
