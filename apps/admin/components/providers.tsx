@@ -34,10 +34,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   const authContextValue = {
     ...authState,
+    user: authState.user as Record<string, unknown> | null,
     signIn: authService?.signIn.bind(authService) || (async () => { throw new Error('Auth service not initialized'); }),
     signOut: authService?.signOut.bind(authService) || (async () => { throw new Error('Auth service not initialized'); }),
     checkAuthState: authService?.checkAuthState.bind(authService) || (async () => { throw new Error('Auth service not initialized'); }),
-    getWebSocketConnectionOptions: authService?.getWebSocketConnectionOptions.bind(authService) || (() => null),
+    getWebSocketConnectionOptions: () => {
+      const options = authService?.getWebSocketConnectionOptions();
+      return options as Record<string, unknown> | null;
+    },
   };
 
   return (

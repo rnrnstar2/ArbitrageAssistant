@@ -2,40 +2,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui
 import { Badge } from "@repo/ui/components/ui/badge";
 import { Button } from "@repo/ui/components/ui/button";
 import { Link, Eye, Edit, AlertTriangle } from "lucide-react";
-import type { ClientPC, Account } from "../hooks/useClientsData";
-import type { AccountGroup } from "../types/types";
-import { formatCurrency, getRiskLevelColor, getMarginLevelColor } from "../utils";
+// Temporary types for MVP (until proper models are implemented)
+type User = any;
+type Account = any;
+import { formatCurrency, getMarginLevelColor } from "../utils";
 
 interface AccountsTabProps {
   accounts: Account[];
-  clients: ClientPC[];
-  groups: AccountGroup[];
+  clients: User[];
 }
 
-export const AccountsTab = ({ accounts, clients, groups }: AccountsTabProps) => {
+export const AccountsTab = ({ accounts, clients }: AccountsTabProps) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {accounts.map((account) => {
-        const client = clients.find(c => c.id === account.clientId);
+        const client = clients.find(c => c.id === account.userId);
         return (
           <Card key={account.id}>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">{account.name}</CardTitle>
                 <div className="flex items-center space-x-2">
-                  <Badge className={getRiskLevelColor(account.riskLevel)}>
-                    {account.riskLevel.toUpperCase()}
+                  <Badge variant="outline">
+                    {account.isActive ? '稼働中' : '停止中'}
                   </Badge>
-                  {account.linkedAccounts.length > 0 && (
-                    <Badge variant="outline">
-                      <Link className="mr-1 h-3 w-3" />
-                      連動
-                    </Badge>
-                  )}
                 </div>
               </div>
               <div className="text-sm text-gray-500">
-                {client?.name} • {account.server}
+                {client?.name} • {account.broker}
               </div>
             </CardHeader>
             <CardContent>
@@ -69,27 +63,9 @@ export const AccountsTab = ({ accounts, clients, groups }: AccountsTabProps) => 
                 )}
                 
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">ポジション: {account.openPositions}</span>
-                  {account.group && (
-                    <Badge variant="outline">{groups.find(g => g.id === account.group)?.name}</Badge>
-                  )}
+                  <span className="text-sm text-gray-600">アカウント番号: {account.accountNumber}</span>
+                  <Badge variant="outline">{account.broker}</Badge>
                 </div>
-                
-                {account.linkedAccounts.length > 0 && (
-                  <div>
-                    <span className="text-xs text-gray-500">連動口座:</span>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {account.linkedAccounts.map((linkedId) => {
-                        const linkedAccount = accounts.find(a => a.id === linkedId);
-                        return linkedAccount && (
-                          <Badge key={linkedId} variant="outline" className="text-xs">
-                            {linkedAccount.name}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
                 
                 <div className="flex space-x-2 pt-2">
                   <Button size="sm" variant="outline" className="flex-1">

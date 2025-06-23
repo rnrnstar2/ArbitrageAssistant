@@ -1,9 +1,9 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import { Providers } from "../components/providers";
 import { AuthGuard, AuthContainer } from "@repo/ui/components/auth";
-import { AdminLayout } from "@/components/layout/admin-layout";
+import { AdminLayout } from "../components/layout/admin-layout";
 
 export const metadata: Metadata = {
   title: {
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="ja" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} min-h-screen font-sans antialiased`}
+        className={`${fontSans.variable} font-sans antialiased`}
       >
         <Providers>
           <AuthGuard

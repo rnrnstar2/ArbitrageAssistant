@@ -33,7 +33,7 @@ export function AccountList({ accounts }: AccountListProps) {
               </div>
               <div className="text-sm text-gray-600">
                 残高: ${account.balance.toFixed(2)} | 
-                ボーナス: ${account.bonusAmount.toFixed(2)} | 
+                ボーナス: ${(account.bonusAmount || 0).toFixed(2)} | 
                 有効証拠金: ${account.equity.toFixed(2)}
               </div>
             </div>

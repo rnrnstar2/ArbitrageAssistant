@@ -52,6 +52,12 @@ private:
     string CreatePositionJson();
     string CreateAccountJson();
     string CreateHeartbeatJson();
+    void SendOpenedEvent(string positionId, string actionId, int ticket, double price);
+    void SendClosedEvent(string positionId, string actionId, int ticket, double price, double profit);
+    void SendStoppedEvent(string positionId, int ticket, double price, string reason);
+    void ExecuteOrderWithCallback(string symbol, int type, double lots, double price, double sl, double tp, string positionId, string actionId);
+    void ClosePositionWithCallback(string positionId, string actionId);
+    bool ClosePositionByTicket(ulong ticket);
     void LogMessage(string message);
 };
 
@@ -295,39 +301,174 @@ void HedgeSystemConnector::ProcessIncomingMessage(string message)
 }
 
 //+------------------------------------------------------------------+
-//| コマンド処理                                                     |
+//| コマンド処理（設計書準拠メッセージフォーマット対応）             |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::ProcessCommand(string command)
 {
     LogMessage("Processing command: " + command);
     
-    // JSONから必要な情報を抽出（実際の実装ではJSONライブラリを使用）
-    if(StringFind(command, "\"action\":\"open_position\"") != -1)
+    // 設計書準拠のメッセージ処理
+    if(StringFind(command, "\"type\":\"OPEN\"") != -1)
     {
-        // 新規ポジション開設
+        // 新規ポジション開設（設計書準拠）
+        string positionId = ""; // JSONから抽出が必要
+        string actionId = ""; // JSONから抽出が必要  
         string symbol = "EURUSD"; // JSONから抽出
-        int type = ORDER_TYPE_BUY; // JSONから抽出
-        double lots = 0.01; // JSONから抽出
-        double price = 0.0; // JSONから抽出（0.0は成行）
-        double sl = 0.0; // JSONから抽出
-        double tp = 0.0; // JSONから抽出
+        string side = "BUY"; // JSONから抽出（BUY/SELL）
+        double volume = 0.01; // JSONから抽出
+        double trailWidth = 0.0; // JSONから抽出（オプション）
         
-        ExecuteOrder(symbol, type, lots, price, sl, tp);
+        // 簡易JSONパース（実際の実装では適切なJSONライブラリを使用）
+        int pos = StringFind(command, "\"positionId\":\"");
+        if(pos != -1)
+        {
+            int start = pos + 14;
+            int end = StringFind(command, "\"", start);
+            if(end != -1) positionId = StringSubstr(command, start, end - start);
+        }
+        
+        pos = StringFind(command, "\"actionId\":\"");
+        if(pos != -1)
+        {
+            int start = pos + 12;
+            int end = StringFind(command, "\"", start);
+            if(end != -1) actionId = StringSubstr(command, start, end - start);
+        }
+        
+        int type = (side == "BUY") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
+        ExecuteOrderWithCallback(symbol, type, volume, 0.0, 0.0, 0.0, positionId, actionId);
     }
-    else if(StringFind(command, "\"action\":\"close_position\"") != -1)
+    else if(StringFind(command, "\"type\":\"CLOSE\"") != -1)
     {
-        // ポジション決済
-        ulong ticket = 0; // JSONから抽出
-        ClosePosition(ticket);
+        // ポジション決済（設計書準拠）
+        string positionId = ""; // JSONから抽出が必要
+        string actionId = ""; // JSONから抽出が必要
+        
+        // 簡易JSONパース
+        int pos = StringFind(command, "\"positionId\":\"");
+        if(pos != -1)
+        {
+            int start = pos + 14;
+            int end = StringFind(command, "\"", start);
+            if(end != -1) positionId = StringSubstr(command, start, end - start);
+        }
+        
+        pos = StringFind(command, "\"actionId\":\"");
+        if(pos != -1)
+        {
+            int start = pos + 12;
+            int end = StringFind(command, "\"", start);
+            if(end != -1) actionId = StringSubstr(command, start, end - start);
+        }
+        
+        ClosePositionWithCallback(positionId, actionId);
     }
     else if(StringFind(command, "\"action\":\"modify_position\"") != -1)
     {
-        // ポジション修正
+        // レガシー対応: ポジション修正
         ulong ticket = 0; // JSONから抽出
         double sl = 0.0; // JSONから抽出
         double tp = 0.0; // JSONから抽出
         ModifyPosition(ticket, sl, tp);
     }
+}
+
+//+------------------------------------------------------------------+
+//| コールバック付き注文実行                                         |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::ExecuteOrderWithCallback(string symbol, int type, double lots, double price, double sl, double tp, string positionId, string actionId)
+{
+    MqlTradeRequest request;
+    MqlTradeResult result;
+    
+    ZeroMemory(request);
+    ZeroMemory(result);
+    
+    request.action = TRADE_ACTION_DEAL;
+    request.symbol = symbol;
+    request.volume = lots;
+    request.type = type;
+    request.price = (price == 0.0) ? SymbolInfoDouble(symbol, type == ORDER_TYPE_BUY ? SYMBOL_ASK : SYMBOL_BID) : price;
+    request.sl = sl;
+    request.tp = tp;
+    request.deviation = 10;
+    request.magic = 123456;
+    request.comment = "HedgeSystem[" + positionId + "]";
+    
+    if(OrderSend(request, result))
+    {
+        LogMessage("Order executed successfully. Ticket: " + IntegerToString(result.order));
+        // 設計書準拠のOPENED通知送信
+        SendOpenedEvent(positionId, actionId, (int)result.order, request.price);
+    }
+    else
+    {
+        LogMessage("Order execution failed. Error: " + IntegerToString(GetLastError()));
+        // エラー通知も送信可能
+    }
+}
+
+//+------------------------------------------------------------------+
+//| コールバック付きポジション決済                                   |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::ClosePositionWithCallback(string positionId, string actionId)
+{
+    // positionIdからMT4チケットを特定する必要がある
+    // 実装では、ポジション開設時のコメントまたは別の方法でマッピングを管理
+    
+    int totalPositions = PositionsTotal();
+    for(int i = 0; i < totalPositions; i++)
+    {
+        ulong ticket = PositionGetTicket(i);
+        if(ticket != 0)
+        {
+            string comment = PositionGetString(POSITION_COMMENT);
+            if(StringFind(comment, positionId) != -1)
+            {
+                // 対象ポジションを発見
+                double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+                double profit = PositionGetDouble(POSITION_PROFIT);
+                
+                if(ClosePositionByTicket(ticket))
+                {
+                    // 設計書準拠のCLOSED通知送信
+                    SendClosedEvent(positionId, actionId, (int)ticket, currentPrice, profit);
+                }
+                return;
+            }
+        }
+    }
+    
+    LogMessage("Position not found for positionId: " + positionId);
+}
+
+//+------------------------------------------------------------------+
+//| チケット指定ポジション決済                                       |
+//+------------------------------------------------------------------+
+bool HedgeSystemConnector::ClosePositionByTicket(ulong ticket)
+{
+    if(!PositionSelectByTicket(ticket))
+    {
+        return false;
+    }
+    
+    MqlTradeRequest request;
+    MqlTradeResult result;
+    
+    ZeroMemory(request);
+    ZeroMemory(result);
+    
+    request.action = TRADE_ACTION_DEAL;
+    request.position = ticket;
+    request.symbol = PositionGetString(POSITION_SYMBOL);
+    request.volume = PositionGetDouble(POSITION_VOLUME);
+    request.type = (PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY) ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+    request.price = (request.type == ORDER_TYPE_SELL) ? SymbolInfoDouble(request.symbol, SYMBOL_BID) : SymbolInfoDouble(request.symbol, SYMBOL_ASK);
+    request.deviation = 10;
+    request.magic = 123456;
+    request.comment = "HedgeSystem Close";
+    
+    return OrderSend(request, result);
 }
 
 //+------------------------------------------------------------------+
@@ -507,6 +648,85 @@ string HedgeSystemConnector::CreateHeartbeatJson()
     json += "}";
     
     return json;
+}
+
+//+------------------------------------------------------------------+
+//| OPENED イベント送信（設計書準拠）                                |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendOpenedEvent(string positionId, string actionId, int ticket, double price)
+{
+    string message = StringFormat(
+        "{\"type\":\"OPENED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"actionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        m_accountId,
+        positionId,
+        actionId,
+        ticket,
+        price,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+    );
+    
+    if(WSSendMessage(message))
+    {
+        LogMessage("OPENED event sent for position: " + positionId);
+    }
+    else
+    {
+        LogMessage("Failed to send OPENED event");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| CLOSED イベント送信（設計書準拠）                                |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendClosedEvent(string positionId, string actionId, int ticket, double price, double profit)
+{
+    string message = StringFormat(
+        "{\"type\":\"CLOSED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"actionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"profit\":%.2f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        m_accountId,
+        positionId,
+        actionId,
+        ticket,
+        price,
+        profit,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+    );
+    
+    if(WSSendMessage(message))
+    {
+        LogMessage("CLOSED event sent for position: " + positionId);
+    }
+    else
+    {
+        LogMessage("Failed to send CLOSED event");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| STOPPED イベント送信（ロスカット通知・設計書準拠）               |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendStoppedEvent(string positionId, int ticket, double price, string reason)
+{
+    string message = StringFormat(
+        "{\"type\":\"STOPPED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"reason\":\"%s\"}",
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        m_accountId,
+        positionId,
+        ticket,
+        price,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        reason
+    );
+    
+    if(WSSendMessage(message))
+    {
+        LogMessage("STOPPED event sent for position: " + positionId + " reason: " + reason);
+    }
+    else
+    {
+        LogMessage("Failed to send STOPPED event");
+    }
 }
 
 //+------------------------------------------------------------------+

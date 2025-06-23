@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc --noEmit",
+    "check-types": "tsc --noEmit",
     "dev": "echo 'No dev server for backend package'",
     "lint": "echo 'No linting configured for backend package'",
     "lock": "npm install --package-lock-only --workspaces=false",

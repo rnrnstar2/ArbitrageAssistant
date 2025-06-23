@@ -20,7 +20,7 @@ export function handleAuthError(error: unknown, context?: unknown): AppError {
 
   if (typeof error === 'string') {
     userMessage = error;
-  } else if (error?.message) {
+  } else if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
     const message = error.message;
     
     // AWS Amplifyの一般的なエラーメッセージを日本語に変換
@@ -53,7 +53,9 @@ export function handleAuthError(error: unknown, context?: unknown): AppError {
   }
 
   return {
-    message: error?.message || error?.toString() || 'Unknown error',
+    message: (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') 
+      ? error.message 
+      : (typeof error === 'string' ? error : 'Unknown error'),
     userMessage,
     code,
     context,
@@ -69,10 +71,11 @@ export function handleApiError(error: unknown, context?: unknown): AppError {
   let userMessage = '';
   let code = '';
 
-  if (error?.response) {
+  if (error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object') {
     // HTTPレスポンスエラー
-    const status = error.response.status;
-    const data = error.response.data;
+    const response = error.response as { status?: number; data?: { message?: string } };
+    const status = response.status;
+    const data = response.data;
 
     switch (status) {
       case 400:
@@ -99,15 +102,19 @@ export function handleApiError(error: unknown, context?: unknown): AppError {
         userMessage = `エラーが発生しました (${status})`;
         code = 'HTTP_ERROR';
     }
-  } else if (error?.code === 'NETWORK_ERROR') {
+  } else if (error && typeof error === 'object' && 'code' in error && error.code === 'NETWORK_ERROR') {
     userMessage = 'ネットワークエラーが発生しました';
     code = 'NETWORK_ERROR';
   } else {
-    userMessage = error?.message || 'エラーが発生しました';
+    userMessage = (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string')
+      ? error.message
+      : 'エラーが発生しました';
   }
 
   return {
-    message: error?.message || error?.toString() || 'Unknown error',
+    message: (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') 
+      ? error.message 
+      : (typeof error === 'string' ? error : 'Unknown error'),
     userMessage,
     code,
     context,

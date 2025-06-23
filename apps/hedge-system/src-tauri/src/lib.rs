@@ -1,6 +1,8 @@
 use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 use tauri::{Manager, AppHandle, Emitter};
 
+mod websocket;
+
 // アップデートチェックコマンド
 #[tauri::command]
 async fn check_for_updates(app: AppHandle) -> Result<String, String> {
@@ -15,7 +17,16 @@ pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_updater::Builder::new().build())
     .plugin(tauri_plugin_process::init())
-    .invoke_handler(tauri::generate_handler![check_for_updates])
+    .manage(websocket::WSServerManager::default())
+    .invoke_handler(tauri::generate_handler![
+      check_for_updates,
+      websocket::start_websocket_server,
+      websocket::stop_websocket_server,
+      websocket::get_websocket_server_status,
+      websocket::get_websocket_clients,
+      websocket::disconnect_websocket_client,
+      websocket::update_websocket_config
+    ])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

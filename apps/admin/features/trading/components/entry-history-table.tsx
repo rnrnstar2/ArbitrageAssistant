@@ -54,6 +54,35 @@ const STATUS_LABELS = {
   timeout: "タイムアウト",
 };
 
+// 開発用ダミーデータ
+const createMockEntries = (accounts: Array<{id: string; broker: string; accountNumber: string}>): EntryHistoryItem[] => {
+  if (accounts.length === 0) return [];
+  
+  const symbols = ["USDJPY", "EURJPY", "GBPJPY", "AUDJPY", "NZDJPY"];
+  const types: ("buy" | "sell")[] = ["buy", "sell"];
+  const statuses: ("pending" | "executed" | "failed" | "timeout")[] = ["executed", "executed", "executed", "failed", "pending"];
+  
+  return Array.from({ length: 8 }, (_, i) => {
+    const createdAt = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000); // 過去7日間
+    const status = statuses[Math.floor(Math.random() * statuses.length)];
+    const executedAt = status === "executed" ? new Date(createdAt.getTime() + Math.random() * 60000) : undefined;
+    
+    return {
+      id: `entry-${i + 1}`,
+      accountId: accounts[Math.floor(Math.random() * accounts.length)].id,
+      symbol: symbols[Math.floor(Math.random() * symbols.length)],
+      type: types[Math.floor(Math.random() * types.length)],
+      lots: Number((Math.random() * 2 + 0.1).toFixed(1)),
+      price: status === "executed" ? Number((150 + Math.random() * 10).toFixed(3)) : undefined,
+      status,
+      createdAt: createdAt.toISOString(),
+      executedAt: executedAt?.toISOString(),
+      resultPositionId: status === "executed" ? `pos-${i + 1}` : undefined,
+      error: status === "failed" ? "接続エラー" : undefined,
+    };
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
 export function EntryHistoryTable({ refreshTrigger, accounts }: EntryHistoryTableProps) {
   const [entries, setEntries] = useState<EntryHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,9 +92,14 @@ export function EntryHistoryTable({ refreshTrigger, accounts }: EntryHistoryTabl
     try {
       setLoading(true);
       const accountId = selectedAccount === "all" ? undefined : selectedAccount;
-      // MVPでは簡略化された処理
-      const history: EntryHistoryItem[] = [];
-      setEntries(history as EntryHistoryItem[]);
+      
+      // 開発用：ダミーデータを生成
+      const allEntries = createMockEntries(accounts);
+      const filteredEntries = accountId 
+        ? allEntries.filter(entry => entry.accountId === accountId)
+        : allEntries;
+      
+      setEntries(filteredEntries);
     } catch (error) {
       console.error("Error loading entry history:", error);
     } finally {

@@ -1,4 +1,4 @@
-import { ClientsManager } from '@/features/clients';
+import { ClientsManager } from '../../features/clients';
 
 export default function ClientsPage() {
   return <ClientsManager />;

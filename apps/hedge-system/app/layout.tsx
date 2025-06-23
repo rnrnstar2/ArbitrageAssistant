@@ -1,9 +1,9 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
+import { Providers } from "../components/providers";
 import { AuthGuard, AuthContainer } from "@repo/ui/components/auth";
-import { ErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary } from "../components/error-boundary";
 
 export const metadata: Metadata = {
   title: "Hedge System",

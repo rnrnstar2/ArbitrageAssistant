@@ -1,38 +1,53 @@
 "use client";
 
 import { Button } from "@repo/ui/components/ui/button";
-import { Plus } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
+import { Badge } from "@repo/ui/components/ui/badge";
+import { Separator } from "@repo/ui/components/ui/separator";
+import { Skeleton } from "@repo/ui/components/ui/skeleton";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import {
+  Plus,
+  Activity,
+  CheckCircle2
+} from "lucide-react";
 import { useDashboardData } from "../hooks/useDashboardData";
 import { StatsCards } from "./StatsCards";
 import { ClientStatusCard } from "./ClientStatusCard";
-import { ActiveStrategiesCard } from "./ActiveStrategiesCard";
-import { QuickStrategyCard } from "./QuickStrategyCard";
 import { MonitoringPanel } from "./MonitoringPanel";
 
 export function DashboardPage() {
-  const { stats, clients, strategies, quickPresets, isLoading } = useDashboardData();
+  const { stats, clients, isLoading } = useDashboardData();
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">戦略設定ダッシュボード</h1>
-          <p className="text-gray-600">柔軟な取引戦略の設定と監視</p>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">管理ダッシュボード</h1>
+          <p className="text-muted-foreground">
+            アービトラージ取引の監視と基本操作を行います
+          </p>
         </div>
-        <Button className="w-fit sm:w-auto">
-          <Plus className="mr-2 h-4 w-4" />
-          新規戦略作成
-        </Button>
       </div>
-      
+
+      <Separator />
+
+      {/* Alert Section */}
+      <Alert>
+        <CheckCircle2 className="h-4 w-4" />
+        <AlertDescription>
+          システムは正常に動作しています。現在 <Badge variant="secondary">5つのクライアント</Badge> が接続中です。
+        </AlertDescription>
+      </Alert>
+
+      {/* Stats Section */}
       <StatsCards stats={stats} isLoading={isLoading} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
-        <ClientStatusCard clients={clients} isLoading={isLoading} />
-        <ActiveStrategiesCard strategies={strategies} isLoading={isLoading} />
-        <QuickStrategyCard quickPresets={quickPresets} isLoading={isLoading} />
-      </div>
+      {/* Client Status */}
+      <ClientStatusCard clients={clients} isLoading={isLoading} />
 
+      {/* Monitoring Panel */}
       <MonitoringPanel isLoading={isLoading} />
     </div>
   );

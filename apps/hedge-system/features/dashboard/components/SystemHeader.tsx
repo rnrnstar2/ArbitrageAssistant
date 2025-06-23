@@ -17,7 +17,7 @@ export function SystemHeader() {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 text-xs bg-white/10 px-2 py-1 rounded">
           <User className="w-3 h-3" />
-          <span>{user?.signInDetails?.loginId || "ユーザー"}</span>
+          <span>{(user as any)?.signInDetails?.loginId || "ユーザー"}</span>
         </div>
         <button
           onClick={signOut}

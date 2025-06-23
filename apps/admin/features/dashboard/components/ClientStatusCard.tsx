@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
 import { Monitor } from "lucide-react";
 import { ClientStatus } from "../types";
-import { formatCurrency } from "../utils";
 
 interface ClientStatusCardProps {
   clients: ClientStatus[];
@@ -39,7 +38,9 @@ export function ClientStatusCard({ clients, isLoading }: ClientStatusCardProps) 
                     <div className="text-xs text-gray-500">{client.accountCount}口座 • {client.lastSeen}</div>
                   </div>
                 </div>
-                <div className="text-sm font-medium">{formatCurrency(client.totalBalance)}</div>
+                <div className="text-sm font-medium">
+                  {client.status === "online" ? "稼働中" : "停止中"}
+                </div>
               </div>
             ))
           )}

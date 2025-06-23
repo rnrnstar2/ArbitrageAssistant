@@ -1,12 +1,13 @@
 {
   "auth": {
-    "user_pool_id": "ap-northeast-1_0L3z8Noox",
+    "user_pool_id": "ap-northeast-1_xNhS3Nemg",
     "aws_region": "ap-northeast-1",
-    "user_pool_client_id": "6atot25ch9duj6oag6svorm4fq",
-    "identity_pool_id": "ap-northeast-1:262b97c9-684d-4f6f-931d-794f8b34d85d",
+    "user_pool_client_id": "3ur3e3ersmfjn5an7pntbbf7k0",
+    "identity_pool_id": "ap-northeast-1:e6acb4ab-37b4-488e-8fc6-e2d43fb9dc75",
     "mfa_methods": [],
     "standard_required_attributes": [
-      "email"
+      "email",
+      "given_name"
     ],
     "username_attributes": [
       "email"
@@ -14,19 +15,30 @@
     "user_verification_types": [
       "email"
     ],
-    "groups": [],
+    "groups": [
+      {
+        "CLIENT": {
+          "precedence": 0
+        }
+      },
+      {
+        "ADMIN": {
+          "precedence": 1
+        }
+      }
+    ],
     "mfa_configuration": "NONE",
     "password_policy": {
       "min_length": 8,
-      "require_lowercase": false,
-      "require_numbers": false,
-      "require_symbols": false,
-      "require_uppercase": false
+      "require_lowercase": true,
+      "require_numbers": true,
+      "require_symbols": true,
+      "require_uppercase": true
     },
     "unauthenticated_identities_enabled": true
   },
   "data": {
-    "url": "https://qj3y3xzjobgl3h3bxdllquxmp4.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+    "url": "https://qxj5ikewlfdezozpkbxiilgtai.appsync-api.ap-northeast-1.amazonaws.com/graphql",
     "aws_region": "ap-northeast-1",
     "default_authorization_type": "AMAZON_COGNITO_USER_POOLS",
     "authorization_types": [
@@ -52,112 +64,6 @@
               "isRequired": true,
               "attributes": []
             },
-            "role": {
-              "name": "role",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "clientPCs": {
-              "name": "clientPCs",
-              "isArray": true,
-              "type": {
-                "model": "ClientPC"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": true,
-              "association": {
-                "connectionType": "HAS_MANY",
-                "associatedWith": [
-                  "userId"
-                ]
-              }
-            },
-            "closeRules": {
-              "name": "closeRules",
-              "isArray": true,
-              "type": {
-                "model": "CloseRule"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": true,
-              "association": {
-                "connectionType": "HAS_MANY",
-                "associatedWith": [
-                  "userId"
-                ]
-              }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "Users",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "provider": "userPools",
-                    "ownerField": "id",
-                    "allow": "owner",
-                    "identityClaim": "cognito:username",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
-        "ClientPC": {
-          "name": "ClientPC",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "userId": {
-              "name": "userId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
             "name": {
               "name": "name",
               "isArray": false,
@@ -165,11 +71,29 @@
               "isRequired": true,
               "attributes": []
             },
-            "status": {
-              "name": "status",
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": {
+                "enum": "UserRole"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "pcName": {
+              "name": "pcName",
               "isArray": false,
               "type": "String",
-              "isRequired": true,
+              "isRequired": false,
+              "attributes": []
+            },
+            "pcStatus": {
+              "name": "pcStatus",
+              "isArray": false,
+              "type": {
+                "enum": "PCStatus"
+              },
+              "isRequired": false,
               "attributes": []
             },
             "lastSeen": {
@@ -179,20 +103,26 @@
               "isRequired": false,
               "attributes": []
             },
-            "user": {
-              "name": "user",
+            "isActive": {
+              "name": "isActive",
               "isArray": false,
-              "type": {
-                "model": "User"
-              },
+              "type": "Boolean",
               "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "userId"
-                ]
-              }
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
             },
             "accounts": {
               "name": "accounts",
@@ -206,29 +136,13 @@
               "association": {
                 "connectionType": "HAS_MANY",
                 "associatedWith": [
-                  "clientPCId"
+                  "userId"
                 ]
               }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             }
           },
           "syncable": true,
-          "pluralName": "ClientPCS",
+          "pluralName": "Users",
           "attributes": [
             {
               "type": "model",
@@ -248,6 +162,13 @@
                       "delete"
                     ],
                     "identityClaim": "cognito:username"
+                  },
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "read",
+                      "create"
+                    ]
                   }
                 ]
               }
@@ -269,10 +190,32 @@
               "isRequired": true,
               "attributes": []
             },
-            "clientPCId": {
-              "name": "clientPCId",
+            "userId": {
+              "name": "userId",
               "isArray": false,
               "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "user": {
+              "name": "user",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "userId"
+                ]
+              }
+            },
+            "name": {
+              "name": "name",
+              "isArray": false,
+              "type": "String",
               "isRequired": true,
               "attributes": []
             },
@@ -297,15 +240,22 @@
               "isRequired": true,
               "attributes": []
             },
-            "bonusAmount": {
-              "name": "bonusAmount",
+            "equity": {
+              "name": "equity",
               "isArray": false,
               "type": "Float",
               "isRequired": true,
               "attributes": []
             },
-            "equity": {
-              "name": "equity",
+            "margin": {
+              "name": "margin",
+              "isArray": false,
+              "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "freeMargin": {
+              "name": "freeMargin",
               "isArray": false,
               "type": "Float",
               "isRequired": true,
@@ -315,45 +265,42 @@
               "name": "marginLevel",
               "isArray": false,
               "type": "Float",
+              "isRequired": true,
+              "attributes": []
+            },
+            "bonusAmount": {
+              "name": "bonusAmount",
+              "isArray": false,
+              "type": "Float",
               "isRequired": false,
               "attributes": []
             },
-            "clientPC": {
-              "name": "clientPC",
+            "isActive": {
+              "name": "isActive",
               "isArray": false,
-              "type": {
-                "model": "ClientPC"
-              },
+              "type": "Boolean",
               "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "clientPCId"
-                ]
-              }
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
             },
             "positions": {
               "name": "positions",
               "isArray": true,
               "type": {
                 "model": "Position"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": true,
-              "association": {
-                "connectionType": "HAS_MANY",
-                "associatedWith": [
-                  "accountId"
-                ]
-              }
-            },
-            "entries": {
-              "name": "entries",
-              "isArray": true,
-              "type": {
-                "model": "Entry"
               },
               "isRequired": false,
               "attributes": [],
@@ -380,22 +327,6 @@
                   "accountId"
                 ]
               }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
             }
           },
           "syncable": true,
@@ -447,6 +378,21 @@
               "isRequired": true,
               "attributes": []
             },
+            "account": {
+              "name": "account",
+              "isArray": false,
+              "type": {
+                "model": "Account"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "accountId"
+                ]
+              }
+            },
             "symbol": {
               "name": "symbol",
               "isArray": false,
@@ -454,15 +400,8 @@
               "isRequired": true,
               "attributes": []
             },
-            "type": {
-              "name": "type",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "lots": {
-              "name": "lots",
+            "volume": {
+              "name": "volume",
               "isArray": false,
               "type": "Float",
               "isRequired": true,
@@ -479,95 +418,61 @@
               "name": "currentPrice",
               "isArray": false,
               "type": "Float",
+              "isRequired": false,
+              "attributes": []
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": {
+                "enum": "PositionType"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "openTime": {
+              "name": "openTime",
+              "isArray": false,
+              "type": "AWSDateTime",
               "isRequired": true,
+              "attributes": []
+            },
+            "closeTime": {
+              "name": "closeTime",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
               "attributes": []
             },
             "profit": {
               "name": "profit",
               "isArray": false,
               "type": "Float",
-              "isRequired": true,
-              "attributes": []
-            },
-            "swapTotal": {
-              "name": "swapTotal",
-              "isArray": false,
-              "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "trailSettings": {
-              "name": "trailSettings",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": false,
-              "attributes": []
-            },
-            "closeSettings": {
-              "name": "closeSettings",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": false,
-              "attributes": []
-            },
-            "relatedPositionId": {
-              "name": "relatedPositionId",
-              "isArray": false,
-              "type": "ID",
               "isRequired": false,
               "attributes": []
             },
             "status": {
               "name": "status",
               "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "openedAt": {
-              "name": "openedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": true,
-              "attributes": []
-            },
-            "closedAt": {
-              "name": "closedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": []
-            },
-            "account": {
-              "name": "account",
-              "isArray": false,
               "type": {
-                "model": "Account"
+                "enum": "PositionStatus"
               },
               "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "accountId"
-                ]
-              }
+              "attributes": []
             },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
               "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             },
             "updatedAt": {
               "name": "updatedAt",
               "isArray": false,
               "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             }
           },
           "syncable": true,
@@ -626,15 +531,8 @@
               "isRequired": true,
               "attributes": []
             },
-            "type": {
-              "name": "type",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "lots": {
-              "name": "lots",
+            "volume": {
+              "name": "volume",
               "isArray": false,
               "type": "Float",
               "isRequired": true,
@@ -644,80 +542,47 @@
               "name": "price",
               "isArray": false,
               "type": "Float",
-              "isRequired": false,
-              "attributes": []
-            },
-            "trailSettings": {
-              "name": "trailSettings",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": false,
-              "attributes": []
-            },
-            "hedgeSettings": {
-              "name": "hedgeSettings",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": false,
-              "attributes": []
-            },
-            "status": {
-              "name": "status",
-              "isArray": false,
-              "type": "String",
               "isRequired": true,
               "attributes": []
             },
-            "createdAt": {
-              "name": "createdAt",
+            "type": {
+              "name": "type",
               "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": true,
+              "type": {
+                "enum": "PositionType"
+              },
+              "isRequired": false,
               "attributes": []
             },
             "executedAt": {
               "name": "executedAt",
               "isArray": false,
               "type": "AWSDateTime",
-              "isRequired": false,
+              "isRequired": true,
               "attributes": []
             },
-            "resultPositionId": {
-              "name": "resultPositionId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": false,
-              "attributes": []
-            },
-            "error": {
-              "name": "error",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "account": {
-              "name": "account",
+            "status": {
+              "name": "status",
               "isArray": false,
               "type": {
-                "model": "Account"
+                "enum": "EntryStatus"
               },
               "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "accountId"
-                ]
-              }
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
             },
             "updatedAt": {
               "name": "updatedAt",
               "isArray": false,
               "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             }
           },
           "syncable": true,
@@ -776,6 +641,21 @@
               "isRequired": true,
               "attributes": []
             },
+            "account": {
+              "name": "account",
+              "isArray": false,
+              "type": {
+                "model": "Account"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "accountId"
+                ]
+              }
+            },
             "symbol": {
               "name": "symbol",
               "isArray": false,
@@ -786,8 +666,10 @@
             "type": {
               "name": "type",
               "isArray": false,
-              "type": "String",
-              "isRequired": true,
+              "type": {
+                "enum": "PositionType"
+              },
+              "isRequired": false,
               "attributes": []
             },
             "lots": {
@@ -829,27 +711,13 @@
               "name": "holdingDays",
               "isArray": false,
               "type": "Int",
-              "isRequired": true,
+              "isRequired": false,
               "attributes": []
             },
             "closeType": {
               "name": "closeType",
               "isArray": false,
               "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "trailSettings": {
-              "name": "trailSettings",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": false,
-              "attributes": []
-            },
-            "linkedAction": {
-              "name": "linkedAction",
-              "isArray": false,
-              "type": "AWSJSON",
               "isRequired": false,
               "attributes": []
             },
@@ -857,7 +725,7 @@
               "name": "status",
               "isArray": false,
               "type": "String",
-              "isRequired": true,
+              "isRequired": false,
               "attributes": []
             },
             "executedAt": {
@@ -874,36 +742,19 @@
               "isRequired": false,
               "attributes": []
             },
-            "account": {
-              "name": "account",
-              "isArray": false,
-              "type": {
-                "model": "Account"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "accountId"
-                ]
-              }
-            },
             "createdAt": {
               "name": "createdAt",
               "isArray": false,
               "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             },
             "updatedAt": {
               "name": "updatedAt",
               "isArray": false,
               "type": "AWSDateTime",
               "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
+              "attributes": []
             }
           },
           "syncable": true,
@@ -937,210 +788,45 @@
             "primaryKeyFieldName": "id",
             "sortKeyFieldNames": []
           }
-        },
-        "CloseRule": {
-          "name": "CloseRule",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "name": {
-              "name": "name",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "conditions": {
-              "name": "conditions",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": true,
-              "attributes": []
-            },
-            "actions": {
-              "name": "actions",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": true,
-              "attributes": []
-            },
-            "isActive": {
-              "name": "isActive",
-              "isArray": false,
-              "type": "Boolean",
-              "isRequired": true,
-              "attributes": []
-            },
-            "userId": {
-              "name": "userId",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "user": {
-              "name": "user",
-              "isArray": false,
-              "type": {
-                "model": "User"
-              },
-              "isRequired": false,
-              "attributes": [],
-              "association": {
-                "connectionType": "BELONGS_TO",
-                "targetNames": [
-                  "userId"
-                ]
-              }
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "CloseRules",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "provider": "userPools",
-                    "ownerField": "owner",
-                    "allow": "owner",
-                    "operations": [
-                      "read",
-                      "update",
-                      "delete"
-                    ],
-                    "identityClaim": "cognito:username"
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
-        },
-        "WebSocketConnection": {
-          "name": "WebSocketConnection",
-          "fields": {
-            "id": {
-              "name": "id",
-              "isArray": false,
-              "type": "ID",
-              "isRequired": true,
-              "attributes": []
-            },
-            "connectionId": {
-              "name": "connectionId",
-              "isArray": false,
-              "type": "String",
-              "isRequired": true,
-              "attributes": []
-            },
-            "clientId": {
-              "name": "clientId",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "userId": {
-              "name": "userId",
-              "isArray": false,
-              "type": "String",
-              "isRequired": false,
-              "attributes": []
-            },
-            "connectedAt": {
-              "name": "connectedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": true,
-              "attributes": []
-            },
-            "lastHeartbeat": {
-              "name": "lastHeartbeat",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": true,
-              "attributes": []
-            },
-            "createdAt": {
-              "name": "createdAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            },
-            "updatedAt": {
-              "name": "updatedAt",
-              "isArray": false,
-              "type": "AWSDateTime",
-              "isRequired": false,
-              "attributes": [],
-              "isReadOnly": true
-            }
-          },
-          "syncable": true,
-          "pluralName": "WebSocketConnections",
-          "attributes": [
-            {
-              "type": "model",
-              "properties": {}
-            },
-            {
-              "type": "auth",
-              "properties": {
-                "rules": [
-                  {
-                    "allow": "private",
-                    "operations": [
-                      "create",
-                      "update",
-                      "delete",
-                      "read"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "primaryKeyInfo": {
-            "isCustomPrimaryKey": false,
-            "primaryKeyFieldName": "id",
-            "sortKeyFieldNames": []
-          }
         }
       },
-      "enums": {},
+      "enums": {
+        "UserRole": {
+          "name": "UserRole",
+          "values": [
+            "ADMIN",
+            "CLIENT"
+          ]
+        },
+        "PCStatus": {
+          "name": "PCStatus",
+          "values": [
+            "ONLINE",
+            "OFFLINE"
+          ]
+        },
+        "PositionType": {
+          "name": "PositionType",
+          "values": [
+            "BUY",
+            "SELL"
+          ]
+        },
+        "PositionStatus": {
+          "name": "PositionStatus",
+          "values": [
+            "OPEN",
+            "CLOSED"
+          ]
+        },
+        "EntryStatus": {
+          "name": "EntryStatus",
+          "values": [
+            "SUCCESS",
+            "FAILED"
+          ]
+        }
+      },
       "nonModels": {}
     }
   },

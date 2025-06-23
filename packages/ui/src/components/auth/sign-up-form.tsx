@@ -73,7 +73,7 @@ export function SignUpForm({
     async (values: SignUpFormValues) => {
       const attributes: Record<string, string> = {
         email: values.email,
-        name: values.name,
+        given_name: values.name,
       };
 
       const result = await signUp({

@@ -1,6 +1,5 @@
 "use client";
 
-import { Navigation } from "./navigation";
 import { Header } from "./header";
 
 interface AdminLayoutProps {
@@ -9,16 +8,11 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="flex">
-        <Navigation />
-        <div className="flex-1 flex flex-col">
-          <Header />
-          <main className="flex-1 p-6">
-            {children}
-          </main>
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container mx-auto px-4 py-6">
+        {children}
+      </main>
     </div>
   );
 }

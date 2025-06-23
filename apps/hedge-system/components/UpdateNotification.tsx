@@ -7,7 +7,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
 import { Badge } from '@repo/ui/components/ui/badge';
 import { Download, Loader2, Info } from 'lucide-react';
-import { useAutoUpdater } from '@/hooks/useAutoUpdater';
+import { useAutoUpdater } from '../hooks/useAutoUpdater';
 
 export function UpdateNotification() {
   const [currentVersion, setCurrentVersion] = useState<string>('');

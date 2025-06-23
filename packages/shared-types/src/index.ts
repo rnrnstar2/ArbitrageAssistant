@@ -3,19 +3,87 @@
 export * from './trading.js';
 export * from './monitoring.js';
 export * from './risk-management.js';
-export * from './common.js';
 export * from './validation.js';
+export * from './position.js';
+export * from './strategy.js';
+export * from './websocket.js';
 
 // 再エクスポート用の型定義統合
 export type {
-  Position,
   TradeCommand,
   TrailSettings,
   HedgeSettings,
   HedgeGroup,
   TradeStatus,
-  PositionStatus
+  PriceData,
+  MarketConditions,
+  EntryParams,
+  RiskAssessment,
+  TradingRiskMetrics,
+  RiskLimits
 } from './trading.js';
+
+export type {
+  Position,
+  CreatePositionInput,
+  UpdatePositionInput
+} from './position.js';
+
+export { PositionStatus } from './position.js';
+
+export type {
+  Strategy,
+  EntryStrategy,
+  ExitStrategy,
+  BaseStrategy,
+  LegacyStrategy,
+  PositionSpec,
+  CreateStrategyInput,
+  CreateEntryStrategyInput,
+  CreateExitStrategyInput,
+  CreateLegacyStrategyInput,
+  UpdateStrategyInput,
+  StrategyType
+} from './strategy.js';
+
+// Common types - specific symbols to avoid conflicts
+export type {
+  ApiResponse,
+  PaginationParams,
+  PaginatedResponse,
+  TimeRange,
+  WebSocketMessage,
+  Currency,
+  EventType
+} from './common.js';
+export type { Symbol as CommonSymbol } from './common.js';
+
+// Action types
+export type {
+  Action,
+  ActionType
+} from './action.js';
+export { ActionStatus, Symbol as ActionSymbol } from './action.js';
+
+// WebSocket types
+export { WSMessageType } from './websocket.js';
+export type {
+  WSBaseMessage,
+  WSCommand,
+  WSEvent,
+  WSMessage,
+  WSOpenCommand,
+  WSCloseCommand,
+  WSModifyStopCommand,
+  WSPingMessage,
+  WSOpenedEvent,
+  WSClosedEvent,
+  WSErrorEvent,
+  WSPriceEvent,
+  WSPongMessage,
+  WSInfoEvent,
+  WSStopModifiedEvent
+} from './websocket.js';
 
 export type {
   AccountInfo,
@@ -36,16 +104,6 @@ export type {
   RiskAction
 } from './risk-management.js';
 
-export type {
-  ApiResponse,
-  PaginationParams,
-  PaginatedResponse,
-  TimeRange,
-  WebSocketMessage,
-  Currency,
-  Symbol,
-  EventType
-} from './common.js';
 
 // Import types for use in this file
 import type { TrailSettings, HedgeSettings } from './trading.js';

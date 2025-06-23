@@ -1,4 +1,4 @@
-import { Monitor, Target, Users, ArrowLeftRight } from "lucide-react";
+import { Monitor, Target } from "lucide-react";
 import type { TabType } from "../types/types";
 
 interface TabNavigationProps {
@@ -9,8 +9,6 @@ interface TabNavigationProps {
 const tabs = [
   { id: "clients" as const, label: "クライアントPC", icon: Monitor },
   { id: "accounts" as const, label: "口座詳細", icon: Target },
-  { id: "groups" as const, label: "口座グループ", icon: Users },
-  { id: "linking" as const, label: "連動設定", icon: ArrowLeftRight },
 ];
 
 export const TabNavigation = ({ activeTab, onTabChange }: TabNavigationProps) => {

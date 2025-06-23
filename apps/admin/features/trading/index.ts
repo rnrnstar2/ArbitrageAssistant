@@ -3,6 +3,8 @@ export { EntryHistoryTable } from './components/entry-history-table';
 export { EntryForm } from './components/entry-form';
 export { AccountList } from './components/account-list';
 export { TradingDashboard } from './components/trading-dashboard';
+export { EntryStrategyForm } from './components/entry-strategy-form';
+export { StrategyExecutionMonitor } from './components/strategy-execution-monitor';
 export { useCloseHistory } from './hooks/useCloseHistory';
 export { useAccounts } from './hooks/useAccounts';
 export type { Account } from './hooks/useAccounts';
@@ -11,5 +13,10 @@ export type {
   CloseHistoryFilters, 
   CloseHistoryStats, 
   CloseHistoryResponse,
-  CloseHistoryExport
+  CloseHistoryExport,
+  AccountWithStatus,
+  EntryStrategyFormData,
+  ActionStatus,
+  ExecutionStep,
+  StrategyExecution
 } from './types/types';

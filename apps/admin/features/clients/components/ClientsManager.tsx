@@ -2,19 +2,30 @@
 
 import { useState } from "react";
 import { Button } from "@repo/ui/components/ui/button";
-import { Settings, Plus } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@repo/ui/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui/components/ui/tabs";
+import { Badge } from "@repo/ui/components/ui/badge";
+import { Separator } from "@repo/ui/components/ui/separator";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import {
+  Settings,
+  Users,
+  Building,
+  Info,
+  Activity
+} from "lucide-react";
 import type { TabType } from "../types/types";
-import { useClientsData } from "../hooks/useClientsData";
+// import { useClientsData } from "../hooks/useClientsData"; // Temporarily disabled for MVP
 import { LoadingSkeleton } from "./LoadingSkeleton";
-import { TabNavigation } from "./TabNavigation";
 import { ClientsTab } from "./ClientsTab";
 import { AccountsTab } from "./AccountsTab";
-import { GroupsTab } from "./GroupsTab";
-import { LinkingTab } from "./LinkingTab";
 
 export const ClientsManager = () => {
   const [activeTab, setActiveTab] = useState<TabType>("clients");
-  const { clients, accounts, groups, isLoading } = useClientsData();
+  // Using mock data for MVP
+  const clients: any[] = [];
+  const accounts: any[] = [];
+  const isLoading = false;
 
   const renderTabContent = () => {
     if (isLoading) {
@@ -23,40 +34,96 @@ export const ClientsManager = () => {
 
     switch (activeTab) {
       case "clients":
-        return <ClientsTab clients={clients} groups={groups} />;
+        return <ClientsTab clients={clients} accounts={accounts} />;
       case "accounts":
-        return <AccountsTab accounts={accounts} clients={clients} groups={groups} />;
-      case "groups":
-        return <GroupsTab groups={groups} accounts={accounts} clients={clients} />;
-      case "linking":
-        return <LinkingTab accounts={accounts} />;
+        return <AccountsTab accounts={accounts} clients={clients} />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">口座・クライアント管理</h1>
-          <p className="text-gray-600">Hedge-Systemクライアントと口座の詳細管理</p>
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" className="w-fit sm:w-auto">
-            <Settings className="mr-2 h-4 w-4" />
-            システム設定
-          </Button>
-          <Button className="w-fit sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            新規グループ
-          </Button>
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">口座・クライアント管理</h1>
+          <p className="text-muted-foreground">
+            Hedge-Systemクライアントと口座の統合管理
+          </p>
         </div>
       </div>
-      
-      <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      {renderTabContent()}
+
+      <Separator />
+
+      {/* Status Overview */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">接続クライアント</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{clients?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-xs">オンライン</Badge>
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">管理口座</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{accounts?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              アクティブ口座
+            </p>
+          </CardContent>
+        </Card>
+
+      </div>
+
+      {/* Info Alert */}
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          クライアントPCの接続状況や口座の基本情報を監視できます。
+        </AlertDescription>
+      </Alert>
+
+      {/* Tabs Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            管理機能
+          </CardTitle>
+          <CardDescription>
+            クライアント、口座の基本管理を行います
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabType)}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="clients" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">クライアント</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounts" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                <span className="hidden sm:inline">口座</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <div className="mt-6">
+              {renderTabContent()}
+            </div>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
