@@ -1,6 +1,7 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @import "@repo/tailwind-config";
-@import "@repo/ui/styles.css";
 
 /* A8ネット風カスタムカラーテーマ */
 :root {
@@ -11,14 +12,8 @@
   --a8-accent: #FFE6E6;
 }
 
-/* A8ネットテーマをTailwind CSS v4のテーマに統合 */
-@theme {
-  --color-a8-primary: var(--a8-primary);
-  --color-a8-primary-hover: var(--a8-primary-hover);
-  --color-a8-primary-light: var(--a8-primary-light);
-  --color-a8-secondary: var(--a8-secondary);
-  --color-a8-accent: var(--a8-accent);
-}
+/* A8ネットテーマをTailwind CSS v3のテーマに統合 */
+/* @theme は v4 記法のため、v3 では tailwind.config.js で定義 */
 
 /* A8ネットテーマのユーティリティクラス（後方互換性のため保持） */
 .bg-a8-primary {

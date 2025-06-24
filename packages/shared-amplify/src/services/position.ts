@@ -10,6 +10,7 @@
 
 import { amplifyClient, getCurrentUserId, handleGraphQLError, retryGraphQLOperation } from '../client';
 import { handleServiceError, executeWithRetry } from '../utils/error-handler';
+import { generateMockPositions, generateMockAccounts, generateMockUsers } from '../utils/mock-data';
 import type {
   Position,
   PositionStatus,
@@ -22,6 +23,82 @@ import type {
 } from '../types';
 
 export class PositionService {
+  private mockDataCache: Position[] | null = null;
+  private mockAccountIds: string[] = [];
+  private mockUserIds: string[] = [];
+
+  /**
+   * データソース判定
+   */
+  private shouldUseMockData(): boolean {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const mockEnabled = process.env.NEXT_PUBLIC_MOCK_DATA_ENABLED === 'true';
+    const useRealData = process.env.NEXT_PUBLIC_USE_REAL_DATA === 'true';
+    const dataSource = process.env.NEXT_PUBLIC_DATA_SOURCE;
+
+    if (dataSource === 'mock') return true;
+    if (dataSource === 'real') return false;
+    if (dataSource === 'hybrid') {
+      return isDevelopment && mockEnabled && !useRealData;
+    }
+
+    // デフォルト: 開発環境でモック有効の場合はモックデータを使用
+    return isDevelopment && mockEnabled && !useRealData;
+  }
+
+  /**
+   * モックデータ初期化
+   */
+  private initializeMockData(): void {
+    if (this.mockDataCache) return;
+
+    const users = generateMockUsers(2);
+    const accounts = generateMockAccounts(users.map(u => u.id), 4);
+    this.mockUserIds = users.map(u => u.id);
+    this.mockAccountIds = accounts.map(a => a.id);
+    
+    this.mockDataCache = generateMockPositions(
+      this.mockUserIds,
+      this.mockAccountIds,
+      25
+    );
+
+    console.log('📊 Mock data initialized:', {
+      positions: this.mockDataCache.length,
+      accounts: this.mockAccountIds.length,
+      users: this.mockUserIds.length
+    });
+  }
+
+  /**
+   * モックデータからフィルタ適用データを取得
+   */
+  private getMockDataWithFilters(filters: PositionFilters = {}): Position[] {
+    this.initializeMockData();
+    
+    if (!this.mockDataCache) return [];
+
+    let filteredData = [...this.mockDataCache];
+
+    // フィルター適用
+    if (filters.status) {
+      filteredData = filteredData.filter(p => p.status === filters.status);
+    }
+    if (filters.accountId) {
+      filteredData = filteredData.filter(p => p.accountId === filters.accountId);
+    }
+    if (filters.symbol) {
+      filteredData = filteredData.filter(p => p.symbol === filters.symbol);
+    }
+    if (filters.hasTrail) {
+      filteredData = filteredData.filter(p => p.trailWidth && p.trailWidth > 0);
+    }
+
+    // ページング対応
+    const limit = filters.limit || 100;
+    return filteredData.slice(0, limit);
+  }
+
   /**
    * ポジション作成（エラーハンドリング統一 + パフォーマンス最適化）
    * MVP設計書のエントリー実行パターン対応
@@ -43,7 +120,7 @@ export class PositionService {
       }
       
       console.log('✅ Position created:', result.data.id);
-      return result.data;
+      return result.data as unknown as Position;
     } catch (error) {
       return handleServiceError(error, 'Create position');
     }
@@ -66,7 +143,7 @@ export class PositionService {
       }
       
       console.log('✅ Position updated:', id);
-      return result.data;
+      return result.data as unknown as Position;
     } catch (error) {
       return handleServiceError(error, 'Update position');
     }
@@ -77,7 +154,7 @@ export class PositionService {
    */
   async updatePositionStatus(
     id: string, 
-    status: PositionStatus,
+    status: typeof PositionStatus[keyof typeof PositionStatus],
     additionalData?: {
       mtTicket?: string;
       entryPrice?: number;
@@ -92,8 +169,15 @@ export class PositionService {
 
   /**
    * ユーザーのポジション一覧取得（userIdベース高速検索＋パフォーマンス最適化）
+   * ハイブリッドデータ対応: 実データ -> モックデータのフォールバック
    */
   async listUserPositions(filters: PositionFilters = {}): Promise<Position[]> {
+    // モックデータ使用判定
+    if (this.shouldUseMockData()) {
+      console.log('📊 Using mock data for positions');
+      return this.getMockDataWithFilters(filters);
+    }
+
     try {
       const userId = await getCurrentUserId();
       
@@ -119,8 +203,25 @@ export class PositionService {
         });
       }, 'List user positions');
       
-      return result.data || [];
+      const realData = (result.data as unknown as Position[]) || [];
+      
+      // 実データが空の場合、ハイブリッドモードならモックデータを返す
+      if (realData.length === 0 && process.env.NEXT_PUBLIC_DATA_SOURCE === 'hybrid') {
+        console.log('⚠️ No real data found, falling back to mock data');
+        return this.getMockDataWithFilters(filters);
+      }
+      
+      console.log('🟢 Using real data for positions:', realData.length);
+      return realData;
     } catch (error) {
+      console.error('❌ Real data fetch failed:', error);
+      
+      // エラー発生時、ハイブリッドモードならモックデータにフォールバック
+      if (process.env.NEXT_PUBLIC_DATA_SOURCE === 'hybrid') {
+        console.log('🔄 Falling back to mock data due to error');
+        return this.getMockDataWithFilters(filters);
+      }
+      
       return handleServiceError(error, 'List user positions');
     }
   }
@@ -281,7 +382,7 @@ export class PositionService {
   async getPosition(id: string): Promise<Position | null> {
     try {
       const result = await amplifyClient.models.Position.get({ id });
-      return result.data || null;
+      return (result.data as unknown as Position) || null;
     } catch (error) {
       console.error('❌ Get position error:', error);
       return null;

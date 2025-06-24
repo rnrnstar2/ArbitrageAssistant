@@ -19,6 +19,8 @@ interface AuthContainerProps {
   cardClassName?: string;
   enableSignUp?: boolean;
   enableForgotPassword?: boolean;
+  signIn?: (email: string, password: string) => Promise<unknown>;
+  isLoading?: boolean;
 }
 
 export function AuthContainer({
@@ -32,6 +34,8 @@ export function AuthContainer({
   cardClassName,
   enableSignUp = true,
   enableForgotPassword = true,
+  signIn,
+  isLoading = false,
 }: AuthContainerProps) {
   const [currentStep, setCurrentStep] = useState<AuthStep>(initialStep);
   const [confirmEmail, setConfirmEmail] = useState('');
@@ -112,6 +116,8 @@ export function AuthContainer({
           onForgotPassword={enableForgotPassword ? handleGoToForgotPassword : undefined}
           className={className}
           cardClassName={cardClassName}
+          signIn={signIn}
+          isLoading={isLoading}
         />
       );
   }

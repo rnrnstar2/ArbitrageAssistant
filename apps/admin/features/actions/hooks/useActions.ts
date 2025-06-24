@@ -1,82 +1,59 @@
-import { useState, useEffect, useMemo } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import { getCurrentUser } from 'aws-amplify/auth';
-import type { Action } from '@repo/shared-amplify/types';
+import { useState, useEffect, useCallback } from 'react';
+import { dummyActions } from '../../../lib/mock-data';
+import type { Action } from '@repo/shared-types';
 
 export function useActions() {
   const [actions, setActions] = useState<Action[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  
-  const client = useMemo(() => generateClient(), []);
 
-  const loadActions = async () => {
+  const loadActions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Loading actions...');
+      console.log('📊 Loading dummy actions...');
       
-      const user = await getCurrentUser();
-      console.log('Current user:', { userId: user.userId });
+      // ダミーデータ読み込み（ローディング演出）
+      await new Promise(resolve => setTimeout(resolve, 350));
       
-      // MVPシステム設計書v7.0準拠 - GSI actionsByUserIdAndStatusを使用した高速クエリ
-      const result = await (client as any).models.Action.listActionByUserIdAndStatus({
-        userId: user.userId
-        // status: null, // 全ステータスを取得
-      });
-      
-      console.log('Action list result:', result);
-      
-      if (result.errors && result.errors.length > 0) {
-        const errorMsg = result.errors.map((e: any) => e.message).join(', ');
-        console.error('GraphQL errors:', result.errors);
-        throw new Error(`GraphQL Error: ${errorMsg}`);
-      }
-      
-      // 最新順にソート - nullチェックを追加
-      const sortedActions = (result.data || []).sort((a: any, b: any) => {
+      // 最新順にソート
+      const sortedActions = [...dummyActions].sort((a, b) => {
         const aTime = a.updatedAt || a.createdAt || '';
         const bTime = b.updatedAt || b.createdAt || '';
         return new Date(bTime).getTime() - new Date(aTime).getTime();
       });
       
       setActions(sortedActions);
+      console.log('✅ Dummy actions loaded:', sortedActions.length);
       
     } catch (err) {
-      console.error('Failed to load actions:', err);
+      console.error('❌ Failed to load dummy actions:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
       setActions([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Action実行 - MVPシステム設計書準拠
-  const executeAction = async (actionId: string) => {
+  // Action実行 - ダミー実装
+  const executeAction = useCallback(async (actionId: string) => {
     try {
-      // PENDING→EXECUTINGに変更してSubscription経由でHedge Systemが実行
-      const result = await (client as any).models.Action.update({
-        id: actionId,
-        status: 'EXECUTING'
-      });
+      console.log('📝 Executing dummy action:', actionId);
       
-      if (result.errors && result.errors.length > 0) {
-        throw new Error(result.errors.map((e: any) => e.message).join(', '));
-      }
-      
-      // Hedge SystemのSubscriptionが処理
-      console.log('Action execution triggered:', actionId);
+      // ダミー実装：実行をログ出力
+      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log('✅ Dummy action executed:', actionId);
       
     } catch (err) {
-      console.error('Failed to execute action:', err);
+      console.error('❌ Failed to execute dummy action:', err);
       throw err;
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadActions();
-  }, []); // 空の依存配列で初回のみ実行
+  }, [loadActions]);
 
   return {
     actions,

@@ -21,10 +21,12 @@ export function useUserStatus() {
       setError(null);
       const userId = await getCurrentUserId();
       const result = await userService.getUser(userId);
-      setUserStatus({
-        pcStatus: result.pcStatus,
-        isActive: result.isActive
-      });
+      if (result) {
+        setUserStatus({
+          pcStatus: result.pcStatus,
+          isActive: result.isActive
+        });
+      }
     } catch (err) {
       setError(err as Error);
     } finally {
@@ -35,8 +37,7 @@ export function useUserStatus() {
   const updateStatus = useCallback(async (pcStatus: PCStatus) => {
     try {
       setError(null);
-      const userId = await getCurrentUserId();
-      await userService.updateUserStatus(userId, pcStatus);
+      await userService.updatePCStatus(pcStatus);
       // ステータス更新後に再取得
       await fetchUserStatus();
     } catch (err) {

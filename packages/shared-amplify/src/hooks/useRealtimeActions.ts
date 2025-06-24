@@ -22,8 +22,16 @@ export function useRealtimeActions() {
         setLoading(true);
         setError(null);
         
-        subscription = await subscriptionService.subscribeToActions((updatedActions) => {
-          setActions(updatedActions);
+        subscription = await subscriptionService.subscribeToActions((updatedAction) => {
+          setActions(prev => {
+            const index = prev.findIndex(a => a.id === updatedAction.id);
+            if (index >= 0) {
+              const newActions = [...prev];
+              newActions[index] = updatedAction;
+              return newActions;
+            }
+            return [...prev, updatedAction];
+          });
           setLoading(false);
         });
       } catch (err) {

@@ -9,7 +9,9 @@
         "./features/*",
         "./hooks/*",
         "./utils/*"
-      ]
+      ],
+      "@/schema": ["../../packages/shared-backend/amplify/data/resource"],
+      "@/backend-types": ["../../packages/shared-backend"]
     },
     "noEmit": true,
     "esModuleInterop": true,

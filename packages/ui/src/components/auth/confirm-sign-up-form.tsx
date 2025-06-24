@@ -111,7 +111,7 @@ export function ConfirmSignUpForm({ email, onSignIn, className, cardClassName }:
                   id="confirmationCode"
                   placeholder="6桁の確認コード"
                   maxLength={6}
-                  className="h-11 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-center text-lg tracking-widest"
+                  className="h-11 bg-white border-gray-200 focus:border-blue-500 focus:ring-blue-500 text-center text-lg tracking-widest selection:bg-blue-500 selection:text-white"
                   {...smartForm.form.register('code')}
                 />
                 {smartForm.form.formState.errors.code && (

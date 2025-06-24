@@ -22,8 +22,16 @@ export function useRealtimePositions() {
         setLoading(true);
         setError(null);
         
-        subscription = await subscriptionService.subscribeToPositions((updatedPositions) => {
-          setPositions(updatedPositions);
+        subscription = await subscriptionService.subscribeToPositions((updatedPosition) => {
+          setPositions(prev => {
+            const index = prev.findIndex(p => p.id === updatedPosition.id);
+            if (index >= 0) {
+              const newPositions = [...prev];
+              newPositions[index] = updatedPosition;
+              return newPositions;
+            }
+            return [...prev, updatedPosition];
+          });
           setLoading(false);
         });
       } catch (err) {

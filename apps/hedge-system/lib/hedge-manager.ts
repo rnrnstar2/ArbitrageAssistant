@@ -5,15 +5,14 @@ import {
   Symbol,
   ExecutionType
 } from '@repo/shared-types';
-import { amplifyClient, getCurrentUserId } from './amplify-client';
-import { listOpenPositions } from './graphql/queries';
+import { amplifyClient, getCurrentUserId, listOpenPositions } from './amplify-client';
 
 // ========================================
 // 型定義・インターフェース
 // ========================================
 
 export interface NetPosition {
-  symbol: SymbolEnum;
+  symbol: Symbol;
   netVolume: number;
   totalBuyVolume: number;
   totalSellVolume: number;
@@ -34,7 +33,7 @@ export interface HedgeAnalysis {
 
 export interface HedgeSuggestion {
   type: 'CREATE_HEDGE' | 'CLOSE_EXCESS' | 'ADJUST_VOLUME' | 'OPTIMIZE_MARGIN';
-  symbol: SymbolEnum;
+  symbol: Symbol;
   action: 'BUY' | 'SELL';
   volume: number;
   reason: string;
@@ -219,11 +218,11 @@ export class HedgeManager {
    * ネットポジション計算（シンボル別）
    */
   private calculateNetPositions(positions: Position[]): NetPosition[] {
-    const positionsBySymbol = new Map<SymbolEnum, Position[]>();
+    const positionsBySymbol = new Map<Symbol, Position[]>();
     
     // シンボル別にグループ化
     positions.forEach(position => {
-      const symbol = position.symbol as SymbolEnum;
+      const symbol = position.symbol as Symbol;
       if (!positionsBySymbol.has(symbol)) {
         positionsBySymbol.set(symbol, []);
       }
@@ -356,8 +355,9 @@ export class HedgeManager {
     
     // クレジット使用量計算
     const usedCredit = this.calculateUsedCredit(positions, account);
-    const availableCredit = Math.max(0, account.credit - usedCredit);
-    const utilizationRate = account.credit > 0 ? usedCredit / account.credit : 0;
+    const credit = account.credit ?? 0; // null対応
+    const availableCredit = Math.max(0, credit - usedCredit);
+    const utilizationRate = credit > 0 ? usedCredit / credit : 0;
     
     // クレジット効率性計算（利益/使用クレジット）
     const totalUnrealizedPnL = positions.reduce((sum, p) => sum + this.calculatePositionPnL(p), 0);
@@ -365,7 +365,7 @@ export class HedgeManager {
     
     return {
       accountId,
-      totalCredit: account.credit,
+      totalCredit: credit,
       usedCredit,
       availableCredit,
       utilizationRate,
@@ -448,7 +448,7 @@ export class HedgeManager {
     if (creditAnalysis.creditEfficiency < 0) {
       suggestions.push({
         type: 'OPTIMIZE_MARGIN',
-        symbol: 'USDJPY' as SymbolEnum, // デフォルト
+        symbol: 'USDJPY' as Symbol, // デフォルト
         action: 'SELL',
         volume: 0,
         reason: `Poor credit efficiency: ${creditAnalysis.creditEfficiency.toFixed(4)}`,
@@ -503,12 +503,7 @@ export class HedgeManager {
         await this.initializeUserId();
       }
       
-      const result = await amplifyClient.graphql({
-        query: listOpenPositions,
-        variables: { userId: this.currentUserId }
-      });
-      
-      const allPositions = result.data.listPositions.items;
+      const allPositions = await listOpenPositions();
       return allPositions.filter((p: Position) => 
         p.accountId === accountId && p.status === PositionStatus.OPEN
       );
@@ -565,13 +560,14 @@ export class HedgeManager {
   private calculateUsedCredit(positions: Position[], account: Account): number {
     const totalMargin = this.calculateMarginUsed(positions);
     // クレジットはマージンから優先的に使用されると仮定
-    return Math.min(totalMargin, account.credit);
+    const credit = account.credit ?? 0; // null対応
+    return Math.min(totalMargin, credit);
   }
 
   /**
    * マージン影響見積もり
    */
-  private estimateMarginImpact(symbol: SymbolEnum, volume: number): number {
+  private estimateMarginImpact(symbol: Symbol, volume: number): number {
     // 簡易実装：シンボルとボリュームから推定
     const baseMargin = 1000; // 1ロットあたりのベースマージン
     return volume * baseMargin;

@@ -1,44 +1,88 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": [
+    "packages/shared-backend/amplify_outputs.json",
+    ".env*"
+  ],
+  "globalEnv": [
+    "NEXT_PUBLIC_*",
+    "NODE_ENV",
+    "AWS_*"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*", "amplify_outputs.json"],
-      "outputs": ["dist/**", "out/**", ".next/**"],
-      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"],
-      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
-    },
-    "check-types": {
-      "dependsOn": ["^check-types"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "amplify_outputs.json",
+        "!**/*.test.*",
+        "!**/*.spec.*"
+      ],
+      "outputs": [
+        "dist/**",
+        "out/**", 
+        ".next/**",
+        "src-tauri/target/**"
+      ],
+      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"],
+      "persistent": false
     },
     "dev": {
       "dependsOn": ["@repo/shared-amplify#build"],
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "**/*.{ts,tsx,js,jsx}",
+        "eslint.config.*",
+        ".eslintrc.*",
+        "!dist/**",
+        "!out/**"
+      ],
+      "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
+    },
+    "check-types": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "**/*.{ts,tsx}",
+        "tsconfig.json",
+        "!dist/**",
+        "!out/**"
+      ]
     },
     "test": {
-      "dependsOn": ["^test"],
+      "dependsOn": ["^build"],
+      "inputs": [
+        "**/*.{ts,tsx,js,jsx}",
+        "**/*.test.*",
+        "**/*.spec.*",
+        "vitest.config.*",
+        "jest.config.*"
+      ],
       "outputs": ["coverage/**"]
     },
     "build:css": {
       "dependsOn": ["^build:css"],
+      "inputs": [
+        "**/*.css",
+        "tailwind.config.*",
+        "postcss.config.*"
+      ],
       "outputs": ["dist/**/*.css"]
-    },
-    "dev:css": {
-      "cache": false,
-      "persistent": true
     },
     "amplify:deploy": {
       "dependsOn": ["@repo/shared-backend#build"],
-      "inputs": ["amplify/**", "*.ts"],
+      "inputs": [
+        "amplify/**",
+        "*.ts",
+        "amplify_outputs.json"
+      ],
       "outputs": ["amplify_outputs.json"],
-      "cache": false
-    },
-    "amplify:pull": {
       "cache": false
     }
   }

@@ -17,7 +17,7 @@ import {
   RealtimePosition, 
   RealtimeAccount,
   ExecutionType,
-  SymbolEnum
+  Symbol
 } from './types';
 import { amplifyClient } from './amplify-client';
 import { PriceMonitor, PriceUpdate } from './price-monitor';
@@ -577,11 +577,11 @@ export class WebSocketServer {
   async sendOpenCommand(params: {
     accountId: string;
     positionId: string;
-    symbol: SymbolEnum;
+    symbol: Symbol;
     volume: number;
     executionType?: ExecutionType;
   }): Promise<any> {
-    const command: WSOpenCommand = {
+    const command = {
       type: WSMessageType.OPEN,
       timestamp: new Date().toISOString(),
       accountId: params.accountId,
@@ -592,7 +592,7 @@ export class WebSocketServer {
       metadata: {
         timestamp: new Date().toISOString()
       }
-    };
+    } as unknown as WSOpenCommand;
 
     const connectionId = this.getConnectionIdFromAccount(params.accountId);
     if (connectionId) {
@@ -609,12 +609,12 @@ export class WebSocketServer {
     accountId: string;
     positionId: string;
   }): Promise<any> {
-    const command: WSCloseCommand = {
+    const command = {
       type: WSMessageType.CLOSE,
       timestamp: new Date().toISOString(),
       accountId: params.accountId,
       positionId: params.positionId
-    };
+    } as unknown as WSCloseCommand;
 
     const connectionId = this.getConnectionIdFromAccount(params.accountId);
     if (connectionId) {
@@ -644,10 +644,10 @@ export class WebSocketServer {
           timestamp: new Date().toISOString(),
           accountId,
           positionId: `${accountId}_${Date.now()}`,
-          symbol: command.symbol as SymbolEnum,
+          symbol: command.symbol,
           side: command.type === 'buy' ? 'BUY' : 'SELL',
           volume: command.volume
-        } as WSOpenCommand;
+        } as unknown as WSOpenCommand;
         break;
         
       case 'close':
@@ -656,7 +656,7 @@ export class WebSocketServer {
           timestamp: new Date().toISOString(),
           accountId,
           positionId: accountId // 実際のポジションIDが必要
-        } as WSCloseCommand;
+        } as unknown as WSCloseCommand;
         break;
         
       default:

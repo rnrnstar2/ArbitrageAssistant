@@ -55,6 +55,28 @@ npm run dev --turbopack  # 開発
 npm run check-types      # 型チェック
 ```
 
+### Next.jsキャッシュ問題対策
+
+UIの変更が反映されない場合の対処法：
+
+```bash
+# 方法1: クリーンな開発サーバー起動
+cd apps/hedge-system
+npm run dev:clean  # .nextフォルダを削除して起動
+
+# 方法2: より徹底的なクリーン起動（推奨）
+npm run dev:fresh  # .nextとnode_modules/.cacheを削除して起動
+
+# 方法3: ブラウザでハードリロード
+# Mac: Cmd + Shift + R
+# Windows/Linux: Ctrl + Shift + R
+```
+
+#### 開発効率化のヒント
+- UIパッケージの変更時は`dev:clean`を使用
+- 大幅な変更時は`dev:fresh`を使用  
+- `next.config.js`でwatchOptionsを設定済み（500msごとにファイル変更を検知）
+
 ## アーキテクチャ
 
 ### 構成

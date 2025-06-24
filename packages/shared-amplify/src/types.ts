@@ -7,7 +7,30 @@
  * - MVP設計書v7.0のuserIdベース最適化対応
  */
 
-// Re-export from shared-types (MVP設計書準拠の統一型定義)
+// Import from shared-types (MVP設計書準拠の統一型定義)
+import type {
+  User,
+  Account,
+  Position,
+  Action,
+  Symbol,
+  PositionStatus,
+  ActionType,
+  ActionStatus,
+  ExecutionType,
+  UserRole,
+  PCStatus,
+  CreatePositionInput,
+  UpdatePositionInput,
+  CreateActionInput,
+  UpdateActionInput,
+  CreateAccountInput,
+  UpdateAccountInput,
+  CreateUserInput,
+  UpdateUserInput
+} from '@repo/shared-types';
+
+// Re-export types
 export type {
   User,
   Account,
@@ -24,10 +47,16 @@ export type {
   UpdatePositionInput,
   CreateActionInput,
   UpdateActionInput,
-  UpdateAccountInput
-} from '@repo/shared-types';
+  CreateAccountInput,
+  UpdateAccountInput,
+  CreateUserInput,
+  UpdateUserInput
+};
 
 // Enum Values are already defined in shared-types
+
+// AWS Amplify compatibility types
+export type Nullable<T> = T | null;
 
 // Input Types are imported from shared-types above
 

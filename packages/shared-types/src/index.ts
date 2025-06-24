@@ -1,29 +1,52 @@
 // MVPシステム設計書準拠の統一型定義
 
+// AWS Amplify compatibility types
+export type Nullable<T> = T | null;
+
 // =============================================================================
 // User Types
 // =============================================================================
 
-export enum UserRole {
-  CLIENT = 'CLIENT',
-  ADMIN = 'ADMIN'
-}
+export const UserRole = {
+  CLIENT: 'CLIENT',
+  ADMIN: 'ADMIN'
+} as const;
 
-export enum PCStatus {
-  ONLINE = 'ONLINE',
-  OFFLINE = 'OFFLINE'
-}
+export type UserRole = typeof UserRole[keyof typeof UserRole];
+
+export const PCStatus = {
+  ONLINE: 'ONLINE',
+  OFFLINE: 'OFFLINE'
+} as const;
+
+export type PCStatus = typeof PCStatus[keyof typeof PCStatus];
 
 export interface User {
   id: string;
   email: string;
   name: string;
   role: UserRole;
-  pcStatus?: PCStatus;
+  pcStatus?: Nullable<PCStatus>;
   isActive: boolean;
   accounts?: Account[];
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Nullable<string>;
+  updatedAt?: Nullable<string>;
+}
+
+export interface CreateUserInput {
+  email: string;
+  name: string;
+  role: UserRole;
+  isActive?: boolean;
+  pcStatus?: PCStatus;
+}
+
+export interface UpdateUserInput {
+  id: string;
+  name?: string;
+  role?: UserRole;
+  pcStatus?: PCStatus;
+  isActive?: boolean;
 }
 
 // =============================================================================
@@ -37,16 +60,28 @@ export interface Account {
   accountNumber: string;
   serverName: string;
   displayName: string;
+  balance?: Nullable<number>;
+  credit?: Nullable<number>;
+  equity?: Nullable<number>;
+  isActive?: Nullable<boolean>;
+  lastUpdated?: Nullable<string>;
+  user?: User;
+  positions?: Position[];
+  actions?: Action[];
+  createdAt?: Nullable<string>;
+  updatedAt?: Nullable<string>;
+}
+
+export interface CreateAccountInput {
+  userId: string;
+  brokerType: string;
+  accountNumber: string;
+  serverName: string;
+  displayName: string;
   balance?: number;
   credit?: number;
   equity?: number;
   isActive?: boolean;
-  lastUpdated?: string;
-  user?: User;
-  positions?: Position[];
-  actions?: Action[];
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface UpdateAccountInput {
@@ -57,6 +92,7 @@ export interface UpdateAccountInput {
   margin?: number;
   freeMargin?: number;
   marginLevel?: number;
+  isActive?: boolean;
   lastUpdated?: string;
 }
 
@@ -64,27 +100,33 @@ export interface UpdateAccountInput {
 // Position Types
 // =============================================================================
 
-export enum Symbol {
-  USDJPY = 'USDJPY',
-  EURUSD = 'EURUSD',
-  EURGBP = 'EURGBP',
-  XAUUSD = 'XAUUSD'
-}
+export const Symbol = {
+  USDJPY: 'USDJPY',
+  EURUSD: 'EURUSD',
+  EURGBP: 'EURGBP',
+  XAUUSD: 'XAUUSD'
+} as const;
 
-export enum PositionStatus {
-  PENDING = 'PENDING',
-  OPENING = 'OPENING',
-  OPEN = 'OPEN',
-  CLOSING = 'CLOSING',
-  CLOSED = 'CLOSED',
-  STOPPED = 'STOPPED',
-  CANCELED = 'CANCELED'
-}
+export type Symbol = typeof Symbol[keyof typeof Symbol];
 
-export enum ExecutionType {
-  ENTRY = 'ENTRY',
-  EXIT = 'EXIT'
-}
+export const PositionStatus = {
+  PENDING: 'PENDING',
+  OPENING: 'OPENING',
+  OPEN: 'OPEN',
+  CLOSING: 'CLOSING',
+  CLOSED: 'CLOSED',
+  STOPPED: 'STOPPED',
+  CANCELED: 'CANCELED'
+} as const;
+
+export type PositionStatus = typeof PositionStatus[keyof typeof PositionStatus];
+
+export const ExecutionType = {
+  ENTRY: 'ENTRY',
+  EXIT: 'EXIT'
+} as const;
+
+export type ExecutionType = typeof ExecutionType[keyof typeof ExecutionType];
 
 export interface Position {
   id: string;
@@ -94,17 +136,17 @@ export interface Position {
   status: PositionStatus;
   symbol: Symbol;
   volume: number;
-  entryPrice?: number;
-  entryTime?: string;
-  exitPrice?: number;
-  exitTime?: string;
-  exitReason?: string;
-  trailWidth?: number;
-  triggerActionIds?: string;
-  mtTicket?: string;
-  memo?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  entryPrice?: Nullable<number>;
+  entryTime?: Nullable<string>;
+  exitPrice?: Nullable<number>;
+  exitTime?: Nullable<string>;
+  exitReason?: Nullable<string>;
+  trailWidth?: Nullable<number>;
+  triggerActionIds?: Nullable<string>;
+  mtTicket?: Nullable<string>;
+  memo?: Nullable<string>;
+  createdAt?: Nullable<string>;
+  updatedAt?: Nullable<string>;
 }
 
 export interface CreatePositionInput {
@@ -144,34 +186,38 @@ export interface PositionFilter {
 // Action Types
 // =============================================================================
 
-export enum ActionType {
-  ENTRY = 'ENTRY',
-  CLOSE = 'CLOSE'
-}
+export const ActionType = {
+  ENTRY: 'ENTRY',
+  CLOSE: 'CLOSE'
+} as const;
 
-export enum ActionStatus {
-  PENDING = 'PENDING',
-  EXECUTING = 'EXECUTING',
-  EXECUTED = 'EXECUTED',
-  FAILED = 'FAILED'
-}
+export type ActionType = typeof ActionType[keyof typeof ActionType];
+
+export const ActionStatus = {
+  PENDING: 'PENDING',
+  EXECUTING: 'EXECUTING',
+  EXECUTED: 'EXECUTED',
+  FAILED: 'FAILED'
+} as const;
+
+export type ActionStatus = typeof ActionStatus[keyof typeof ActionStatus];
 
 export interface Action {
   id: string;
   userId: string;
   accountId: string;
   positionId: string;
-  triggerPositionId?: string;
+  triggerPositionId?: Nullable<string>;
   type: ActionType;
   status: ActionStatus;
-  createdAt?: string;
-  updatedAt?: string;
+  createdAt?: Nullable<string>;
+  updatedAt?: Nullable<string>;
 }
 
 export interface CreateActionInput {
   userId: string;
   accountId: string;
-  positionId?: string;
+  positionId: string;
   triggerPositionId?: string;
   type: ActionType;
   status?: ActionStatus;

@@ -26,7 +26,7 @@ export function useHedgeAnalysis(accountId?: string) {
       
       const analysisResults = await Promise.all(
         targetAccounts.map(async (account) => {
-          const [positions, netPositions, creditUtilization] = await Promise.all([
+          const [positions, hedgeAnalysisData, creditUtilization] = await Promise.all([
             positionService.listUserPositions({ accountId: account.id }),
             positionService.calculateNetPositions(account.id),
             accountService.calculateCreditUtilization(account.id)
@@ -41,7 +41,7 @@ export function useHedgeAnalysis(accountId?: string) {
           
           return {
             accountId: account.id,
-            netPositions,
+            netPositions: hedgeAnalysisData.netPositions as Record<'USDJPY' | 'EURUSD' | 'EURGBP' | 'XAUUSD', number>,
             totalPositions: positions,
             openPositions,
             trailPositions,

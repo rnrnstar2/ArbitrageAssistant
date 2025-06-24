@@ -53,7 +53,7 @@ export class SubscriptionService {
       }).subscribe({
         next: (data) => {
           try {
-            data.items.forEach(position => callback(position));
+            data.items.forEach(position => callback(position as unknown as Position));
           } catch (error) {
             console.error('❌ Position subscription callback error:', error);
           }
@@ -100,7 +100,7 @@ export class SubscriptionService {
       }).subscribe({
         next: (data) => {
           try {
-            data.items.forEach(action => callback(action));
+            data.items.forEach(action => callback(action as unknown as Action));
           } catch (error) {
             console.error('❌ Action subscription callback error:', error);
           }
@@ -143,7 +143,7 @@ export class SubscriptionService {
       }).subscribe({
         next: (data) => {
           try {
-            data.items.forEach(account => callback(account));
+            data.items.forEach(account => callback(account as unknown as Account));
           } catch (error) {
             console.error('❌ Account subscription callback error:', error);
           }

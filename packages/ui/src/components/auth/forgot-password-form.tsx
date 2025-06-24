@@ -144,7 +144,7 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
                     id="confirmationCode"
                     placeholder="6桁の確認コード"
                     maxLength={6}
-                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 text-center text-lg tracking-widest"
+                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 text-center text-lg tracking-widest selection:bg-blue-500 selection:text-white"
                     {...confirmForm.form.register('code')}
                   />
                   {confirmForm.form.formState.errors.code && (
@@ -162,7 +162,7 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
                     id="newPassword"
                     type="password"
                     placeholder="••••••••"
-                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 selection:bg-blue-500 selection:text-white"
                     {...confirmForm.form.register('newPassword')}
                   />
                   {confirmForm.form.formState.errors.newPassword && (
@@ -240,7 +240,7 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
                     id="confirmPassword"
                     type="password"
                     placeholder="••••••••"
-                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                    className="h-11 bg-white border-gray-200 focus:border-purple-500 focus:ring-purple-500 selection:bg-blue-500 selection:text-white"
                     {...confirmForm.form.register('confirmPassword')}
                   />
                   {confirmForm.form.formState.errors.confirmPassword && (
@@ -325,7 +325,7 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
                   id="email"
                   type="email"
                   placeholder="user@example.com"
-                  className="h-11 bg-white border-gray-200 focus:border-orange-500 focus:ring-orange-500"
+                  className="h-11 bg-white border-gray-200 focus:border-orange-500 focus:ring-orange-500 selection:bg-blue-500 selection:text-white"
                   {...requestForm.form.register('email')}
                 />
                 {requestForm.form.formState.errors.email && (

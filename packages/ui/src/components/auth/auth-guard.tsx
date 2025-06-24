@@ -1,16 +1,31 @@
 "use client";
 
-import { useAuth } from "./auth-provider";
+import { useContext } from "react";
+import { AuthContext } from "./auth-provider";
 import { Loader2 } from "lucide-react";
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  fallback?: React.ReactNode;
+  fallback?: React.ReactNode | ((authContext: { signIn: (email: string, password: string) => Promise<unknown>; isLoading: boolean }) => React.ReactNode);
   loadingComponent?: React.ReactNode;
 }
 
 export function AuthGuard({ children, fallback, loadingComponent }: AuthGuardProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const context = useContext(AuthContext);
+  
+  // AuthProviderが存在しない場合の処理
+  if (context === undefined) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center justify-center text-center space-y-4">
+          <div className="text-xl font-medium text-red-600">認証システムエラー</div>
+          <div className="text-sm text-muted-foreground">AuthProviderが見つかりません</div>
+        </div>
+      </div>
+    );
+  }
+  
+  const { isAuthenticated, isLoading } = context;
 
   if (isLoading) {
     if (loadingComponent) {
@@ -32,6 +47,9 @@ export function AuthGuard({ children, fallback, loadingComponent }: AuthGuardPro
 
   if (!isAuthenticated) {
     if (fallback) {
+      if (typeof fallback === 'function') {
+        return <>{fallback({ signIn: context.signIn, isLoading: context.isLoading })}</>;
+      }
       return <>{fallback}</>;
     }
 

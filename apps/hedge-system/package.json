@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "rm -rf .next && next dev",
+    "dev:fresh": "rm -rf .next node_modules/.cache && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
@@ -20,43 +22,28 @@
     "dev:css": "echo 'CSS is watched through Next.js dev server'"
   },
   "dependencies": {
-    "@aws-amplify/ui-react": "^6.11.2",
     "@repo/shared-amplify": "*",
     "@repo/shared-auth": "*",
-    "@repo/shared-backend": "*",
     "@repo/shared-types": "*",
     "@repo/ui": "*",
-    "@tauri-apps/api": "^2.5.0",
-    "@tauri-apps/plugin-process": "^2.2.1",
-    "@tauri-apps/plugin-updater": "^2.7.1",
-    "aws-amplify": "^6.15.0",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-process": "^2.0.0",
+    "@tauri-apps/plugin-updater": "^2.0.0",
     "lucide-react": "^0.510.0",
     "next": "15.3.2",
     "next-themes": "^0.4.6",
     "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "ws": "^8.18.0",
-    "zod": "^3.25.67"
+    "react-dom": "19.0.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/prettier-config": "*",
     "@repo/typescript-config": "*",
     "@repo/vitest-config": "*",
-    "@tailwindcss/postcss": "^4.1.6",
-    "@tauri-apps/cli": "^2.5.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
+    "@tauri-apps/cli": "^2.0.0",
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/ws": "^8.18.1",
-    "@vitejs/plugin-react": "^4.5.0",
-    "jsdom": "^26.1.0",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^4.1.6",
-    "typescript": "5.5.4",
-    "vitest": "^3.1.4"
+    "tailwindcss": "^3.4.0"
   }
 }

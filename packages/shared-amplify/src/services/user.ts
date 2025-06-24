@@ -34,7 +34,7 @@ export class UserService {
       }
       
       console.log('✅ User created:', result.data.id);
-      return result.data;
+      return result.data as unknown as User;
     } catch (error) {
       console.error('❌ Create user error:', error);
       throw handleGraphQLError(error);
@@ -58,7 +58,7 @@ export class UserService {
       }
       
       console.log('✅ User updated:', id);
-      return result.data;
+      return result.data as unknown as User;
     } catch (error) {
       console.error('❌ Update user error:', error);
       throw handleGraphQLError(error);
@@ -84,7 +84,7 @@ export class UserService {
   async getUser(id: string): Promise<User | null> {
     try {
       const result = await amplifyClient.models.User.get({ id });
-      return result.data || null;
+      return (result.data as unknown as User) || null;
     } catch (error) {
       console.error('❌ Get user error:', error);
       return null;
@@ -94,7 +94,7 @@ export class UserService {
   /**
    * PCステータス更新（複数システム連携用）
    */
-  async updatePCStatus(status: PCStatus): Promise<User | null> {
+  async updatePCStatus(status: typeof PCStatus[keyof typeof PCStatus]): Promise<User | null> {
     try {
       const userId = await getCurrentUserId();
       console.log('🖥️ Updating PC status:', userId, status);
@@ -119,7 +119,7 @@ export class UserService {
   /**
    * ユーザーロール更新
    */
-  async updateUserRole(id: string, role: UserRole): Promise<User> {
+  async updateUserRole(id: string, role: typeof UserRole[keyof typeof UserRole]): Promise<User> {
     console.log('👥 Updating user role:', id, role);
     return this.updateUser(id, { role });
   }
@@ -138,7 +138,7 @@ export class UserService {
         });
       });
       
-      return result.data || [];
+      return (result.data as unknown as User[]) || [];
     } catch (error) {
       console.error('❌ List online users error:', error);
       return [];
@@ -158,7 +158,7 @@ export class UserService {
         });
       });
       
-      return result.data || [];
+      return (result.data as unknown as User[]) || [];
     } catch (error) {
       console.error('❌ List active users error:', error);
       return [];

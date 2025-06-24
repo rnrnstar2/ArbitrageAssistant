@@ -5,4 +5,5 @@ export { TrailMonitor } from './TrailMonitor';
 export { ActionQueue } from './ActionQueue';
 export { CompactSystemOverview } from './CompactSystemOverview';
 export { EnhancedSystemOverview } from './EnhancedSystemOverview';
+export { MinimalSystemOverview } from './MinimalSystemOverview';
 export { ActionExecutionPanel } from './ActionExecutionPanel';

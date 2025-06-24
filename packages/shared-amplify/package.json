@@ -11,7 +11,8 @@
     "./config": "./src/config.ts",
     "./services": "./src/services/index.ts",
     "./hooks": "./src/hooks/index.ts",
-    "./types": "./src/types.ts"
+    "./types": "./src/types.ts",
+    "./utils/i18n": "./src/utils/i18n.ts"
   },
   "scripts": {
     "build": "tsc",
@@ -19,12 +20,15 @@
     "check-types": "tsc --noEmit",
     "lint": "echo 'Linting shared-amplify...'",
     "test": "echo 'Testing shared-amplify...'",
-    "clean": "rm -rf dist",
-    "prepack": "npm run build"
+    "clean": "rm -rf dist && rm -rf node_modules/.cache",
+    "prepack": "npm run build",
+    "check-auth": "npm run check-types",
+    "perf:stats": "echo 'Performance analysis not implemented yet'"
   },
   "dependencies": {
-    "aws-amplify": "^6.0.0",
-    "@repo/shared-types": "*"
+    "@aws-amplify/ui-react": "6.11.2",
+    "@repo/shared-types": "*",
+    "aws-amplify": "^6.0.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",

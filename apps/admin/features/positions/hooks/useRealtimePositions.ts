@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { generateClient } from 'aws-amplify/data';
+import { amplifyClient } from '@repo/shared-amplify';
 import type { Position, Account } from '@repo/shared-types';
 
-const client = generateClient();
+const client = amplifyClient;
 
 interface PositionWithAccount extends Position {
   account?: Account;
@@ -15,7 +15,7 @@ interface UseRealtimePositionsOptions {
 }
 
 interface UseRealtimePositionsResult {
-  positions: PositionWithAccount[];
+  positions: any[];
   loading: boolean;
   error: string | null;
   lastUpdate: Date | null;
@@ -34,7 +34,7 @@ export function useRealtimePositions({
   autoRefresh = true,
   refreshInterval = 5000 // 5秒
 }: UseRealtimePositionsOptions = {}): UseRealtimePositionsResult {
-  const [positions, setPositions] = useState<PositionWithAccount[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -51,11 +51,7 @@ export function useRealtimePositions({
         : {};
       
       const result = await client.models.Position.list({
-        filter,
-        // アカウント情報も含めて取得
-        include: {
-          account: true
-        }
+        filter
       });
       
       if (result.errors) {
@@ -65,13 +61,20 @@ export function useRealtimePositions({
       const positionsData = result.data || [];
       
       // ソート: アクティブ順、新しい順
-      const sortedPositions = positionsData.sort((a, b) => {
-        // まずアクティブ順
-        if (a.isActive !== b.isActive) {
-          return a.isActive ? -1 : 1;
+      const sortedPositions = positionsData.sort((a: any, b: any) => {
+        // まずアクティブ順（OPEN状態を優先）
+        const aIsActive = a.status === 'OPEN';
+        const bIsActive = b.status === 'OPEN';
+        if (aIsActive !== bIsActive) {
+          return aIsActive ? -1 : 1;
         }
         // 次に開設時間の新しい順
-        return new Date(b.openTime).getTime() - new Date(a.openTime).getTime();
+        const aTime = a.entryTime || a.createdAt;
+        const bTime = b.entryTime || b.createdAt;
+        if (aTime && bTime) {
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+        }
+        return 0;
       });
       
       setPositions(sortedPositions);
@@ -109,11 +112,11 @@ export function useRealtimePositions({
       
       // 全アクティブポジションを非アクティブとしてマーク
       const updatePromises = currentPositions
-        .filter(p => p.isActive)
-        .map(position => 
+        .filter((p: any) => p.status === 'OPEN')
+        .map((position: any) => 
           client.models.Position.update({
             id: position.id,
-            isActive: false
+            status: 'CLOSED'
           })
         );
       
@@ -132,14 +135,14 @@ export function useRealtimePositions({
    */
   const deleteInactivePositions = useCallback(async () => {
     try {
-      const inactivePositions = positions.filter(p => !p.isActive);
+      const inactivePositions = positions.filter((p: any) => p.status === 'CLOSED' || p.status === 'CANCELED');
       
       if (inactivePositions.length === 0) {
         console.log('No inactive positions to delete');
         return;
       }
       
-      const deletePromises = inactivePositions.map(position => 
+      const deletePromises = inactivePositions.map((position: any) => 
         client.models.Position.delete({ id: position.id })
       );
       
@@ -174,9 +177,9 @@ export function useRealtimePositions({
     const subscription = client.models.Position.observeQuery({
       filter: accountId ? { accountId: { eq: accountId } } : {}
     }).subscribe({
-      next: ({ items, isSynced }) => {
+      next: ({ items, isSynced }: { items: any; isSynced: any }) => {
         if (isSynced) {
-          const sortedItems = items.sort((a, b) => {
+          const sortedItems = items.sort((a: any, b: any) => {
             // アクティブ（OPEN）ポジションを上位に表示
             const aIsActive = a.status === 'OPEN';
             const bIsActive = b.status === 'OPEN';
@@ -200,7 +203,7 @@ export function useRealtimePositions({
           setLastUpdate(new Date());
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Position subscription error:', err);
         setError('Realtime update failed');
       }
@@ -228,7 +231,7 @@ export function useRealtimePositions({
  * ポジション統計Hook
  * 利益計算は削除（リアルタイムデータとして別途取得）
  */
-export function usePositionStats(positions: PositionWithAccount[]) {
+export function usePositionStats(positions: any[]) {
   const activePositions = positions.filter(p => p.status === 'OPEN');
   const inactivePositions = positions.filter(p => p.status === 'CLOSED' || p.status === 'CANCELED');
   
@@ -283,24 +286,25 @@ export function useAccountPositionStatus() {
   useEffect(() => {
     const fetchAccountStatus = async () => {
       try {
-        const accountsResult = await client.models.Account.list({
-          include: {
-            positions: true
-          }
-        });
+        const accountsResult = await client.models.Account.list();
         
         const accounts = accountsResult.data || [];
         const statusMap = new Map();
         
         for (const account of accounts) {
-          const positions = account.positions || [];
-          const activePositions = positions.filter(p => p.isActive);
-          const inactivePositions = positions.filter(p => !p.isActive);
+          // アカウント別にポジションを取得
+          const positionsResult = await client.models.Position.list({
+            filter: { accountId: { eq: account.id } }
+          });
           
-          // 最新の同期時刻を取得
-          const latestSync = positions.reduce((latest, position) => {
-            const positionSync = new Date(position.lastSync);
-            return !latest || positionSync > latest ? positionSync : latest;
+          const positions = positionsResult.data || [];
+          const activePositions = positions.filter((p: any) => p.status === 'OPEN');
+          const inactivePositions = positions.filter((p: any) => p.status === 'CLOSED' || p.status === 'CANCELED');
+          
+          // 最新の更新時刻を取得
+          const latestSync = positions.reduce((latest: Date | null, position: any) => {
+            const positionSync = position.updatedAt ? new Date(position.updatedAt) : null;
+            return !latest || (positionSync && positionSync > latest) ? positionSync : latest;
           }, null as Date | null);
           
           const isRecentSync = latestSync 

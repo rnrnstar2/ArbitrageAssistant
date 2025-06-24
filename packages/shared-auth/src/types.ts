@@ -44,6 +44,7 @@ export interface WSAuthConfig {
 export interface AuthProviderOptions {
   enableWebSocket?: boolean;
   websocketUrl?: string;
+  appType?: 'admin' | 'hedge-system';
 }
 
 export enum AuthErrorType {

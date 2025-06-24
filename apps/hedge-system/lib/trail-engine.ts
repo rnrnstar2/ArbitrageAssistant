@@ -1,8 +1,10 @@
 import { Position, Action, ActionStatus } from '@repo/shared-types';
 import { PriceMonitor } from './price-monitor';
 import { amplifyClient, getCurrentUserId } from './amplify-client';
-import { updateAction } from './graphql/mutations';
-import { listPositionsByUserId } from './graphql/queries';
+import { 
+  updateAction,
+  listUserPositions
+} from '@repo/shared-amplify';
 
 
 export interface TrailEngineStats {
@@ -130,14 +132,8 @@ export class TrailEngine {
       
       for (const actionId of actionIds) {
         try {
-          await amplifyClient.graphql({
-            query: updateAction,
-            variables: {
-              input: {
-                id: actionId,
-                status: ActionStatus.EXECUTING
-              }
-            }
+          await updateAction(actionId, {
+            status: ActionStatus.EXECUTING
           });
           succeeded++;
         } catch (error) {
@@ -216,12 +212,7 @@ export class TrailEngine {
    */
   private async getPosition(positionId: string): Promise<Position | null> {
     try {
-      const userId = await getCurrentUserId();
-      const result = await amplifyClient.graphql({
-        query: listPositionsByUserId,
-        variables: { userId }
-      }) as any;
-      const positions = result.data.listPositions.items;
+      const positions = await listUserPositions();
       return positions.find((p: Position) => p.id === positionId) || null;
     } catch (error) {
       console.error(`Failed to get position ${positionId}:`, error);
@@ -234,13 +225,7 @@ export class TrailEngine {
    */
   private async getTrailPositions(): Promise<Position[]> {
     try {
-      const userId = await getCurrentUserId();
-      const result = await amplifyClient.graphql({
-        query: listPositionsByUserId,
-        variables: { userId }
-      }) as any;
-      const positions = result.data.listPositions.items;
-      return positions.filter((p: Position) => p.trailWidth && p.trailWidth > 0);
+      return await listUserPositions({ hasTrail: true });
     } catch (error) {
       console.error('Failed to get trail positions:', error);
       return [];

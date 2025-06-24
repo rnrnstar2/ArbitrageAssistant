@@ -7,21 +7,26 @@
   ],
   "private": true,
   "scripts": {
-    "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "turbo dev --parallel",
     "dev:admin": "turbo dev --filter=admin",
-    "dev:hedge": "turbo dev --filter=hedge-system",
+    "dev:hedge": "cd apps/hedge-system && npm run tauri:dev",
     "dev:ui": "turbo dev --filter=@repo/ui",
-    "lint": "turbo lint",
-    "test": "vitest",
-    "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage",
-    "aws:check": "echo '🔍 AWS Account Check:' && aws sts get-caller-identity --query Account --output text && echo '✅ Expected: 183048365370'",
-    "sandbox": "npm run aws:check && cd packages/shared-backend && npx ampx sandbox",
+    "build": "turbo build --filter=!@repo/shared-backend",
+    "lint": "turbo lint --continue",
+    "lint:fix": "turbo lint -- --fix",
+    "type-check": "turbo check-types --continue",
+    "test": "turbo test --continue",
+    "test:watch": "turbo test -- --watch",
+    "release:hedge": "./scripts/release-hedge-system.sh",
+    "sandbox": "echo '🔍 AWS Account Check:' && aws sts get-caller-identity --query Account --output text && echo '✅ Expected: 183048365370' && cd packages/shared-backend && npx ampx sandbox",
+    "sandbox:delete": "npx ampx sandbox delete --identifier ArbitrageAssistant-dev-sandbox",
+    "clean": "turbo clean && rm -rf node_modules/.cache",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "build:css": "turbo build:css",
-    "dev:css": "turbo dev:css",
-    "release:hedge": "./scripts/release-hedge-system.sh"
+    "sync:amplify": "./scripts/sync-amplify-outputs.sh",
+    "auth:test": "turbo run test --filter=@repo/shared-auth @repo/shared-amplify",
+    "auth:security": "npm audit --filter=@repo/shared-auth && npm audit --filter=@repo/shared-amplify",
+    "predev": "npm run sync:amplify",
+    "postinstall": "npm run sync:amplify"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -31,10 +36,12 @@
     "jsdom": "^26.1.0",
     "prettier": "^3.2.5",
     "turbo": "^2.3.3",
+    "typescript": "5.5.4",
     "vitest": "^3.1.4"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.15.0",
+    "npm": ">=9.8.0"
   },
   "packageManager": "npm@9.8.0"
 }

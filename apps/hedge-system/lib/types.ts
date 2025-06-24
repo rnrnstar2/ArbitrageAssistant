@@ -23,6 +23,14 @@ export type {
   Symbol
 } from '@repo/shared-types';
 
+// Enumsの値をインポート
+import {
+  ExecutionType,
+  PositionStatus,
+  ActionType,
+  ActionStatus
+} from '@repo/shared-types';
+
 // Hedge System 固有のフィルター型
 export interface PositionFilter {
   userId?: string;

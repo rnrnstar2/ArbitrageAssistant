@@ -17,8 +17,12 @@ import {
 import { amplifyClient, getCurrentUserId } from './amplify-client';
 import { WebSocketHandler } from './websocket-server';
 import { TrailEngine } from './trail-engine';
-import { createPosition, updatePosition } from './graphql/mutations';
-import { listOpenPositions, listTrailPositions } from './graphql/queries';
+import { 
+  positionService,
+  createPosition,
+  updatePosition,
+  listUserPositions
+} from '@repo/shared-amplify';
 
 /**
  * Position Execution Engine - MVPシステム設計書準拠
@@ -74,7 +78,7 @@ export class PositionExecutor {
    */
   async createPosition(params: {
     accountId: string;
-    symbol: SymbolEnum;
+    symbol: Symbol;
     volume: number;
     executionType: ExecutionType;
     trailWidth?: number;
@@ -95,7 +99,7 @@ export class PositionExecutor {
     };
 
     const result = await this.createPositionGraphQL(positionInput);
-    return result.data.createPosition;
+    return result.data;
   }
 
   /**
@@ -148,20 +152,20 @@ export class PositionExecutor {
     try {
       console.log(`🚀 Executing entry for position: ${position.id}`);
       
-      const command: WSOpenCommand = {
+      const command = {
         type: WSMessageType.OPEN,
         accountId: position.accountId,
         positionId: position.id,
-        symbol: position.symbol as SymbolEnum,
+        symbol: position.symbol,
         side: this.determinePositionSide(position),
         volume: position.volume,
-        trailWidth: position.trailWidth,
+        trailWidth: position.trailWidth ?? 0,
         timestamp: new Date().toISOString(),
         metadata: {
           executionType: position.executionType,
           timestamp: new Date().toISOString()
         }
-      };
+      } as unknown as WSOpenCommand;
 
       await this.sendWSCommand(command);
       console.log(`✅ Entry command sent for position: ${position.id}`);
@@ -179,11 +183,11 @@ export class PositionExecutor {
     try {
       console.log(`🔄 Executing exit for position: ${position.id}`);
       
-      const command: WSCloseCommand = {
+      const command = {
         type: WSMessageType.CLOSE,
         accountId: position.accountId,
         positionId: position.id,
-        symbol: position.symbol as SymbolEnum,
+        symbol: position.symbol,
         side: this.getOppositePositionSide(position),
         volume: position.volume,
         timestamp: new Date().toISOString(),
@@ -191,7 +195,7 @@ export class PositionExecutor {
           executionType: ExecutionType.EXIT,
           timestamp: new Date().toISOString()
         }
-      };
+      } as unknown as WSCloseCommand;
 
       await this.sendWSCommand(command);
       console.log(`✅ Exit command sent for position: ${position.id}`);
@@ -365,49 +369,50 @@ export class PositionExecutor {
   // ========================================
 
   /**
-   * ポジション作成（GraphQL）
+   * ポジション作成（Amplify Gen2）
    */
-  private async createPositionGraphQL(input: CreatePositionInput): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: createPosition,
-      variables: { input: { ...input, userId } }
-    });
+  private async createPositionGraphQL(input: CreatePositionInput): Promise<{ data: Position }> {
+    const result = await createPosition(input);
+    return { data: result };
   }
 
   /**
-   * ポジション状態更新（GraphQL）
+   * ポジション状態更新（Amplify Gen2）
    */
-  private async updatePositionStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<any> {
-    const updateInput = { id, ...additionalFields };
+  private async updatePositionStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<{ data: Position }> {
+    const updateInput: any = { ...additionalFields };
     if (status) updateInput.status = status;
     
-    return amplifyClient.graphql({
-      query: updatePosition,
-      variables: { input: updateInput }
-    });
+    const result = await updatePosition(id, updateInput);
+    return { data: result };
   }
 
   /**
-   * オープンポジション一覧取得（GraphQL）
+   * オープンポジション一覧取得（Amplify Gen2）
    */
-  private async listOpenPositions(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listOpenPositions,
-      variables: { userId }
-    });
+  private async listOpenPositions(): Promise<{ data: { listPositions: { items: Position[] } } }> {
+    const result = await listUserPositions({ status: 'OPEN' });
+    return { 
+      data: { 
+        listPositions: { 
+          items: result 
+        } 
+      } 
+    };
   }
 
   /**
-   * トレール設定済みポジション一覧取得（GraphQL）
+   * トレール設定済みポジション一覧取得（Amplify Gen2）
    */
-  private async listTrailPositions(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listTrailPositions,
-      variables: { userId }
-    });
+  private async listTrailPositions(): Promise<{ data: { listPositions: { items: Position[] } } }> {
+    const result = await listUserPositions({ hasTrail: true });
+    return { 
+      data: { 
+        listPositions: { 
+          items: result 
+        } 
+      } 
+    };
   }
 
   // ========================================
@@ -437,54 +442,55 @@ export class PositionExecutor {
 // ========================================
 
 /**
- * Position Service - GraphQL操作のヘルパー関数
- * 静的メソッドとして外部からアクセス可能
+ * Position Service - Amplify Gen2操作のヘルパー関数
+ * shared-amplifyサービスへの統一されたアクセス
  */
 export class PositionService {
   
   /**
    * ポジション作成
    */
-  static async create(input: CreatePositionInput): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: createPosition,
-      variables: { input: { ...input, userId } }
-    });
+  static async create(input: CreatePositionInput): Promise<{ data: Position }> {
+    const result = await createPosition(input);
+    return { data: result };
   }
 
   /**
    * ポジション状態更新
    */
-  static async updateStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<any> {
-    const updateInput = { id, ...additionalFields };
+  static async updateStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<{ data: Position }> {
+    const updateInput: any = { ...additionalFields };
     if (status) updateInput.status = status;
     
-    return amplifyClient.graphql({
-      query: updatePosition,
-      variables: { input: updateInput }
-    });
+    const result = await updatePosition(id, updateInput);
+    return { data: result };
   }
 
   /**
    * オープンポジション一覧取得
    */
-  static async listOpen(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listOpenPositions,
-      variables: { userId }
-    });
+  static async listOpen(): Promise<{ data: { listPositions: { items: Position[] } } }> {
+    const result = await listUserPositions({ status: 'OPEN' });
+    return { 
+      data: { 
+        listPositions: { 
+          items: result 
+        } 
+      } 
+    };
   }
 
   /**
    * トレール設定済みポジション一覧取得
    */
-  static async listTrailPositions(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listTrailPositions,
-      variables: { userId }
-    });
+  static async listTrailPositions(): Promise<{ data: { listPositions: { items: Position[] } } }> {
+    const result = await listUserPositions({ hasTrail: true });
+    return { 
+      data: { 
+        listPositions: { 
+          items: result 
+        } 
+      } 
+    };
   }
 }

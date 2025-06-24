@@ -76,24 +76,27 @@ export function PositionManager({
     }
 
     // Simple sort by update time
-    return filtered.sort((a, b) => 
-      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    );
+    return filtered.sort((a, b) => {
+      const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return dateB - dateA;
+    });
   }, [positions, statusFilter]);
 
   const calculatePnL = (position: Position): number => {
-    if (!position.entryPrice || position.status !== PositionStatus.OPEN) return 0;
-    return position.profit || 0;
+    if (!position.entryPrice || position.status !== 'OPEN') return 0;
+    // TODO: Implement actual P&L calculation based on current price
+    return 0;
   };
 
   const getStatusBadgeVariant = (status: PositionStatus) => {
     switch (status) {
-      case PositionStatus.OPEN: return 'default';
-      case PositionStatus.PENDING: return 'secondary';
-      case PositionStatus.CLOSING: return 'outline';
-      case PositionStatus.CLOSED: return 'outline';
-      case PositionStatus.STOPPED: return 'destructive';
-      case PositionStatus.CANCELED: return 'secondary';
+      case 'OPEN': return 'default';
+      case 'PENDING': return 'secondary';
+      case 'CLOSING': return 'outline';
+      case 'CLOSED': return 'outline';
+      case 'STOPPED': return 'destructive';
+      case 'CANCELED': return 'secondary';
       default: return 'outline';
     }
   };
@@ -146,7 +149,7 @@ export function PositionManager({
         symbol: data.symbol,
         volume: data.volume,
         executionType: data.executionType,
-        status: PositionStatus.PENDING,
+        status: 'PENDING',
         trailWidth: data.trailWidth,
         triggerActionIds: '', // 後で更新
         memo: data.memo
@@ -231,7 +234,7 @@ export function PositionManager({
     try {
       await amplifyClient.models.Position.update({
         id: positionId,
-        status: PositionStatus.OPENING
+        status: 'OPENING'
       });
       // Subscription経由でHedge Systemが実行
       alert('ポジションの実行を開始しました');
@@ -341,7 +344,7 @@ export function PositionManager({
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    {position.status === PositionStatus.PENDING && (
+                    {position.status === 'PENDING' && (
                       <Button 
                         size="sm" 
                         variant="default"
@@ -352,7 +355,7 @@ export function PositionManager({
                         実行
                       </Button>
                     )}
-                    {position.status === PositionStatus.OPEN && (
+                    {position.status === 'OPEN' && (
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -433,7 +436,7 @@ export function PositionManager({
               <Select 
                 value={createForm.symbol} 
                 onValueChange={(value) => 
-                  setCreateForm(prev => ({ ...prev, symbol: value }))
+                  setCreateForm(prev => ({ ...prev, symbol: value as any }))
                 }
               >
                 <SelectTrigger>
@@ -465,7 +468,7 @@ export function PositionManager({
               <Select 
                 value={createForm.executionType} 
                 onValueChange={(value) => 
-                  setCreateForm(prev => ({ ...prev, executionType: value }))
+                  setCreateForm(prev => ({ ...prev, executionType: value as any }))
                 }
               >
                 <SelectTrigger>

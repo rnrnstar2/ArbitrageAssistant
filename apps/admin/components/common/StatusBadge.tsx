@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge } from '@repo/ui/components/ui/badge';
+import { Badge } from '../../../../packages/ui/src/components/ui/badge';
 
 interface StatusBadgeProps {
   status: string;

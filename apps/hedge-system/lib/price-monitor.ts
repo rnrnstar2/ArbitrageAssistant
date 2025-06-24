@@ -308,13 +308,13 @@ export class PriceMonitor {
     // 広いスプレッドチェック
     if (this.isWideSpread(priceData.symbol)) {
       const midPrice = (priceData.bid + priceData.ask) / 2;
-      const spreadRatio = priceData.spread / midPrice;
+      const spreadRatio = (priceData.spread ?? 0) / midPrice;
       
       alerts.push({
         symbol: priceData.symbol,
         type: 'wide_spread',
         message: `Wide spread detected: ${(spreadRatio * 100).toFixed(3)}%`,
-        timestamp: priceData.timestamp,
+        timestamp: priceData.timestamp ?? new Date(),
         value: spreadRatio,
         threshold: this.alertSettings.wideSpreadThreshold
       });
@@ -329,7 +329,7 @@ export class PriceMonitor {
         symbol: priceData.symbol,
         type: 'volatility_spike',
         message: `Volatility spike detected: ${currentVolatility.toFixed(4)} vs avg ${averageVolatility.toFixed(4)}`,
-        timestamp: priceData.timestamp,
+        timestamp: priceData.timestamp ?? new Date(),
         value: currentVolatility,
         threshold: averageVolatility * this.alertSettings.volatilitySpikeThreshold
       });
@@ -351,7 +351,7 @@ export class PriceMonitor {
     
     this.priceData.forEach((price, symbol) => {
       if (this.isPriceStale(symbol)) {
-        const staleTime = now.getTime() - price.timestamp.getTime();
+        const staleTime = now.getTime() - (price.timestamp ?? new Date()).getTime();
         staleAlerts.push({
           symbol,
           type: 'stale_price',
@@ -404,7 +404,7 @@ export class PriceMonitor {
     const totalSpread = stats.reduce((sum, stat) => sum + stat.avgSpread, 0);
     const staleSymbols = Array.from(this.priceData.keys()).filter(symbol => this.isPriceStale(symbol)).length;
     
-    const lastUpdateTimes = Array.from(this.priceData.values()).map(p => p.timestamp.getTime());
+    const lastUpdateTimes = Array.from(this.priceData.values()).map(p => (p.timestamp ?? new Date()).getTime());
     const lastUpdate = lastUpdateTimes.length > 0 ? new Date(Math.max(...lastUpdateTimes)) : null;
     
     return {

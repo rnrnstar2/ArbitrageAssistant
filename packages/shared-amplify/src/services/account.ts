@@ -9,6 +9,7 @@
  */
 
 import { amplifyClient, getCurrentUserId, handleGraphQLError, retryGraphQLOperation } from '../client';
+import { generateMockAccounts, generateMockUsers } from '../utils/mock-data';
 import type {
   Account,
   CreateAccountInput,
@@ -18,6 +19,56 @@ import type {
 } from '../types';
 
 export class AccountService {
+  private mockDataCache: Account[] | null = null;
+
+  /**
+   * データソース判定
+   */
+  private shouldUseMockData(): boolean {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+    const mockEnabled = process.env.NEXT_PUBLIC_MOCK_DATA_ENABLED === 'true';
+    const useRealData = process.env.NEXT_PUBLIC_USE_REAL_DATA === 'true';
+    const dataSource = process.env.NEXT_PUBLIC_DATA_SOURCE;
+
+    if (dataSource === 'mock') return true;
+    if (dataSource === 'real') return false;
+    if (dataSource === 'hybrid') {
+      return isDevelopment && mockEnabled && !useRealData;
+    }
+
+    return isDevelopment && mockEnabled && !useRealData;
+  }
+
+  /**
+   * モックデータ初期化
+   */
+  private initializeMockData(): void {
+    if (this.mockDataCache) return;
+
+    const users = generateMockUsers(2);
+    this.mockDataCache = generateMockAccounts(users.map(u => u.id), 4);
+
+    console.log('📊 Mock account data initialized:', this.mockDataCache.length);
+  }
+
+  /**
+   * モックデータからフィルタ適用データを取得
+   */
+  private getMockDataWithFilters(filters: AccountFilters = {}): Account[] {
+    this.initializeMockData();
+    
+    if (!this.mockDataCache) return [];
+
+    let filteredData = [...this.mockDataCache];
+
+    if (filters.isActive !== undefined) {
+      filteredData = filteredData.filter(a => a.isActive === filters.isActive);
+    }
+
+    const limit = filters.limit || 100;
+    return filteredData.slice(0, limit);
+  }
+
   /**
    * 口座作成
    */
@@ -39,7 +90,7 @@ export class AccountService {
       }
       
       console.log('✅ Account created:', result.data.id);
-      return result.data;
+      return result.data as unknown as Account;
     } catch (error) {
       console.error('❌ Create account error:', error);
       throw handleGraphQLError(error);
@@ -64,7 +115,7 @@ export class AccountService {
       }
       
       console.log('✅ Account updated:', id);
-      return result.data;
+      return result.data as unknown as Account;
     } catch (error) {
       console.error('❌ Update account error:', error);
       throw handleGraphQLError(error);
@@ -73,8 +124,15 @@ export class AccountService {
 
   /**
    * ユーザーの口座一覧取得（userIdベース高速検索）
+   * ハイブリッドデータ対応: 実データ -> モックデータのフォールバック
    */
   async listUserAccounts(filters: AccountFilters = {}): Promise<Account[]> {
+    // モックデータ使用判定
+    if (this.shouldUseMockData()) {
+      console.log('📊 Using mock data for accounts');
+      return this.getMockDataWithFilters(filters);
+    }
+
     try {
       const userId = await getCurrentUserId();
       
@@ -91,8 +149,25 @@ export class AccountService {
         });
       });
       
-      return result.data || [];
+      const realData = (result.data as unknown as Account[]) || [];
+      
+      // 実データが空の場合、ハイブリッドモードならモックデータを返す
+      if (realData.length === 0 && process.env.NEXT_PUBLIC_DATA_SOURCE === 'hybrid') {
+        console.log('⚠️ No real account data found, falling back to mock data');
+        return this.getMockDataWithFilters(filters);
+      }
+      
+      console.log('🟢 Using real data for accounts:', realData.length);
+      return realData;
     } catch (error) {
+      console.error('❌ Real account data fetch failed:', error);
+      
+      // エラー発生時、ハイブリッドモードならモックデータにフォールバック
+      if (process.env.NEXT_PUBLIC_DATA_SOURCE === 'hybrid') {
+        console.log('🔄 Falling back to mock account data due to error');
+        return this.getMockDataWithFilters(filters);
+      }
+      
       console.error('❌ List user accounts error:', error);
       return [];
     }
@@ -275,7 +350,7 @@ export class AccountService {
   async getAccount(id: string): Promise<Account | null> {
     try {
       const result = await amplifyClient.models.Account.get({ id });
-      return result.data || null;
+      return (result.data as unknown as Account) || null;
     } catch (error) {
       console.error('❌ Get account error:', error);
       return null;

@@ -39,7 +39,7 @@ export class ActionService {
       }
       
       console.log('✅ Action created:', result.data.id);
-      return result.data;
+      return result.data as unknown as Action;
     } catch (error) {
       console.error('❌ Create action error:', error);
       throw handleGraphQLError(error);
@@ -63,7 +63,7 @@ export class ActionService {
       }
       
       console.log('✅ Action updated:', id);
-      return result.data;
+      return result.data as unknown as Action;
     } catch (error) {
       console.error('❌ Update action error:', error);
       throw handleGraphQLError(error);
@@ -98,7 +98,7 @@ export class ActionService {
         });
       });
       
-      return result.data || [];
+      return (result.data as unknown as Action[]) || [];
     } catch (error) {
       console.error('❌ List user actions error:', error);
       return [];
@@ -280,7 +280,7 @@ export class ActionService {
   async getAction(id: string): Promise<Action | null> {
     try {
       const result = await amplifyClient.models.Action.get({ id });
-      return result.data || null;
+      return (result.data as unknown as Action) || null;
     } catch (error) {
       console.error('❌ Get action error:', error);
       return null;

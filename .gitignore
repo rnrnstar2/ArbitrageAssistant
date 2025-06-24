@@ -85,3 +85,11 @@ temp/
 # Temporary files
 *.tmp
 *.temp
+
+# Amplify outputs (managed by sync script)
+amplify_outputs.json
+apps/*/amplify_outputs.json
+packages/shared-amplify/amplify_outputs.json
+
+# Keep only source
+!packages/shared-backend/amplify_outputs.json

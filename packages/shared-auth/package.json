@@ -18,10 +18,17 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "lint": "eslint . --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "check-auth": "npm run check-types && npm run lint",
+    "test": "echo 'No tests configured for shared-auth'",
+    "clean": "rm -rf dist && rm -rf node_modules/.cache"
   },
   "dependencies": {
     "aws-amplify": "^6.10.0"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

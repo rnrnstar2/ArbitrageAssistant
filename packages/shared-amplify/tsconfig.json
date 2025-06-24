@@ -7,7 +7,9 @@
     "baseUrl": ".",
     "paths": {
       "@repo/shared-types": ["../shared-types/src"],
-      "@repo/shared-backend/amplify/data/resource": ["../shared-backend/amplify/data/resource.ts"]
+      "@repo/shared-backend/amplify/data/resource": ["../shared-backend/amplify/data/resource.ts"],
+      "@/schema": ["../shared-backend/amplify/data/resource"],
+      "@/backend-types": ["../shared-backend"]
     }
   },
   "include": [

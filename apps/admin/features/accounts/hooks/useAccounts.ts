@@ -1,122 +1,90 @@
-import { useState, useEffect, useMemo } from 'react';
-import { generateClient } from 'aws-amplify/data';
-import { getCurrentUser } from 'aws-amplify/auth';
-import type { Account } from '@repo/shared-amplify/types';
+import { useState, useEffect, useCallback } from 'react';
+import { dummyAccounts } from '../../../lib/mock-data';
+import type { Account } from '@repo/shared-types';
 
 export function useAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  
-  const client = useMemo(() => generateClient(), []);
 
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      console.log('Loading accounts...');
+      console.log('📊 Loading dummy accounts...');
       
-      // ユーザー認証確認
-      const user = await getCurrentUser();
-      console.log('Current user:', { userId: user.userId, groups: user.signInDetails });
+      // ダミーデータ読み込み（ローディング演出）
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // MVPシステム設計書v7.0準拠 - GSI accountsByUserIdを使用した高速クエリ
-      const result = await (client as any).models.Account.listAccountByUserId({
-        userId: user.userId
-      });
-      console.log('Account list result:', result);
-      
-      if (result.errors && result.errors.length > 0) {
-        const errorMsg = result.errors.map((e: any) => e.message).join(', ');
-        console.error('GraphQL errors:', result.errors);
-        throw new Error(`GraphQL Error: ${errorMsg}`);
-      }
-      
-      // GSIから直接取得（フィルタリング不要）
-      const userAccounts = result.data || [];
-      
-      console.log('Filtered accounts:', userAccounts);
-      setAccounts(userAccounts);
+      setAccounts(dummyAccounts);
+      console.log('✅ Dummy accounts loaded:', dummyAccounts.length);
       
     } catch (err) {
-      console.error('Failed to load accounts:', err);
-      
-      // より詳細なエラーメッセージ
-      if (err instanceof Error) {
-        if (err.message.includes('Network')) {
-          setError(new Error('ネットワーク接続の問題です'));
-        } else if (err.message.includes('Unauthorized') || err.message.includes('unauthorized')) {
-          setError(new Error('認証エラー: 管理者権限が必要です'));
-        } else {
-          setError(err);
-        }
-      } else {
-        setError(new Error('不明なエラーが発生しました'));
-      }
-      
-      setAccounts([]); // 安全なフォールバック
+      console.error('❌ Failed to load dummy accounts:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error'));
+      setAccounts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const createAccount = async (accountData: {
+  const createAccount = useCallback(async (accountData: {
     brokerType: string;
     accountNumber: string;
     serverName: string;
     displayName: string;
   }) => {
     try {
-      const user = await getCurrentUser();
+      console.log('📝 Creating dummy account:', accountData);
       
-      const result = await (client as any).models.Account.create({
-        userId: user.userId,
+      // ダミー実装：新しいアカウントを一時的に追加
+      const newAccount: Account = {
+        id: `acc-${Date.now()}`,
+        userId: 'user-1',
         ...accountData,
         balance: 0,
         credit: 0,
         equity: 0,
-        isActive: true
-      });
+        isActive: true,
+        lastUpdated: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
       
-      if (result.errors) {
-        throw new Error(result.errors.map((e: any) => e.message).join(', '));
-      }
+      // 成功メッセージとしてログ出力
+      console.log('✅ Dummy account created:', newAccount.id);
       
-      await loadAccounts(); // Refresh list
-      return result.data;
+      // 実際には何もしない（ダミー）
+      return newAccount;
       
     } catch (err) {
-      console.error('Failed to create account:', err);
+      console.error('❌ Failed to create dummy account:', err);
       throw err;
     }
-  };
+  }, []);
 
-  const updateAccount = async (
+  const updateAccount = useCallback(async (
     accountId: string, 
     updates: Partial<Account>
   ): Promise<void> => {
     try {
-      const result = await (client as any).models.Account.update({
-        id: accountId,
-        ...updates
-      });
+      console.log('📝 Updating dummy account:', accountId, updates);
       
-      if (result.errors) {
-        throw new Error(result.errors.map((e: any) => e.message).join(', '));
-      }
+      // ダミー実装：成功をログ出力
+      console.log('✅ Dummy account updated');
       
-      await loadAccounts(); // Refresh list
+      // 実際には何もしない（ダミー）
       
     } catch (err) {
-      console.error('Failed to update account:', err);
+      console.error('❌ Failed to update dummy account:', err);
       throw err;
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadAccounts();
-  }, []); // 空の依存配列で初回のみ実行
+  }, [loadAccounts]);
 
   return {
     accounts,

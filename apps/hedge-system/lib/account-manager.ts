@@ -1,6 +1,5 @@
 import { amplifyClient } from './amplify-client';
 import { WebSocketHandler } from './websocket-server';
-import { REPORT_ACCOUNT_STATUS } from './graphql/mutations';
 
 interface ConnectionInfo {
   accountId: string;

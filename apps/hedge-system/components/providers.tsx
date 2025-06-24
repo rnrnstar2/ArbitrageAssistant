@@ -2,10 +2,9 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import "../utils/amplify-i18n"; // i18n設定を初期化
+import "@repo/shared-amplify/utils/i18n"; // i18n設定を初期化
 import { UpdateNotification } from "./UpdateNotification";
-import { AuthProvider } from "@repo/ui/components/auth";
-import { AuthService } from "@repo/shared-auth";
+import { AuthProvider } from "@repo/shared-auth"; // 統合AuthProviderを使用
 import { systemManager, SystemManager } from "../lib/system-manager";
 // shared-amplifyをインポートすることで自動的にAmplify設定が実行される
 import "@repo/shared-amplify/config";
@@ -22,13 +21,6 @@ export function useSystemManager() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [authService] = React.useState(() => new AuthService({
-    enableWebSocket: true,
-    websocketUrl: process.env.NEXT_PUBLIC_WEBSOCKET_URL
-  }));
-  
-  const [authState, setAuthState] = React.useState(() => authService.getState());
-  
   // System Manager初期化
   React.useEffect(() => {
     const initializeSystem = async () => {
@@ -47,25 +39,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       systemManager.stop().catch(console.error);
     };
   }, []);
-  
-  React.useEffect(() => {
-    const unsubscribe = authService.subscribe(() => {
-      setAuthState(authService.getState());
-    });
-    return unsubscribe;
-  }, [authService]);
-
-  const authContextValue = {
-    ...authState,
-    user: authState.user as Record<string, unknown> | null,
-    signIn: authService.signIn.bind(authService),
-    signOut: authService.signOut.bind(authService),
-    checkAuthState: authService.checkAuthState.bind(authService),
-    getWebSocketConnectionOptions: () => {
-      const options = authService.getWebSocketConnectionOptions();
-      return options as Record<string, unknown> | null;
-    },
-  };
 
   return (
     <NextThemesProvider
@@ -76,7 +49,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
       enableColorScheme
     >
       <SystemContext.Provider value={systemManager}>
-        <AuthProvider value={authContextValue}>
+        <AuthProvider 
+          options={{
+            enableWebSocket: true,
+            websocketUrl: process.env.NEXT_PUBLIC_WEBSOCKET_URL,
+            appType: 'hedge-system'
+          }}
+          enableDebugLogs={process.env.NODE_ENV === 'development'}
+        >
           {children}
           <UpdateNotification />
         </AuthProvider>

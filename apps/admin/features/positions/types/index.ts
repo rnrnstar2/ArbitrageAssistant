@@ -1,12 +1,22 @@
 // ポジション管理機能で使用する型定義
 
-// 共通型の再エクスポート (shared-amplifyから統一)
+// 共通型の再エクスポート (shared-typesから統一)
+import type {
+  Position,
+  CreatePositionInput,
+  UpdatePositionInput,
+  PositionStatus,
+  Account
+} from '@repo/shared-types';
+
+// Re-export
 export type {
   Position,
   CreatePositionInput,
   UpdatePositionInput,
-  PositionStatus
-} from '@repo/shared-amplify/types';
+  PositionStatus,
+  Account
+};
 
 // フィルター・ソート用の型定義
 export type PositionFilter = {

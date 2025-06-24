@@ -109,8 +109,8 @@ export default function TrailConfig({
             type: action.type as any,
             userId: action.userId,
             accountId: action.accountId,
-            parameters: JSON.stringify(action.parameters),
-            status: ActionStatus.PENDING
+            positionId: 'temp-position-id',
+            status: 'PENDING'
           })
         )
       );

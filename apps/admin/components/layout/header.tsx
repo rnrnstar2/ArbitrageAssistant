@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@repo/ui/components/auth";
-import { Avatar, AvatarFallback } from "@repo/ui/components/ui/avatar";
-import { Button } from "@repo/ui/components/ui/button";
+import { useAuth } from "@repo/shared-auth";
+import { Avatar, AvatarFallback } from "../../../../packages/ui/src/components/ui/avatar";
+import { Button } from "../../../../packages/ui/src/components/ui/button";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -12,16 +12,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@repo/ui/components/ui/dropdown-menu";
+} from "../../../../packages/ui/src/components/ui/dropdown-menu";
 import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuLink,
   navigationMenuTriggerStyle,
-} from "@repo/ui/components/ui/navigation-menu";
+} from "../../../../packages/ui/src/components/ui/navigation-menu";
 import { User, Settings, LogOut, Menu } from "lucide-react";
-import { cn } from "@repo/ui/lib/utils";
+import { cn } from "../../../../packages/ui/src/lib/utils";
 
 const navigationItems = [
   {

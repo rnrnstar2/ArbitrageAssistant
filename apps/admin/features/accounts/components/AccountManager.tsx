@@ -59,7 +59,7 @@ const CreateAccountDialog: React.FC<{
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="bg-white border shadow-lg">
         <DialogHeader>
           <DialogTitle>新しい口座を追加</DialogTitle>
         </DialogHeader>

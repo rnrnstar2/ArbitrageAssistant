@@ -1,200 +1,145 @@
-import { amplifyClient, getCurrentUserId } from '../amplify-client';
+import { 
+  subscriptionService as sharedSubscriptionService
+} from '@repo/shared-amplify';
 import { Position, Action, Account } from '@repo/shared-types';
-import {
-  onActionStatusChanged,
-  onPositionStatusChanged,
-  onActionCreated,
-  onAccountUpdated
-} from '../graphql/subscriptions';
 
 /**
- * Subscription Service - MVPシステム設計書準拠のリアルタイム通信サービス
- * 複数Hedge System間の連携とリアルタイム監視を担当
+ * Subscription Service - Amplify Gen2標準実装
+ * shared-amplifyサービスのWrapper（APIの互換性維持）
  */
 export class SubscriptionService {
-  private subscriptions: Map<string, any> = new Map();
+  private subscriptions: Map<string, { unsubscribe: () => void }> = new Map();
 
   /**
-   * アクション状態変更の監視 - 最重要（実行担当判定用）
-   * 設計書の「複数システム連携」対応
+   * アクション状態変更の監視（Amplify Gen2標準）
    */
   async subscribeToActionStatusChanges(
     callback: (action: Action) => void,
-    errorCallback?: (error: any) => void
+    errorCallback?: (error: Error) => void
   ): Promise<string> {
     try {
-      const userId = await getCurrentUserId();
+      const subscriptionId = await sharedSubscriptionService.subscribeToActions(
+        callback,
+        {} // すべての状態変更を監視
+      );
       
-      const subscription = amplifyClient.graphql({
-        query: onActionStatusChanged,
-        variables: { userId }
-      }).subscribe({
-        next: ({ data }) => {
-          if (data?.onUpdateAction) {
-            callback(data.onUpdateAction);
-          }
-        },
-        error: (error) => {
-          console.error('Action status subscription error:', error);
-          if (errorCallback) errorCallback(error);
-        }
+      this.subscriptions.set(subscriptionId, {
+        unsubscribe: () => sharedSubscriptionService.unsubscribe(subscriptionId)
       });
-      
-      const subscriptionId = `action-status-${Date.now()}`;
-      this.subscriptions.set(subscriptionId, subscription);
       
       return subscriptionId;
     } catch (error) {
       console.error('Subscribe to action status changes error:', error);
-      throw error;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (errorCallback) errorCallback(errorObj);
+      throw errorObj;
     }
   }
 
   /**
-   * ポジション状態変更の監視 - ポジション実行フロー用
+   * ポジション状態変更の監視（Amplify Gen2標準）
    */
   async subscribeToPositionStatusChanges(
     callback: (position: Position) => void,
-    errorCallback?: (error: any) => void
+    errorCallback?: (error: Error) => void
   ): Promise<string> {
     try {
-      const userId = await getCurrentUserId();
+      const subscriptionId = await sharedSubscriptionService.subscribeToPositions(
+        callback,
+        {} // すべての状態変更を監視
+      );
       
-      const subscription = amplifyClient.graphql({
-        query: onPositionStatusChanged,
-        variables: { userId }
-      }).subscribe({
-        next: ({ data }) => {
-          if (data?.onUpdatePosition) {
-            callback(data.onUpdatePosition);
-          }
-        },
-        error: (error) => {
-          console.error('Position status subscription error:', error);
-          if (errorCallback) errorCallback(error);
-        }
+      this.subscriptions.set(subscriptionId, {
+        unsubscribe: () => sharedSubscriptionService.unsubscribe(subscriptionId)
       });
-      
-      const subscriptionId = `position-status-${Date.now()}`;
-      this.subscriptions.set(subscriptionId, subscription);
       
       return subscriptionId;
     } catch (error) {
       console.error('Subscribe to position status changes error:', error);
-      throw error;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (errorCallback) errorCallback(errorObj);
+      throw errorObj;
     }
   }
 
   /**
-   * 新規アクション作成の監視 - トレール発動検知用
+   * 新規アクション作成の監視（Amplify Gen2標準）
    */
   async subscribeToActionCreation(
     callback: (action: Action) => void,
-    errorCallback?: (error: any) => void
+    errorCallback?: (error: Error) => void
   ): Promise<string> {
     try {
-      const userId = await getCurrentUserId();
+      const subscriptionId = await sharedSubscriptionService.subscribeToActions(
+        callback,
+        {} // すべてのアクション作成を監視
+      );
       
-      const subscription = amplifyClient.graphql({
-        query: onActionCreated,
-        variables: { userId }
-      }).subscribe({
-        next: ({ data }) => {
-          if (data?.onCreateAction) {
-            callback(data.onCreateAction);
-          }
-        },
-        error: (error) => {
-          console.error('Action creation subscription error:', error);
-          if (errorCallback) errorCallback(error);
-        }
+      this.subscriptions.set(subscriptionId, {
+        unsubscribe: () => sharedSubscriptionService.unsubscribe(subscriptionId)
       });
-      
-      const subscriptionId = `action-creation-${Date.now()}`;
-      this.subscriptions.set(subscriptionId, subscription);
       
       return subscriptionId;
     } catch (error) {
       console.error('Subscribe to action creation error:', error);
-      throw error;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (errorCallback) errorCallback(errorObj);
+      throw errorObj;
     }
   }
 
   /**
-   * 口座情報更新の監視 - 残高・クレジット変動監視用
+   * 口座情報更新の監視（Amplify Gen2標準）
    */
   async subscribeToAccountUpdates(
     callback: (account: Account) => void,
-    errorCallback?: (error: any) => void
+    errorCallback?: (error: Error) => void
   ): Promise<string> {
     try {
-      const userId = await getCurrentUserId();
+      const subscriptionId = await sharedSubscriptionService.subscribeToAccounts(
+        callback
+      );
       
-      const subscription = amplifyClient.graphql({
-        query: onAccountUpdated,
-        variables: { userId }
-      }).subscribe({
-        next: ({ data }) => {
-          if (data?.onUpdateAccount) {
-            callback(data.onUpdateAccount);
-          }
-        },
-        error: (error) => {
-          console.error('Account update subscription error:', error);
-          if (errorCallback) errorCallback(error);
-        }
+      this.subscriptions.set(subscriptionId, {
+        unsubscribe: () => sharedSubscriptionService.unsubscribe(subscriptionId)
       });
-      
-      const subscriptionId = `account-update-${Date.now()}`;
-      this.subscriptions.set(subscriptionId, subscription);
       
       return subscriptionId;
     } catch (error) {
       console.error('Subscribe to account updates error:', error);
-      throw error;
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      if (errorCallback) errorCallback(errorObj);
+      throw errorObj;
     }
   }
 
   /**
-   * 複数システム連携用の統合監視 - 設計書のメインフロー対応
+   * 複数システム連携用の統合監視（Amplify Gen2標準）
    */
   async subscribeToSystemCoordination(callbacks: {
     onActionStatusChange: (action: Action) => Promise<void>;
     onPositionStatusChange: (position: Position) => Promise<void>;
     onAccountUpdate: (account: Account) => Promise<void>;
   }): Promise<string[]> {
-    const subscriptionIds: string[] = [];
-    
     try {
-      // Action状態変更監視（最重要）
-      const actionSubscriptionId = await this.subscribeToActionStatusChanges(
-        async (action) => {
-          // userIdベースの実行判定
-          const currentUserId = await getCurrentUserId();
-          if (action.userId === currentUserId) {
-            await callbacks.onActionStatusChange(action);
-          }
-        }
-      );
-      subscriptionIds.push(actionSubscriptionId);
+      const subscriptionIds = await sharedSubscriptionService.subscribeToSystemCoordination({
+        onActionStatusChange: callbacks.onActionStatusChange,
+        onPositionStatusChange: callbacks.onPositionStatusChange,
+        onAccountUpdate: callbacks.onAccountUpdate
+      });
       
-      // Position状態変更監視
-      const positionSubscriptionId = await this.subscribeToPositionStatusChanges(
-        callbacks.onPositionStatusChange
-      );
-      subscriptionIds.push(positionSubscriptionId);
-      
-      // Account更新監視
-      const accountSubscriptionId = await this.subscribeToAccountUpdates(
-        callbacks.onAccountUpdate
-      );
-      subscriptionIds.push(accountSubscriptionId);
+      // ローカルの管理マップに追加
+      subscriptionIds.forEach(id => {
+        this.subscriptions.set(id, {
+          unsubscribe: () => sharedSubscriptionService.unsubscribe(id)
+        });
+      });
       
       return subscriptionIds;
     } catch (error) {
-      // エラー時は作成済みサブスクリプションをクリーンアップ
-      subscriptionIds.forEach(id => this.unsubscribe(id));
-      throw error;
+      console.error('Subscribe to system coordination error:', error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      throw errorObj;
     }
   }
 
@@ -216,7 +161,7 @@ export class SubscriptionService {
    */
   unsubscribeAll(): number {
     let count = 0;
-    this.subscriptions.forEach((subscription, id) => {
+    this.subscriptions.forEach((subscription, _id) => {
       subscription.unsubscribe();
       count++;
     });
@@ -236,8 +181,8 @@ export class SubscriptionService {
    */
   getSubscriptionStatus(): { [subscriptionId: string]: string } {
     const status: { [subscriptionId: string]: string } = {};
-    this.subscriptions.forEach((subscription, id) => {
-      status[id] = subscription.closed ? 'closed' : 'active';
+    this.subscriptions.forEach((_subscription, id) => {
+      status[id] = 'active'; // Simplify as we don't have closed property
     });
     return status;
   }
@@ -260,16 +205,16 @@ export const useAccountUpdateSubscription = (callback: (account: Account) => voi
 };
 
 // 便利関数エクスポート
-export const subscribeToActionStatusChanges = (callback: (action: Action) => void, errorCallback?: (error: any) => void) => 
+export const subscribeToActionStatusChanges = (callback: (action: Action) => void, errorCallback?: (error: Error) => void) => 
   subscriptionService.subscribeToActionStatusChanges(callback, errorCallback);
 
-export const subscribeToPositionStatusChanges = (callback: (position: Position) => void, errorCallback?: (error: any) => void) => 
+export const subscribeToPositionStatusChanges = (callback: (position: Position) => void, errorCallback?: (error: Error) => void) => 
   subscriptionService.subscribeToPositionStatusChanges(callback, errorCallback);
 
-export const subscribeToActionCreation = (callback: (action: Action) => void, errorCallback?: (error: any) => void) => 
+export const subscribeToActionCreation = (callback: (action: Action) => void, errorCallback?: (error: Error) => void) => 
   subscriptionService.subscribeToActionCreation(callback, errorCallback);
 
-export const subscribeToAccountUpdates = (callback: (account: Account) => void, errorCallback?: (error: any) => void) => 
+export const subscribeToAccountUpdates = (callback: (account: Account) => void, errorCallback?: (error: Error) => void) => 
   subscriptionService.subscribeToAccountUpdates(callback, errorCallback);
 
 export const subscribeToSystemCoordination = (callbacks: { onActionStatusChange: (action: Action) => Promise<void>; onPositionStatusChange: (position: Position) => Promise<void>; onAccountUpdate: (account: Account) => Promise<void>; }) => 

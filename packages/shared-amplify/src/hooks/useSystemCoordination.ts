@@ -22,10 +22,35 @@ export function useSystemCoordination() {
         setLoading(true);
         setError(null);
         
-        subscription = await subscriptionService.subscribeToSystemCoordination((state) => {
-          setCoordinationState(state);
-          setLoading(false);
+        subscription = await subscriptionService.subscribeToSystemCoordination({
+          onActionStatusChange: (action) => {
+            setCoordinationState(prev => ({
+              ...prev,
+              userId: action.userId,
+              activeActions: prev?.activeActions || [],
+              pendingActions: action.status === 'PENDING' ? [...(prev?.pendingActions || []), action] : (prev?.pendingActions || []),
+              executingActions: action.status === 'EXECUTING' ? [...(prev?.executingActions || []), action] : (prev?.executingActions || []),
+              trailMonitoringPositions: prev?.trailMonitoringPositions || [],
+              pcStatus: prev?.pcStatus || 'ONLINE',
+              lastUpdate: new Date().toISOString()
+            }));
+          },
+          onPositionStatusChange: (position) => {
+            setCoordinationState(prev => ({
+              ...prev,
+              userId: position.userId,
+              trailMonitoringPositions: position.trailWidth && position.trailWidth > 0 
+                ? [...(prev?.trailMonitoringPositions || []), position]
+                : (prev?.trailMonitoringPositions || []),
+              activeActions: prev?.activeActions || [],
+              pendingActions: prev?.pendingActions || [],
+              executingActions: prev?.executingActions || [],
+              pcStatus: prev?.pcStatus || 'ONLINE',
+              lastUpdate: new Date().toISOString()
+            }));
+          }
         });
+        setLoading(false);
       } catch (err) {
         setError(err as Error);
         setLoading(false);

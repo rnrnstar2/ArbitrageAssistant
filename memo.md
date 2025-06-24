@@ -1,1 +1,16 @@
-MVPシステム設計.mdをしっかり理解した上で実行すること。hedge systemのエラーを修正していきたい。amplify gen2, next.js15, turborepoなどのベストプラクティスに従って修正を進めていくこと。ultrathink
+【タスク作成プロンプト】
+MVPシステム設計.mdをしっかり理解してから実装を開始すること。
+claude codeで実行するための最適なタスク分けをすること。
+claude codeでそれぞれ独立して実行可能なものにすること。
+ultrathink
+
+【タスク実行プロンプト】
+MVPシステム設計.mdをしっかり理解してから実装を開始すること。
+[hedge systemのbuildを実行して。成功しない場合はエラーを修正して。]
+ultrathink
+
+【エラー修正プロンプト】
+MVPシステム設計.mdをしっかり理解してからエラー修正を開始すること。
+hedge systemのUIを修正したい。
+表示は接続中の口座情報だけでいい。ポジションも表示。
+ultrathink

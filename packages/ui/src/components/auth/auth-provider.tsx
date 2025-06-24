@@ -15,7 +15,7 @@ export interface AuthContextType {
   getWebSocketConnectionOptions: () => Record<string, unknown> | null;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: React.ReactNode;

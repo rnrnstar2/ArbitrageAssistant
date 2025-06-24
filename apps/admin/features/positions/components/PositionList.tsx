@@ -189,9 +189,9 @@ export function PositionList({ viewMode = 'table' }: PositionListProps) {
             </TableHeader>
             <TableBody>
               {filteredAndSortedPositions.map((position) => (
-                <TableRow key={position.positionId}>
+                <TableRow key={position.id}>
                   <TableCell className="font-mono text-sm">
-                    {position.positionId.substring(0, 8)}...
+                    {position.id.substring(0, 8)}...
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusBadgeVariant(position.status)}>
@@ -229,7 +229,7 @@ export function PositionList({ viewMode = 'table' }: PositionListProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredAndSortedPositions.map((position) => (
-            <PositionCard key={position.positionId} position={position} />
+            <PositionCard key={position.id} position={position} />
           ))}
         </div>
       )}

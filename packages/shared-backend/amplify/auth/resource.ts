@@ -2,6 +2,7 @@ import { defineAuth } from '@aws-amplify/backend';
 import { postConfirmation } from './post-confirmation/resource';
 
 export const auth = defineAuth({
+  name: `ArbitrageAssistant-Auth-${process.env.NODE_ENV || 'dev'}`,
   loginWith: {
     email: {
       verificationEmailStyle: "CODE",
@@ -14,6 +15,10 @@ export const auth = defineAuth({
     email: {
       required: true,
       mutable: false,
+    },
+    fullname: {
+      required: true,
+      mutable: true,
     },
   },
   groups: ['ADMIN', 'CLIENT'],

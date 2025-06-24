@@ -66,5 +66,12 @@ export {
   subscribeToAccounts,
   subscribeToSystemCoordination,
   unsubscribe,
-  unsubscribeAll
+  unsubscribeAll,
+  subscriptionService
 } from './subscription';
+
+// 🔧 Service Instances (singletons)
+export { actionService } from './action';
+export { positionService } from './position';
+export { accountService } from './account';
+export { userService } from './user';

@@ -131,6 +131,7 @@ const schema = a
 export type Schema = ClientSchema<typeof schema>;
 
 export const data = defineData({
+  name: `ArbitrageAssistant-Data-${process.env.NODE_ENV || 'dev'}`,
   schema,
   authorizationModes: {
     defaultAuthorizationMode: "userPool",

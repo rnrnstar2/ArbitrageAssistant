@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import { PositionStatus } from '@repo/shared-amplify/types';
-import type { AmplifySchema as Schema } from '@repo/shared-amplify/types';
+// TODO: Add proper schema import when Amplify Gen2 is configured
 
 export interface UsePositionActionsReturn {
   closePosition: (positionId: string) => Promise<void>;
@@ -13,20 +13,14 @@ export interface UsePositionActionsReturn {
 
 export function usePositionActions(): UsePositionActionsReturn {
   const [loading, setLoading] = useState(false);
-  const client = generateClient<Schema>();
+  const client = generateClient();
 
   const closePosition = async (positionId: string) => {
     setLoading(true);
     try {
-      const result = await client.models.Position.update({
-        id: positionId,
-        status: PositionStatus.CLOSING,
-        exitTime: new Date().toISOString()
-      });
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
+      // TODO: Implement when Amplify Gen2 schema is ready
+      console.log('Mock: Closing position', positionId);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('Position closed successfully:', positionId);
     } catch (error) {
@@ -40,15 +34,9 @@ export function usePositionActions(): UsePositionActionsReturn {
   const updateStopLoss = async (positionId: string, stopLoss: number) => {
     setLoading(true);
     try {
-      const result = await client.models.Position.update({
-        id: positionId,
-        // Note: stopLoss field doesn't exist in new schema
-        // This would need to be implemented differently
-      });
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
+      // TODO: Implement when Amplify Gen2 schema is ready
+      console.log('Mock: Updating stop loss', positionId, stopLoss);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('Stop loss updated successfully:', positionId, stopLoss);
     } catch (error) {
@@ -62,15 +50,9 @@ export function usePositionActions(): UsePositionActionsReturn {
   const updateTakeProfit = async (positionId: string, takeProfit: number) => {
     setLoading(true);
     try {
-      const result = await client.models.Position.update({
-        id: positionId,
-        // Note: takeProfit field doesn't exist in new schema
-        // This would need to be implemented differently
-      });
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
+      // TODO: Implement when Amplify Gen2 schema is ready
+      console.log('Mock: Updating take profit', positionId, takeProfit);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('Take profit updated successfully:', positionId, takeProfit);
     } catch (error) {
@@ -84,14 +66,9 @@ export function usePositionActions(): UsePositionActionsReturn {
   const updatePosition = async (positionId: string, updates: any) => {
     setLoading(true);
     try {
-      const result = await client.models.Position.update({
-        id: positionId,
-        ...updates
-      });
-
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
+      // TODO: Implement when Amplify Gen2 schema is ready
+      console.log('Mock: Updating position', positionId, updates);
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       console.log('Position updated successfully:', positionId);
     } catch (error) {

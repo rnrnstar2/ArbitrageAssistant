@@ -1,31 +1,33 @@
 #!/bin/bash
-
-# Amplify出力ファイルを各アプリに同期するスクリプト
+# Amplify outputs synchronization for monorepo
 
 set -e
 
-echo "🔄 Amplify outputs同期中..."
+# Change to script directory and go to repo root
+cd "$(dirname "$0")/.."
 
-SOURCE_FILE="/Users/rnrnstar/github/ArbitrageAssistant/packages/shared-backend/amplify_outputs.json"
-APPS=(
-  "/Users/rnrnstar/github/ArbitrageAssistant/apps/hedge-system"
-  "/Users/rnrnstar/github/ArbitrageAssistant/apps/admin"
-)
+BACKEND_CONFIG="packages/shared-backend/amplify_outputs.json"
 
-if [ ! -f "$SOURCE_FILE" ]; then
-  echo "❌ エラー: $SOURCE_FILE が見つかりません"
-  echo "   先にAmplify Sandboxを実行してください: npm run backend:dev"
+if [ ! -f "$BACKEND_CONFIG" ]; then
+  echo "❌ Backend config not found: $BACKEND_CONFIG"
+  echo "   Run Amplify Sandbox first: npm run backend:dev"
   exit 1
 fi
 
-for APP_DIR in "${APPS[@]}"; do
-  if [ -d "$APP_DIR" ]; then
-    echo "📂 $APP_DIR/amplify_outputs.json を更新中..."
-    cp "$SOURCE_FILE" "$APP_DIR/amplify_outputs.json"
-    echo "✅ 完了"
-  else
-    echo "⚠️  ディレクトリが見つかりません: $APP_DIR"
-  fi
-done
+echo "🔄 Syncing amplify_outputs.json..."
 
-echo "🎉 Amplify outputs同期完了！"
+# Copy to shared-amplify
+echo "📂 Updating packages/shared-amplify/amplify_outputs.json..."
+cp "$BACKEND_CONFIG" "packages/shared-amplify/amplify_outputs.json"
+echo "✅ Completed"
+
+# Copy to apps
+echo "📂 Updating apps/admin/amplify_outputs.json..."
+cp "$BACKEND_CONFIG" "apps/admin/amplify_outputs.json"
+echo "✅ Completed"
+
+echo "📂 Updating apps/hedge-system/amplify_outputs.json..."
+cp "$BACKEND_CONFIG" "apps/hedge-system/amplify_outputs.json"
+echo "✅ Completed"
+
+echo "🎉 Amplify outputs synced successfully!"

@@ -10,18 +10,13 @@ import {
   WSCloseCommand, 
   WSMessageType
 } from './types';
-import { amplifyClient, getCurrentUserId } from './amplify-client';
+import { 
+  amplifyClient, 
+  getCurrentUserId,
+  subscriptionService,
+  actionService 
+} from '@repo/shared-amplify';
 import { WebSocketHandler } from './websocket-server';
-import { 
-  createAction, 
-  updateAction 
-} from './graphql/mutations';
-import { 
-  listActionsByUserId, 
-  listExecutingActions, 
-  listPendingActions 
-} from './graphql/queries';
-import { onActionStatusChanged } from './graphql/subscriptions';
 
 // ========================================
 // 型定義・インターフェース
@@ -268,29 +263,23 @@ export class ActionSync {
   // ========================================
 
   /**
-   * Action Subscription設定（MVPシステム設計準拠）
+   * Action Subscription設定（Amplify Gen2標準）
    */
   private async setupActionSubscription(): Promise<void> {
     console.log('🔔 Setting up Action subscription for userId:', this.currentUserId);
     
     try {
-      this.actionSubscription = amplifyClient.models.Action
-        .onUpdate()
-        .subscribe({
-          next: async (data: any) => {
-            const action = data.data;
-            console.log(`📨 Action update received: ${action.id} -> ${action.status}`);
-            
-            await this.handleActionUpdate(action);
-          },
-          error: (error: any) => {
-            console.error('❌ Action subscription error:', error);
-            this.stats.subscriptionErrors++;
-            
-            // 自動再接続ロジック
-            setTimeout(() => this.setupActionSubscription(), 5000);
-          }
-        });
+      // EXECUTING状態のアクションを監視（実行担当判定用）
+      const subscriptionId = await subscriptionService.subscribeToExecutingActions(
+        async (action: Action) => {
+          console.log(`📨 Action update received: ${action.id} -> ${action.status}`);
+          await this.handleActionUpdate(action);
+        }
+      );
+      
+      this.actionSubscription = {
+        unsubscribe: () => subscriptionService.unsubscribe(subscriptionId)
+      };
       
       console.log('✅ Action subscription established');
     } catch (error) {
@@ -360,7 +349,7 @@ export class ActionSync {
     const actionInput = {
       userId: this.currentUserId!,
       accountId: params.accountId,
-      positionId: params.positionId,
+      positionId: params.positionId || '',
       triggerPositionId: params.triggerPositionId,
       type: params.type,
       status: params.status || ActionStatus.PENDING
@@ -476,7 +465,7 @@ export class ActionSync {
         symbol: position.symbol as any,
         side: this.determineSide(position),
         volume: position.volume,
-        trailWidth: position.trailWidth,
+        trailWidth: position.trailWidth ?? 0,
         timestamp: new Date().toISOString(),
         metadata: {
           executionType: position.executionType,
@@ -754,35 +743,33 @@ export class ActionSync {
   // ========================================
 
   /**
-   * Action作成（GraphQL）
+   * Action作成（Amplify Gen2）
    */
   private async createActionGraphQL(input: CreateActionInput): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: createAction,
-      variables: { input: { ...input, userId } }
-    });
+    const result = await actionService.createAction(input);
+    return { data: { createAction: result } };
   }
 
   /**
-   * Action状態更新（GraphQL）
+   * Action状態更新（Amplify Gen2）
    */
   private async updateActionStatus(id: string, status: ActionStatus): Promise<any> {
-    return amplifyClient.graphql({
-      query: updateAction,
-      variables: { input: { id, status } }
-    });
+    const result = await actionService.updateActionStatus(id, status);
+    return { data: { updateAction: result } };
   }
 
   /**
-   * 実行中Action一覧取得（GraphQL）
+   * 実行中Action一覧取得（Amplify Gen2）
    */
   private async listExecutingActions(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listExecutingActions,
-      variables: { userId }
-    });
+    const result = await actionService.listExecutingActions();
+    return { 
+      data: { 
+        listActions: { 
+          items: result 
+        } 
+      } 
+    };
   }
 
   /**
@@ -860,50 +847,12 @@ export class ActionSync {
 }
 
 // ========================================
-// Static Service Methods（旧ActionService）
+// Action Service Export（shared-amplifyへ移行済み）
 // ========================================
 
 /**
- * Action Service - GraphQL操作のヘルパー関数
- * 静的メソッドとして外部からアクセス可能
+ * Action Service - Amplify Gen2操作のヘルパー関数
+ * shared-amplifyサービスへの統一されたアクセス
+ * Note: 実装はshared-amplify/src/services/action.tsに移行済み
  */
-export class ActionService {
-  static async create(input: CreateActionInput): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: createAction,
-      variables: { input: { ...input, userId } }
-    });
-  }
-
-  static async updateStatus(id: string, status: ActionStatus): Promise<any> {
-    return amplifyClient.graphql({
-      query: updateAction,
-      variables: { input: { id, status } }
-    });
-  }
-
-  static async listByUserId(userId?: string, filter?: any): Promise<any> {
-    const targetUserId = userId || await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listActionsByUserId,
-      variables: { userId: targetUserId, filter }
-    });
-  }
-
-  static async listExecuting(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listExecutingActions,
-      variables: { userId }
-    });
-  }
-
-  static async listPending(): Promise<any> {
-    const userId = await getCurrentUserId();
-    return amplifyClient.graphql({
-      query: listPendingActions,
-      variables: { userId }
-    });
-  }
-}
+export { actionService as ActionService } from '@repo/shared-amplify';

@@ -23,7 +23,7 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
     const userId = userAttributes.sub;
     const email = userAttributes.email;
     // フォームで入力された名前を使用、なければメールアドレスから生成
-    const name = userAttributes.name || userAttributes.given_name || email.split('@')[0];
+    const name = userAttributes.fullname || userAttributes.given_name || email.split('@')[0];
 
     // 1. ユーザーをCLIENTグループに追加
     const addToGroupCommand = new AdminAddUserToGroupCommand({

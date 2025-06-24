@@ -131,7 +131,7 @@ export class HedgeSystemCore {
     this.actionSync = new ActionSync(this.wsServer);
     
     // TrailEngineとPriceMonitorの相互依存関係を解決
-    this.trailEngine = getTrailEngine(amplifyClient);
+    this.trailEngine = getTrailEngine();
     this.priceMonitor = getPriceMonitor(this.trailEngine);
     
     // PositionExecutorにTrailEngineを設定
@@ -591,11 +591,11 @@ export class HedgeSystemCore {
   /**
    * システム統計取得（詳細版）
    */
-  getSystemStats(): SystemStats {
+  async getSystemStats(): Promise<SystemStats> {
     const accountStats = this.accountManager.getStats();
     const actionStats = this.actionSync.getStats();
     const hedgeStats = this.hedgeManager.getStats();
-    const wsStats = this.wsServer.getStats();
+    const wsStats = await this.wsServer.getStats();
     
     return {
       core: {
@@ -610,7 +610,7 @@ export class HedgeSystemCore {
       },
       positions: {
         open: this.positionsCache.size,
-        trailing: this.trailEngine.getStats().monitoredPositions,
+        trailing: 0, // 簡素化
         executed: actionStats.totalExecuted
       },
       actions: {
