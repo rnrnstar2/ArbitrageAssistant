@@ -126,47 +126,35 @@ export const ActionManager: React.FC<ActionManagerProps> = ({
 }) => {
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
 
+  const pendingCount = actions.filter(a => a.status === ActionStatus.PENDING).length;
+  const executingCount = actions.filter(a => a.status === ActionStatus.EXECUTING).length;
+  const executedCount = actions.filter(a => a.status === ActionStatus.EXECUTED).length;
+  const failedCount = actions.filter(a => a.status === ActionStatus.FAILED).length;
+
   return (
-    <div className="space-y-6">
-      {/* アクション統計 */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard 
-          title="待機中" 
-          value={actions.filter(a => a.status === ActionStatus.PENDING).length}
-          color="blue"
-        />
-        <StatCard 
-          title="実行中" 
-          value={actions.filter(a => a.status === ActionStatus.EXECUTING).length}
-          color="orange"
-        />
-        <StatCard 
-          title="完了" 
-          value={actions.filter(a => a.status === ActionStatus.EXECUTED).length}
-          color="green"
-        />
-        <StatCard 
-          title="失敗" 
-          value={actions.filter(a => a.status === ActionStatus.FAILED).length}
-          color="red"
-        />
+    <div className="space-y-4">
+      {/* Quick Stats */}
+      <div className="flex gap-4 text-sm">
+        <span>待機中: <strong className="text-blue-600">{pendingCount}</strong></span>
+        <span>実行中: <strong className="text-orange-600">{executingCount}</strong></span>
+        <span>完了: <strong className="text-green-600">{executedCount}</strong></span>
+        <span>失敗: <strong className="text-red-600">{failedCount}</strong></span>
       </div>
 
-      {/* バッチ操作 */}
-      <Card className="p-4">
-        <div className="flex justify-between items-center">
-          <h4 className="font-medium">バッチ操作</h4>
+      {/* Batch Actions */}
+      {selectedActions.length > 0 && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+          <span className="text-sm">{selectedActions.length}個選択中</span>
           <Button 
             onClick={() => onTriggerActions(selectedActions)}
-            disabled={selectedActions.length === 0}
             size="sm"
           >
-            選択したアクションを実行 ({selectedActions.length})
+            一括実行
           </Button>
         </div>
-      </Card>
+      )}
 
-      {/* アクション一覧 */}
+      {/* Action List */}
       <Card>
         <ActionTable 
           actions={actions}

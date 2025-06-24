@@ -1,5 +1,5 @@
-import { AmplifyClient } from './amplify-client';
-import { WebSocketHandler } from './websocket-handler';
+import { amplifyClient } from './amplify-client';
+import { WebSocketHandler } from './websocket-server';
 import { REPORT_ACCOUNT_STATUS } from './graphql/mutations';
 
 interface ConnectionInfo {
@@ -23,7 +23,7 @@ interface AccountAssignment {
  * 分散アーキテクチャでの口座担当管理・接続状態管理
  */
 export class AccountManager {
-  private amplifyClient: AmplifyClient;
+  private amplifyClient: any; // amplifyClientの型
   private websocketHandler: WebSocketHandler;
   private assignedAccounts: Set<string> = new Set();
   private accountConnections: Map<string, ConnectionInfo> = new Map();
@@ -44,11 +44,11 @@ export class AccountManager {
   };
 
   constructor(
-    amplifyClient: AmplifyClient,
+    client: any, // amplifyClientの型
     websocketHandler: WebSocketHandler,
     pcId?: string
   ) {
-    this.amplifyClient = amplifyClient;
+    this.amplifyClient = client;
     this.websocketHandler = websocketHandler;
     this.pcId = pcId || this.generatePCId();
     

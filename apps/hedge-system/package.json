@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.11.2",
+    "@repo/shared-amplify": "*",
     "@repo/shared-auth": "*",
     "@repo/shared-backend": "*",
     "@repo/shared-types": "*",

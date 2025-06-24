@@ -13,17 +13,14 @@ export type {
   UpdateActionInput,
   Account,
   UpdateAccountInput,
-  User
-} from '@repo/shared-types';
-
-export {
-  PositionStatus,
-  Symbol as SymbolEnum,
+  User,
   ExecutionType,
+  PositionStatus,
   ActionType,
   ActionStatus,
   UserRole,
-  PCStatus
+  PCStatus,
+  Symbol
 } from '@repo/shared-types';
 
 // Hedge System 固有のフィルター型
@@ -31,7 +28,7 @@ export interface PositionFilter {
   userId?: string;
   accountId?: string;
   status?: PositionStatus;
-  symbol?: import('@repo/shared-types').Symbol;
+  symbol?: Symbol;
   executionType?: ExecutionType;
 }
 
@@ -82,7 +79,7 @@ export interface WSPongMessage extends WSMessage {
 export interface WSOpenCommand extends WSCommand {
   type: WSMessageType.OPEN;
   positionId: string;
-  symbol: import('@repo/shared-types').Symbol;
+  symbol: Symbol;
   side: 'BUY' | 'SELL';
   volume: number;
   trailWidth?: number;
@@ -96,7 +93,7 @@ export interface WSOpenCommand extends WSCommand {
 export interface WSCloseCommand extends WSCommand {
   type: WSMessageType.CLOSE;
   positionId: string;
-  symbol?: import('@repo/shared-types').Symbol;
+  symbol?: Symbol;
   side?: 'BUY' | 'SELL';
   volume?: number;
   metadata?: {
@@ -177,3 +174,6 @@ export interface RealtimeAccount {
   lastUpdate: Date;
   positions: RealtimePosition[];
 }
+
+// isolatedModules対応のための空実装
+export const Types = {} as const;

@@ -2,8 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/ui/card';
-import { Position } from '@repo/shared-types';
-import { TrailEngineStats } from '../../../lib/trail-engine';
+import type { Position } from '@repo/shared-amplify/types';
+
+// TrailEngineStats型定義（MVP簡略版）
+interface TrailEngineStats {
+  monitoringCount: number;
+  activePositions: string[];
+  totalTriggered: number;
+  lastUpdate: Date;
+}
 
 interface TrailMonitorProps {
   hedgeSystemCore?: any; // HedgeSystemCore instance
@@ -11,7 +18,7 @@ interface TrailMonitorProps {
 
 export const TrailMonitor: React.FC<TrailMonitorProps> = ({ hedgeSystemCore }) => {
   const [trailStats, setTrailStats] = useState<TrailEngineStats>();
-  const [monitoredPositions, setMonitoredPositions] = useState<Position[]>([]);
+  const [monitoredPositions, setMonitoredPositions] = useState<any[]>([]);
   const [priceUpdates, setPriceUpdates] = useState<Map<string, number>>(new Map());
 
   // リアルタイム状態表示（task specification準拠）
@@ -35,32 +42,34 @@ export const TrailMonitor: React.FC<TrailMonitorProps> = ({ hedgeSystemCore }) =
           };
           setTrailStats(mockStats);
           
-          const mockPositions: Position[] = [
+          const mockPositions: any[] = [
             {
               id: 'pos1',
               userId: 'user1',
               accountId: '12345678',
-              executionType: 'ENTRY' as any,
-              status: 'OPEN' as any,
-              symbol: 'USDJPY' as any,
+              executionType: 'ENTRY',
+              status: 'OPEN',
+              symbol: 'USDJPY',
               volume: 0.1,
               entryPrice: 150.25,
               trailWidth: 20,
               triggerActionIds: JSON.stringify(['action1', 'action2']),
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             },
             {
               id: 'pos2',
               userId: 'user1',
               accountId: '87654321',
-              executionType: 'ENTRY' as any,
-              status: 'OPEN' as any,
-              symbol: 'EURUSD' as any,
+              executionType: 'ENTRY',
+              status: 'OPEN',
+              symbol: 'EURUSD',
               volume: 0.2,
               entryPrice: 1.0850,
               trailWidth: 15,
               triggerActionIds: JSON.stringify(['action3']),
-              createdAt: new Date().toISOString()
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
             }
           ];
           setMonitoredPositions(mockPositions);

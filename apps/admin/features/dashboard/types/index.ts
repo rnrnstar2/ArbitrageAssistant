@@ -15,5 +15,5 @@ export interface ClientStatus {
   accountCount: number;
 }
 
-// Import types from shared-types
-export type { Account, Position, Action } from '@repo/shared-types';
+// Import types from shared-amplify (統一)
+export type { Account, Position, Action } from '@repo/shared-amplify/types';

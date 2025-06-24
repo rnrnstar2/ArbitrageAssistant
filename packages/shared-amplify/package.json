@@ -1,0 +1,45 @@
+{
+  "name": "@repo/shared-amplify",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MVP システム設計書準拠の統一AWS Amplify Gen2 GraphQLサービス",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./config": "./src/config.ts",
+    "./services": "./src/services/index.ts",
+    "./hooks": "./src/hooks/index.ts",
+    "./types": "./src/types.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "echo 'Linting shared-amplify...'",
+    "test": "echo 'Testing shared-amplify...'",
+    "clean": "rm -rf dist",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "aws-amplify": "^6.0.0",
+    "@repo/shared-types": "*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "typescript": "^5.5.4"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  }
+}

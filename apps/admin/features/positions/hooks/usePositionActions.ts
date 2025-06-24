@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { generateClient } from 'aws-amplify/api';
-import type { Schema } from '@repo/shared-backend/amplify/data/resource';
-import { PositionStatus } from '@repo/shared-types';
+import { PositionStatus } from '@repo/shared-amplify/types';
+import type { AmplifySchema as Schema } from '@repo/shared-amplify/types';
 
 export interface UsePositionActionsReturn {
   closePosition: (positionId: string) => Promise<void>;

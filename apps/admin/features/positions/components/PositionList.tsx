@@ -45,12 +45,12 @@ export function PositionList({ viewMode = 'table' }: PositionListProps) {
       
       switch (sortBy) {
         case 'createdAt':
-          aValue = new Date(a.createdAt);
-          bValue = new Date(b.createdAt);
+          aValue = a.createdAt ? new Date(a.createdAt) : new Date(0);
+          bValue = b.createdAt ? new Date(b.createdAt) : new Date(0);
           break;
         case 'updatedAt':
-          aValue = new Date(a.updatedAt);
-          bValue = new Date(b.updatedAt);
+          aValue = a.updatedAt ? new Date(a.updatedAt) : new Date(0);
+          bValue = b.updatedAt ? new Date(b.updatedAt) : new Date(0);
           break;
         case 'symbol':
           aValue = a.symbol;

@@ -128,7 +128,7 @@ export function PositionManager({
   };
 
   /**
-   * ポジション作成（設計書準拠）
+   * ポジション作成（MVPシステム設計書v7.0準拠）
    */
   const createPosition = async (data: CreatePositionInput): Promise<void> => {
     setIsCreating(true);
@@ -137,17 +137,10 @@ export function PositionManager({
       const user = await getCurrentUser();
       const userId = user.userId;
       
-      let triggerActionIds = '';
+      console.log('Creating position with trail settings:', { trailWidth: data.trailWidth });
       
-      // トレール設定確認
-      if (data.trailWidth > 0) {
-        // トレール用アクション事前作成
-        const triggerActions = await createTriggerActions(data);
-        triggerActionIds = JSON.stringify(triggerActions.map(a => a.id));
-      }
-      
-      // ポジション作成
-      await amplifyClient.models.Position.create({
+      // ポジション作成 (アクション作成前にIDが必要なため、まず作成)
+      const positionResult = await amplifyClient.models.Position.create({
         userId: userId,
         accountId: data.accountId,
         symbol: data.symbol,
@@ -155,12 +148,33 @@ export function PositionManager({
         executionType: data.executionType,
         status: PositionStatus.PENDING,
         trailWidth: data.trailWidth,
-        triggerActionIds: triggerActionIds,
+        triggerActionIds: '', // 後で更新
         memo: data.memo
       });
       
+      if (positionResult.errors) {
+        throw new Error(positionResult.errors.map((e: any) => e.message).join(', '));
+      }
+      
+      const positionId = positionResult.data!.id;
+      let triggerActionIds = '';
+      
+      // トレール設定確認 - 設計書準拠のアクション事前作成
+      if (data.trailWidth > 0) {
+        console.log('Creating trigger actions for trail position');
+        const triggerActions = await createTriggerActions(userId, data.accountId, positionId);
+        triggerActionIds = JSON.stringify(triggerActions.map(a => a.id));
+        
+        // ポジション更新 - triggerActionIdsを設定
+        await amplifyClient.models.Position.update({
+          id: positionId,
+          triggerActionIds: triggerActionIds
+        });
+      }
+      
       setShowCreateDialog(false);
       refreshPositions();
+      console.log('Position created successfully:', { positionId, triggerActionIds });
       alert('ポジションを作成しました');
     } catch (error) {
       console.error('Failed to create position:', error);
@@ -171,14 +185,42 @@ export function PositionManager({
   };
 
   /**
-   * トレール用アクション事前作成
+   * トレール用アクション事前作成（MVPシステム設計書準拠）
+   * 設計書: "トレール設定があれば事前にアクションを作成しPENDING状態で待機"
    */
-  const createTriggerActions = async (data: CreatePositionInput): Promise<any[]> => {
-    // 実装簡略化：モックアクション
-    return [
-      { id: `action-${Date.now()}-1`, type: 'CLOSE' },
-      { id: `action-${Date.now()}-2`, type: 'ENTRY' }
-    ];
+  const createTriggerActions = async (
+    userId: string, 
+    accountId: string, 
+    positionId: string
+  ): Promise<any[]> => {
+    const actions = [];
+    
+    try {
+      // CLOSE アクション作成 - トレール条件達成時の決済用
+      const closeActionResult = await amplifyClient.models.Action.create({
+        userId: userId,
+        accountId: accountId,
+        positionId: positionId,
+        triggerPositionId: positionId, // このポジションがトリガー
+        type: 'CLOSE',
+        status: 'PENDING'
+      });
+      
+      if (closeActionResult.errors) {
+        throw new Error('Failed to create close action');
+      }
+      
+      actions.push(closeActionResult.data);
+      console.log('Created trigger action:', { actionId: closeActionResult.data!.id, type: 'CLOSE' });
+      
+      // 必要に応じて追加のアクション（他口座でのヘッジエントリーなど）
+      // MVPでは基本的なCLOSEアクションのみ実装
+      
+      return actions;
+    } catch (error) {
+      console.error('Failed to create trigger actions:', error);
+      throw error;
+    }
   };
 
   /**
@@ -229,40 +271,30 @@ export function PositionManager({
 
   return (
     <div className="space-y-4">
-      {/* Basic Filter Controls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            ポジション管理
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4 mb-4">
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="ステータス" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全て</SelectItem>
-                <SelectItem value="pending">待機中</SelectItem>
-                <SelectItem value="open">オープン</SelectItem>
-                <SelectItem value="closed">クローズ済み</SelectItem>
-                <SelectItem value="stopped">ロスカット</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Controls */}
+      <div className="flex gap-4 items-center">
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+          <SelectTrigger className="w-32">
+            <SelectValue placeholder="ステータス" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全て</SelectItem>
+            <SelectItem value="pending">待機中</SelectItem>
+            <SelectItem value="open">オープン</SelectItem>
+            <SelectItem value="closed">クローズ済み</SelectItem>
+            <SelectItem value="stopped">ロスカット</SelectItem>
+          </SelectContent>
+        </Select>
 
-            <Button onClick={refreshPositions}>
-              更新
-            </Button>
-            
-            <Button onClick={() => setShowCreateDialog(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              ポジション作成
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <Button onClick={refreshPositions} variant="outline" size="sm">
+          更新
+        </Button>
+        
+        <Button onClick={() => setShowCreateDialog(true)} size="sm">
+          <Plus className="h-4 w-4 mr-1" />
+          作成
+        </Button>
+      </div>
 
       {/* Position List */}
       <Card>

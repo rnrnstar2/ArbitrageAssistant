@@ -185,12 +185,26 @@ export const AccountManager: React.FC = () => {
     }
   };
 
+  // デバッグ情報表示
+  console.log('AccountManager state:', { loading, error, accountsCount: accounts.length });
+
   if (error) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="text-red-600">エラー: {error.message}</div>
+          <CardHeader>
+            <CardTitle className="text-red-600">エラーが発生しました</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p className="text-sm text-red-600">{error.message}</p>
+              <p className="text-xs text-gray-500">
+                ブラウザの開発者ツール（F12）→ Consoleタブでより詳細な情報を確認できます
+              </p>
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                ページを再読み込み
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -20,7 +20,7 @@ import {
   NavigationMenuLink,
   navigationMenuTriggerStyle,
 } from "@repo/ui/components/ui/navigation-menu";
-import { Bell, User, Settings, LogOut, Menu } from "lucide-react";
+import { User, Settings, LogOut, Menu } from "lucide-react";
 import { cn } from "@repo/ui/lib/utils";
 
 const navigationItems = [
@@ -29,7 +29,7 @@ const navigationItems = [
     href: "/dashboard",
   },
   {
-    title: "クライアント",
+    title: "口座管理",
     href: "/clients",
   },
   {
@@ -88,12 +88,6 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">通知</span>
-          </Button>
-          
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

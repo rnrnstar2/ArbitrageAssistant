@@ -2,7 +2,8 @@
 
 import { Card, CardHeader, CardTitle, CardContent } from '@repo/ui/components/ui/card';
 import { Badge } from '@repo/ui/components/ui/badge';
-import { Position, PositionStatus } from '@repo/shared-types';
+import { PositionStatus } from '@repo/shared-amplify/types';
+import type { Position } from '@repo/shared-amplify/types';
 import { PositionActions } from './PositionActions';
 import { formatCurrency, formatDateTime } from '../../../lib/utils';
 

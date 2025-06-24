@@ -4,7 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "amplify_outputs.json"],
       "outputs": ["dist/**", "out/**", ".next/**"],
       "env": ["NEXT_PUBLIC_WEBSOCKET_URL"]
     },
@@ -16,6 +16,7 @@
       "dependsOn": ["^check-types"]
     },
     "dev": {
+      "dependsOn": ["@repo/shared-amplify#build"],
       "cache": false,
       "persistent": true
     },
@@ -30,6 +31,15 @@
     "dev:css": {
       "cache": false,
       "persistent": true
+    },
+    "amplify:deploy": {
+      "dependsOn": ["@repo/shared-backend#build"],
+      "inputs": ["amplify/**", "*.ts"],
+      "outputs": ["amplify_outputs.json"],
+      "cache": false
+    },
+    "amplify:pull": {
+      "cache": false
     }
   }
 }

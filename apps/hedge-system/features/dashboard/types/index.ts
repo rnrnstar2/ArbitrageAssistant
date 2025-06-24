@@ -39,3 +39,6 @@ export interface SystemContextType {
 export interface DashboardProps {
   className?: string;
 }
+
+// isolatedModules対応のための空実装
+export const DashboardTypes = {} as const;

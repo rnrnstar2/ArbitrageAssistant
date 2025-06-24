@@ -1,0 +1,23 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "declaration": true,
+    "outDir": "dist",
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@repo/shared-types": ["../shared-types/src"],
+      "@repo/shared-backend/amplify/data/resource": ["../shared-backend/amplify/data/resource.ts"]
+    }
+  },
+  "include": [
+    "src/**/*",
+    "amplify_outputs.json",
+    "../shared-types/src/**/*",
+    "../shared-backend/amplify/data/resource.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
+}

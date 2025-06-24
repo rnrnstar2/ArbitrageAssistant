@@ -1,4 +1,4 @@
-import { Amplify } from 'aws-amplify';
-import outputs from '../amplify_outputs.json';
+import { configureAmplify } from '@repo/shared-amplify/config';
 
-Amplify.configure(outputs);
+// shared-amplifyから統一設定を使用
+configureAmplify();

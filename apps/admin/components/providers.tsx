@@ -1,13 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Amplify } from "aws-amplify";
-import outputs from "../amplify_outputs.json";
 import { AuthProvider } from "@repo/ui/components/auth";
 import { AuthService } from "@repo/shared-auth";
-
-// Amplify設定をモジュールレベルで実行
-Amplify.configure(outputs);
+// shared-amplifyをインポートすることで自動的にAmplify設定が実行される
+import "@repo/shared-amplify/config";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [authService, setAuthService] = React.useState<AuthService | null>(null);

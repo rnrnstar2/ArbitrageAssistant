@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import { hedgeSystemCore } from '../../../lib/hedge-system-core';
+import { 
+  PositionService,
+  ActionService,
+  AccountService 
+} from '@repo/shared-amplify/services';
+
+// サービスインスタンス作成
+const positionService = new PositionService();
+const actionService = new ActionService();
+const accountService = new AccountService();
+import type { PositionStatus, ActionStatus } from '@repo/shared-amplify/types';
 
 interface SystemStatus {
   isInitialized: boolean;
@@ -27,27 +38,72 @@ export function useSystemStatus() {
   useEffect(() => {
     const updateSystemStatus = async () => {
       try {
-        // 実際のシステム状態取得
-        const status = hedgeSystemCore.getSystemStatus();
-        const trailStats = hedgeSystemCore.getTrailEngineStats();
-        const actionStats = hedgeSystemCore.getActionSyncStats();
+        // システム状態取得（MVP簡略版）
+        const coreStatus = hedgeSystemCore.getStatus();
+        
+        // shared-amplifyサービスから統計データを取得（修正版）
+        const accounts = await accountService.listUserAccounts();
+        const positions = await positionService.listUserPositions();
+        const actions = await actionService.listUserActions();
+        
+        // トレール監視中のポジションを計算
+        const trailPositions = positions.filter((p: any) => 
+          p.status === 'OPEN' && p.trailWidth && p.trailWidth > 0
+        );
+        
+        // 実行中のアクション
+        const executingActions = actions.filter((a: any) => a.status === 'EXECUTING');
+        
+        // 今日の完了アクション数
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const completedToday = actions.filter((a: any) => 
+          a.status === 'EXECUTED' && 
+          new Date(a.updatedAt) >= today
+        ).length;
         
         setSystemStatus({
-          ...status,
+          isInitialized: true,
+          isRunning: coreStatus === 'RUNNING',
+          connectedAccounts: accounts.length,
+          totalAccounts: accounts.length,
+          activeSubscriptions: 1, // MVP: 固定値
+          lastUpdate: new Date(),
           trailMonitoring: {
-            monitoredPositions: trailStats.monitoringCount,
-            triggeredToday: trailStats.totalTriggered,
-            lastTrigger: trailStats.lastUpdate
+            monitoredPositions: trailPositions.length,
+            triggeredToday: 0, // MVP: 仮値
+            lastTrigger: null // MVP: 仮値
           },
           actionExecution: {
-            executingActions: actionStats.executingActions.length,
-            completedToday: actionStats.totalExecuted,
-            lastExecution: actionStats.lastSyncTime ? new Date(actionStats.lastSyncTime) : null
+            executingActions: executingActions.length,
+            completedToday,
+            lastExecution: executingActions.length > 0 ? 
+              new Date(Math.max(...executingActions.map((a: any) => new Date(a.updatedAt).getTime()))) : 
+              null
           }
         });
         
       } catch (error) {
         console.error('Failed to get system status:', error);
+        // エラー時のフォールバック
+        setSystemStatus({
+          isInitialized: false,
+          isRunning: false,
+          connectedAccounts: 0,
+          totalAccounts: 0,
+          activeSubscriptions: 0,
+          lastUpdate: new Date(),
+          trailMonitoring: {
+            monitoredPositions: 0,
+            triggeredToday: 0,
+            lastTrigger: null
+          },
+          actionExecution: {
+            executingActions: 0,
+            completedToday: 0,
+            lastExecution: null
+          }
+        });
       } finally {
         setIsLoading(false);
       }

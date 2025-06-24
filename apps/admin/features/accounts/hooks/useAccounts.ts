@@ -1,43 +1,67 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { generateClient } from 'aws-amplify/data';
 import { getCurrentUser } from 'aws-amplify/auth';
-import type { Account } from '@repo/shared-types';
+import type { Account } from '@repo/shared-amplify/types';
 
 export function useAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const client = generateClient();
+  const client = useMemo(() => generateClient(), []);
 
-  const loadAccounts = useCallback(async () => {
+  const loadAccounts = async () => {
     try {
       setLoading(true);
       setError(null);
       
+      console.log('Loading accounts...');
+      
+      // ユーザー認証確認
       const user = await getCurrentUser();
+      console.log('Current user:', { userId: user.userId, groups: user.signInDetails });
       
-      const result = await (client as any).models.Account.list({
-        filter: { 
-          userId: { eq: user.userId }
-        }
+      // MVPシステム設計書v7.0準拠 - GSI accountsByUserIdを使用した高速クエリ
+      const result = await (client as any).models.Account.listAccountByUserId({
+        userId: user.userId
       });
+      console.log('Account list result:', result);
       
-      if (result.errors) {
-        throw new Error(result.errors.map(e => e.message).join(', '));
+      if (result.errors && result.errors.length > 0) {
+        const errorMsg = result.errors.map((e: any) => e.message).join(', ');
+        console.error('GraphQL errors:', result.errors);
+        throw new Error(`GraphQL Error: ${errorMsg}`);
       }
       
-      setAccounts(result.data);
+      // GSIから直接取得（フィルタリング不要）
+      const userAccounts = result.data || [];
+      
+      console.log('Filtered accounts:', userAccounts);
+      setAccounts(userAccounts);
       
     } catch (err) {
       console.error('Failed to load accounts:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error'));
+      
+      // より詳細なエラーメッセージ
+      if (err instanceof Error) {
+        if (err.message.includes('Network')) {
+          setError(new Error('ネットワーク接続の問題です'));
+        } else if (err.message.includes('Unauthorized') || err.message.includes('unauthorized')) {
+          setError(new Error('認証エラー: 管理者権限が必要です'));
+        } else {
+          setError(err);
+        }
+      } else {
+        setError(new Error('不明なエラーが発生しました'));
+      }
+      
+      setAccounts([]); // 安全なフォールバック
     } finally {
       setLoading(false);
     }
-  }, [client]);
+  };
 
-  const createAccount = useCallback(async (accountData: {
+  const createAccount = async (accountData: {
     brokerType: string;
     accountNumber: string;
     serverName: string;
@@ -56,7 +80,7 @@ export function useAccounts() {
       });
       
       if (result.errors) {
-        throw new Error(result.errors.map(e => e.message).join(', '));
+        throw new Error(result.errors.map((e: any) => e.message).join(', '));
       }
       
       await loadAccounts(); // Refresh list
@@ -66,9 +90,9 @@ export function useAccounts() {
       console.error('Failed to create account:', err);
       throw err;
     }
-  }, [client, loadAccounts]);
+  };
 
-  const updateAccount = useCallback(async (
+  const updateAccount = async (
     accountId: string, 
     updates: Partial<Account>
   ): Promise<void> => {
@@ -79,7 +103,7 @@ export function useAccounts() {
       });
       
       if (result.errors) {
-        throw new Error(result.errors.map(e => e.message).join(', '));
+        throw new Error(result.errors.map((e: any) => e.message).join(', '));
       }
       
       await loadAccounts(); // Refresh list
@@ -88,11 +112,11 @@ export function useAccounts() {
       console.error('Failed to update account:', err);
       throw err;
     }
-  }, [client, loadAccounts]);
+  };
 
   useEffect(() => {
     loadAccounts();
-  }, [loadAccounts]);
+  }, []); // 空の依存配列で初回のみ実行
 
   return {
     accounts,

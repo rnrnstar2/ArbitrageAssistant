@@ -1,46 +1,50 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { generateClient } from 'aws-amplify/api';
 import { getCurrentUser } from 'aws-amplify/auth';
-import type { Schema } from '@repo/shared-backend/amplify/data/resource';
-
-type Position = Schema['Position']['type'];
-type PositionFilterInput = Schema['Position']['filterInput'];
+import type { Position, AmplifySchema as Schema } from '@repo/shared-amplify/types';
 
 export function usePositions() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  const client = generateClient<Schema>();
+  const client = useMemo(() => generateClient<Schema>(), []);
 
-  const loadPositions = useCallback(async () => {
+  const loadPositions = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const user = await getCurrentUser();
+      console.log('Loading positions...');
       
-      // MVPスキーマv7.0準拠のクエリ
-      const result = await client.models.Position.list({
-        filter: { 
-          userId: { eq: user.userId }
-        },
+      const user = await getCurrentUser();
+      console.log('Current user:', { userId: user.userId });
+      
+      // MVPシステム設計書v7.0準拠 - GSI positionsByUserIdを使用した高速クエリ
+      const result = await (client as any).models.Position.listPositionByUserIdAndStatus({
+        userId: user.userId,
+        // status: null, // 全ステータスを取得
         limit: 100
       });
       
-      if (result.errors) {
-        throw new Error(result.errors.map(e => e.message).join(', '));
+      console.log('Position list result:', result);
+      
+      if (result.errors && result.errors.length > 0) {
+        const errorMsg = result.errors.map((e: any) => e.message).join(', ');
+        console.error('GraphQL errors:', result.errors);
+        throw new Error(`GraphQL Error: ${errorMsg}`);
       }
       
-      setPositions(result.data);
+      setPositions(result.data || []);
       
     } catch (err) {
       console.error('Failed to load positions:', err);
       setError(err instanceof Error ? err : new Error('Unknown error'));
+      setPositions([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   // リアルタイム更新のSubscription
   useEffect(() => {
@@ -75,11 +79,11 @@ export function usePositions() {
 
   useEffect(() => {
     loadPositions();
-  }, [loadPositions]);
+  }, []); // 空の依存配列で初回のみ実行
 
-  const refreshPositions = useCallback(() => {
+  const refreshPositions = () => {
     loadPositions();
-  }, [loadPositions]);
+  };
 
   return {
     positions,
