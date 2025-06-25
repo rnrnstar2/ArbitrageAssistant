@@ -93,3 +93,5 @@ packages/shared-amplify/amplify_outputs.json
 
 # Keep only source
 !packages/shared-backend/amplify_outputs.json
+
+.venv

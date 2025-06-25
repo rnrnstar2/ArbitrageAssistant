@@ -1,0 +1,345 @@
+apiVersion: haconiwa.dev/v1
+kind: Organization
+metadata:
+  name: arbitrage-assistant-mvp-org
+spec:
+  companyName: "ArbitrageAssistant MVP Development Team"
+  industry: "Financial Technology & Trading Systems"
+  basePath: "./arbitrage-assistant-mvp"
+  hierarchy:
+    departments:
+    - id: "trading-systems"
+      name: "Trading Systems Team"
+      description: "MVP開発：ボーナスアービトラージ取引システム"
+      roles:
+      - roleType: "trading"
+        title: "Quantitative Developer"
+        agentId: "quant-dev-lead"
+        responsibilities:
+          - "アービトラージ計算ロジック実装"
+          - "ポジション管理機能開発"
+          - "両建て管理機能実装"
+          - "トレール機能開発"
+      - roleType: "engineering"
+        title: "Full-Stack Developer"
+        agentId: "fullstack-dev"
+        responsibilities:
+          - "Admin画面実装 (Next.js)"
+          - "Hedge System UI実装 (Tauri)"
+          - "リアルタイム監視機能"
+          - "口座管理UI実装"
+      - roleType: "engineering"
+        title: "Backend Infrastructure Developer"
+        agentId: "backend-dev"
+        responsibilities:
+          - "AWS Amplify GraphQL実装"
+          - "WebSocket通信実装"
+          - "データベース設計実装"
+          - "認証・権限管理"
+      - roleType: "trading"
+        title: "MT5 Integration Specialist"
+        agentId: "mt5-specialist"
+        responsibilities:
+          - "MQL5 EA開発"
+          - "WebSocket DLL実装"
+          - "取引実執行機能"
+          - "口座情報取得機能"
+
+---
+apiVersion: haconiwa.dev/v1
+kind: Space
+metadata:
+  name: arbitrage-assistant-mvp-workspace
+spec:
+  nations:
+  - id: mvp-dev
+    name: MVP Development
+    cities:
+    - id: main-dev
+      name: MainDevelopment
+      villages:
+      - id: arbitrage-mvp-village
+        name: "ArbitrageAssistant MVP Village"
+        companies:
+        - name: arbitrage-assistant-mvp
+          grid: "4x2"  # MVP開発に適したサイズ
+          basePath: "./"
+          organizationRef: "arbitrage-assistant-mvp-org"
+          agentDefaults:
+            type: "claude-code"
+            permissions:
+              allow:
+                - "Bash(npm run *)"
+                - "Bash(cd apps/* && npm run *)"
+                - "Read(apps/**/*)"
+                - "Write(apps/**/*)"
+                - "Edit(apps/**/*)"
+                - "Read(packages/**/*)"
+                - "Write(packages/**/*)"
+                - "Read(ea/**/*)"
+                - "Write(ea/**/*)"
+                - "Read(*.md)"
+                - "Edit(*.md)"
+              deny:
+                - "Write(node_modules/**/*)"
+                - "Write(.git/**/*)"
+              env:
+                NODE_ENV: "development"
+                ARBITRAGE_MVP_MODE: "1"
+          gitRepo:
+            url: "https://github.com/rnrnstar/ArbitrageAssistant"
+            defaultBranch: "main"
+            auth: "https"
+          buildings:
+          - id: "mvp-development-building"
+            name: "MVP Development Building"
+            floors:
+            - id: "development-floor"
+              name: "Development Floor"
+              rooms:
+              - id: room-trading-systems
+                name: "Trading Systems Room"
+                description: "MVP実装チーム"
+
+---
+# Account Management Implementation
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-account-management
+spec:
+  taskId: mvp-account-management
+  title: "口座管理機能実装"
+  description: |
+    ## 口座管理機能実装 (MVP)
+    
+    AWS Amplifyベースの口座管理機能を実装する。
+    
+    ### 実装範囲:
+    - Account GraphQLスキーマ実装
+    - 口座CRUD操作
+    - クレジット（ボーナス）管理
+    - 残高・証拠金表示
+    - 接続状態管理
+    
+    ### 対象ファイル:
+    - apps/admin/features/accounts/
+    - packages/shared-backend/graphql/
+  assignee: "backend-dev"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-account-management"
+
+---
+# Position Management Implementation
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-position-management
+spec:
+  taskId: mvp-position-management
+  title: "ポジション管理機能実装"
+  description: |
+    ## ポジション管理機能実装 (MVP)
+    
+    個別ポジション管理とトレール機能を実装する。
+    
+    ### 実装範囲:
+    - Position GraphQLスキーマ実装
+    - エントリー・決済機能
+    - トレール設定機能
+    - ポジション状態管理
+    - 実行フロー実装
+    
+    ### 対象ファイル:
+    - apps/admin/features/positions/
+    - apps/hedge-system/lib/position-execution.ts
+  assignee: "quant-dev-lead"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-position-management"
+
+---
+# Action Execution System
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-action-execution
+spec:
+  taskId: mvp-action-execution
+  title: "アクション実行システム実装"
+  description: |
+    ## アクション実行システム実装 (MVP)
+    
+    Action管理とトリガー機能を実装する。
+    
+    ### 実装範囲:
+    - Action GraphQLスキーマ実装
+    - アクション生成・実行機能
+    - triggerActionIds機能
+    - userId判定機能
+    - 状態遷移管理
+    
+    ### 対象ファイル:
+    - apps/hedge-system/lib/action-manager.ts
+    - apps/hedge-system/lib/action-sync.ts
+  assignee: "quant-dev-lead"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-action-execution"
+
+---
+# WebSocket Communication
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-websocket-communication
+spec:
+  taskId: mvp-websocket-communication
+  title: "WebSocket通信実装"
+  description: |
+    ## WebSocket通信実装 (MVP)
+    
+    Hedge SystemとMT4/MT5 EA間の通信を実装する。
+    
+    ### 実装範囲:
+    - WebSocketサーバー実装
+    - コマンド送信機能
+    - イベント受信機能
+    - 口座情報更新
+    - 実行結果通知
+    
+    ### 対象ファイル:
+    - apps/hedge-system/lib/websocket-server.ts
+    - apps/hedge-system/lib/websocket-handler.ts
+    - ea/HedgeSystemConnector.mq5
+  assignee: "mt5-specialist"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-websocket-communication"
+
+---
+# Admin Dashboard UI
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-admin-dashboard
+spec:
+  taskId: mvp-admin-dashboard
+  title: "管理者画面実装"
+  description: |
+    ## 管理者画面実装 (MVP)
+    
+    口座・ポジション管理のUI実装する。
+    
+    ### 実装範囲:
+    - 口座一覧・詳細画面
+    - ポジション作成・管理画面
+    - 両建て状況表示
+    - リアルタイム監視画面
+    - 基本的なUI操作
+    
+    ### 対象ファイル:
+    - apps/admin/app/accounts/
+    - apps/admin/app/positions/
+    - apps/admin/app/dashboard/
+  assignee: "fullstack-dev"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-admin-dashboard"
+
+---
+# Hedge System Core
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-hedge-system-core
+spec:
+  taskId: mvp-hedge-system-core
+  title: "Hedge Systemコア機能実装"
+  description: |
+    ## Hedge Systemコア機能実装 (MVP)
+    
+    デスクトップアプリのコア機能を実装する。
+    
+    ### 実装範囲:
+    - 口座管理機能
+    - ポジション実行エンジン
+    - トレール判定エンジン
+    - 両建て管理機能
+    - AWS Amplify連携
+    
+    ### 対象ファイル:
+    - apps/hedge-system/lib/hedge-system-core.ts
+    - apps/hedge-system/lib/account-manager.ts
+    - apps/hedge-system/lib/hedge-manager.ts
+    - apps/hedge-system/lib/trail-engine.ts
+  assignee: "backend-dev"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-hedge-system-core"
+
+---
+# Database Schema Implementation
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-database-schema
+spec:
+  taskId: mvp-database-schema
+  title: "データベーススキーマ実装"
+  description: |
+    ## データベーススキーマ実装 (MVP)
+    
+    AWS Amplify GraphQLスキーマを実装する。
+    
+    ### 実装範囲:
+    - User, Account, Position, Actionモデル
+    - 認証・権限設定
+    - GSI設定（userIdベース）
+    - Subscription設定
+    - 列挙型定義
+    
+    ### 対象ファイル:
+    - packages/shared-backend/amplify/
+  assignee: "backend-dev"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-database-schema"
+
+---
+# MT5 EA Integration
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mvp-mt5-ea-integration
+spec:
+  taskId: mvp-mt5-ea-integration
+  title: "MT5 EA統合実装"
+  description: |
+    ## MT5 EA統合実装 (MVP)
+    
+    MT4/MT5との連携機能を実装する。
+    
+    ### 実装範囲:
+    - HedgeSystemConnector.mq5実装
+    - WebSocket通信DLL実装
+    - 取引実行機能
+    - 口座情報取得
+    - エラーハンドリング
+    
+    ### 対象ファイル:
+    - ea/HedgeSystemConnector.mq5
+    - ea/websocket-dll/
+  assignee: "mt5-specialist"
+  spaceRef: "arbitrage-assistant-mvp"
+  priority: "high"
+  worktree: true
+  branch: "feature/mvp-mt5-ea-integration"
