@@ -86,7 +86,7 @@ erDiagram
         string id PK
         string userId FK "作成者・実行担当"
         string accountId FK "所属口座"
-        ExecutionType executionType "ENTRY/EXIT"
+        ExecutionType executionType "ENTRY/EXIT（ポジション種別）"
         PositionStatus status "必須"
         Symbol symbol "必須"
         float volume "必須・ロット数"
@@ -139,9 +139,8 @@ erDiagram
 |                    | CANCELED                       | 発注失敗等でポジション不成立         |
 | **ActionType**     | ENTRY                          | 新規エントリー                       |
 |                    | CLOSE                          | 通常クローズ                         |
-| **ExecutionType**  | ENTRY                          | エントリー実行                       |
-|                    | EXIT                           | 決済実行                             |
-| **TriggerType**    | POSITION_TRAIL                 | ポジションのトレール経由             |
+| **ExecutionType**  | ENTRY                          | エントリー実行（新規ポジション作成） |
+|                    | EXIT                           | 決済実行（既存ポジション決済）       |
 | **ActionStatus**   | PENDING                        | アクション待機中                     |
 |                    | EXECUTING                      | 実行中                               |
 |                    | EXECUTED                       | 実行完了                             |
@@ -150,6 +149,10 @@ erDiagram
 |                    | ADMIN                          | 管理者                               |
 | **PCStatus**       | ONLINE                         | PC接続中                             |
 |                    | OFFLINE                        | PC未接続                             |
+
+**注記：ExecutionTypeとActionTypeの違い**
+- **ExecutionType**: Positionの種別を示す（そのポジションがエントリー用か決済用か）
+- **ActionType**: Actionが実行する操作の種別を示す（新規エントリーか既存ポジション決済か）
 
 ### 2-4. 認証・権限設計
 
@@ -311,7 +314,7 @@ sequenceDiagram
     Note over U,EA: 決済設定フェーズ
     U->>UI: 決済対象ポジション選択
     U->>UI: 決済アクション作成
-    U->>UI: 残存ポジション選択
+    U->>UI: 決済タイミング調整用トレール設定
     U->>UI: トレール幅設定（0で即時実行）
     U->>UI: トレール時のアクション設定
     U->>UI: 作成ボタン
@@ -335,7 +338,7 @@ sequenceDiagram
     HS->>API: updatePosition(status:CLOSED)
     HS->>API: updateAction(status:EXECUTED)
 
-    Note over U,EA: 残存ポジションのトレール監視
+    Note over U,EA: 口座内他ポジションのトレール監視継続
     HS->>HS: トレール設定確認
     alt トレール幅 = 0
         HS->>HS: 即時トリガー
@@ -824,6 +827,163 @@ graph LR
 - **事前作成**: アクションの事前作成により実行時処理を軽減
 - **バッチ更新**: 口座情報の定期バッチ更新
 - **シンプルな判定**: 1ユーザー1PC制約によるロジック簡素化
+
+## 11. 実行ロジック詳細説明
+
+### 11-1. エントリーロジック（Entry Logic）
+
+#### 基本フロー
+
+**1. アクション作成フェーズ**
+- 管理画面でエントリー計画を作成
+- 対象口座・通貨ペア・ロット数・トレール幅を設定
+- `createAction(type:ENTRY, status:PENDING)`でアクション作成
+- `createPosition(status:PENDING, trailWidth)`でポジション作成
+- トレール発動時の後続アクションも事前に作成・設定
+
+**2. 実行フェーズ**
+- 管理画面で実行ボタンクリック
+- `updatePosition(status:OPENING)`でステータス更新
+- AppSync Subscriptionで各Hedge Systemに通知
+- 実行担当システムが即座に反応
+
+**3. 担当判定・実行**
+- Hedge SystemがuserIdを確認して自分の担当か判定
+- 担当の場合：MT4/MT5 EAに`OPEN`命令送信
+- 他ユーザーの担当の場合：処理をスキップ
+- EA実行後：`updatePosition(status:OPEN, mtTicket)`で完了
+
+#### 設計特徴
+- **userId最適化**: GSIによる高速な担当判定
+- **事前設定方式**: トレール設定を事前に組み込み
+- **独立実行**: 各ポジションが独立して処理
+- **即時反応**: Subscription経由での瞬時実行開始
+
+### 11-2. 決済ロジック（Settlement Logic）
+
+#### 基本フロー
+
+**1. 決済設定フェーズ**
+- 決済対象ポジションを選択
+- `createAction(type:CLOSE, status:PENDING)`で決済アクション作成
+- 決済対象ポジション自体にトレール設定を追加（決済タイミングの調整）
+- 決済後の両建て状況も考慮した設計
+
+**2. 決済実行フェーズ**
+- 管理画面で決済実行ボタンクリック
+- `updatePosition(status:CLOSING)`でステータス更新
+- 担当Hedge SystemがMT4/MT5 EAに`CLOSE`命令送信
+- 決済処理の進行状況を監視
+
+**3. 完了処理**
+- EA実行後：`updatePosition(status:CLOSED)`で完了
+- `updateAction(status:EXECUTED)`でアクション完了
+- 決済理由（exitReason）の記録
+
+#### 両建て連携
+- 決済後の他のポジション（口座内の残存ポジション）も自動的にトレール監視継続
+- 口座全体での動的なポジション組み替えに対応
+- クレジット（ボーナス）の効率的活用を継続
+
+### 11-3. トレール決済ロジック（Trailing Stop Settlement Logic）
+
+#### トレール監視システム
+
+**1. 監視対象の特定**
+- `trailWidth > 0`のポジションを自動検出
+- `listPositionsByUserId`でユーザー別高速取得
+- 各ポジションが独立してトレール監視
+- 監視対象の動的な更新
+
+**2. トレール条件判定**
+```
+トレール発動条件：
+- 現在価格がトレール幅を超えて有利に動いた場合
+- 各ポジション個別に条件判定
+- リアルタイム価格監視（EA→Hedge System）
+- 複数ポジションの同時発動も可能
+```
+
+**3. トレール発動フロー**
+- 条件成立時：`triggerActionIds`の各アクションを`PENDING→EXECUTING`に更新
+- AppSync Subscriptionで関連する全Hedge Systemに通知
+- 各システムがuserIdベースで担当判定・実行
+- 実行結果の即座な反映
+
+#### 複数システム連携
+
+**連携例：**
+```
+User1のポジションAがトレール発動
+→ User2のアクション(act-001)がEXECUTING状態に
+→ User2のHedge SystemがSubscription受信
+→ User2が担当のためMT4/MT5で実行
+→ 実行完了後EXECUTED状態に更新
+```
+
+**連携の特徴：**
+- 異なるPC間でのシームレスな協調動作
+- userIdベースの確実な担当分離
+- リアルタイムでの状態同期
+- エラー時の自動回復機能
+
+#### 特殊ケース対応
+
+**ロスカット発生時**
+- `updatePosition(status:STOPPED)`で状態更新
+- 設定された`triggerActionIds`を自動実行
+- 他ポジションへの影響を最小化
+
+**即時実行**
+- `trailWidth = 0`の場合は即座にトリガー
+- 設定直後からの監視開始
+- テスト・デバッグ時の動作確認に活用
+
+**エラー処理**
+- 実行失敗時は`EXECUTING→PENDING`に戻して再試行可能
+- タイムアウト処理による自動回復
+- 状態整合性の自動修復
+
+### 11-4. システム連携の核心原則
+
+#### 1. userId最適化
+- 全操作でuserIdベースの高速フィルタリング
+- GSI（Global Secondary Index）による効率的なクエリ実行
+- 担当判定の即座実行
+
+#### 2. 独立処理
+- 各ポジション・アクションが独立して機能
+- 並列実行による高いスループット
+- 単一障害点の排除
+
+#### 3. 事前設定方式
+- 実行時の処理を最小化する設計
+- トレール設定の事前組み込み
+- 動的な設定変更にも対応
+
+#### 4. リアルタイム同期
+- AppSync Subscriptionによる即座の状態同期
+- WebSocketベースの高速通信
+- 状態変更の即座反映
+
+#### 5. 1ユーザー1PC制約の活用
+- シンプルで確実な実行判定
+- 複雑な排他制御を不要に
+- 運用コストの最小化
+
+### 11-5. ボーナスアービトラージ特化設計
+
+#### クレジット管理
+- クレジット（ボーナス）の効率的活用
+- 両建てポジションの動的組み替え
+- リスク最小化とボーナス最大化の両立
+
+#### 実行効率
+- 複数口座間の協調動作
+- 最適タイミングでの実行
+- 市場状況に応じた柔軟な対応
+
+この実行ロジック設計により、ボーナスアービトラージに特化した効率的なポジション管理と、複数口座間の協調的なトレール実行が実現されています。
 
 ## まとめ
 

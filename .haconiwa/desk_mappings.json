@@ -1,0 +1,56 @@
+[
+  {
+    "desk_id": "desk-room-ceo-office-00",
+    "agent_id": "exec-01",
+    "org_id": "org-01",
+    "role": "pm",
+    "room_id": "room-ceo-office",
+    "directory_name": "exec-01",
+    "title": "Executive Team - Executive 1 - \ud83c\udfdb\ufe0f CEO Executive Office"
+  },
+  {
+    "desk_id": "desk-room-backend-00",
+    "agent_id": "standby-dev-01",
+    "org_id": "org-02",
+    "role": "pm",
+    "room_id": "room-backend",
+    "directory_name": "stan-01",
+    "title": "Standby Team - Standby Developer 01 - \ud83d\uddc4\ufe0f Backend Architecture Room"
+  },
+  {
+    "desk_id": "desk-room-trading-00",
+    "agent_id": "standby-dev-01",
+    "org_id": "org-02",
+    "role": "pm",
+    "room_id": "room-trading",
+    "directory_name": "stan-01",
+    "title": "Standby Team - Standby Developer 01 - \u26a1 Trading Systems Room"
+  },
+  {
+    "desk_id": "desk-room-integration-00",
+    "agent_id": "standby-dev-01",
+    "org_id": "org-02",
+    "role": "pm",
+    "room_id": "room-integration",
+    "directory_name": "stan-01",
+    "title": "Standby Team - Standby Developer 01 - \ud83d\udd0c Integration Systems Room"
+  },
+  {
+    "desk_id": "desk-room-frontend-00",
+    "agent_id": "standby-dev-01",
+    "org_id": "org-02",
+    "role": "pm",
+    "room_id": "room-frontend",
+    "directory_name": "stan-01",
+    "title": "Standby Team - Standby Developer 01 - \ud83c\udfa8 Frontend Experience Room"
+  },
+  {
+    "desk_id": "desk-room-devops-00",
+    "agent_id": "standby-dev-01",
+    "org_id": "org-02",
+    "role": "pm",
+    "room_id": "room-devops",
+    "directory_name": "stan-01",
+    "title": "Standby Team - Standby Developer 01 - \ud83d\ude80 DevOps & QA Room"
+  }
+]

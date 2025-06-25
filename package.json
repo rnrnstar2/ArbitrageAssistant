@@ -23,10 +23,13 @@
     "clean": "turbo clean && rm -rf node_modules/.cache",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "sync:amplify": "./scripts/sync-amplify-outputs.sh",
-    "auth:test": "turbo run test --filter=@repo/shared-auth @repo/shared-amplify",
-    "auth:security": "npm audit --filter=@repo/shared-auth && npm audit --filter=@repo/shared-amplify",
     "predev": "npm run sync:amplify",
-    "postinstall": "npm run sync:amplify"
+    "postinstall": "npm run sync:amplify",
+    "setup:haconiwa": "./scripts/setup-haconiwa-environment.sh",
+    "start:claude": "./scripts/start-claude-all-windows.sh",
+    "start:haconiwa": "./scripts/start-haconiwa-complete.sh",
+    "setup:claude": "./scripts/claude-setup-all-windows.sh",
+    "auto:haconiwa": "./scripts/haconiwa-autonomous.sh"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

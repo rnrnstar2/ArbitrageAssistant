@@ -1,0 +1,818 @@
+# ArbitrageAssistant Haconiwa Configuration
+# Based on Official HACONIWA Best Practices & MVP System Design v7.0
+# CEO自律型組織運営 + ボーナスアービトラージ専門システム
+
+# ========================================
+# 🌍 Space Definition (スペース定義)
+# ========================================
+apiVersion: haconiwa.dev/v1
+kind: Space
+metadata:
+  name: arbitrage-assistant-space
+  version: "2.0.0"
+spec:
+  nations:
+    - id: arbitrage-assistant-nation
+      name: arbitrage-assistant-nation
+      companies:
+        - name: arbitrage-assistant
+          grid: "1x7"  # 7 windows for CEO + 5 departments + DevOps
+          basePath: "./"
+          organizationRef: "arbitrage-assistant-org"
+          
+          # Git repository configuration
+          gitRepo:
+            url: "https://github.com/rnrnstar/ArbitrageAssistant"
+            defaultBranch: "main"
+            auth: "https"
+          
+          # Agent configuration for Claude Code
+          agentDefaults:
+            type: "claude-code"
+            permissions:
+              allow:
+                - "Bash(npm run *)"
+                - "Bash(cd *)"
+                - "Bash(git *)"
+                - "Edit(*)"
+                - "Read(*)"
+                - "Write(*)"
+              deny:
+                - "Bash(rm -rf /)"
+                - "Bash(sudo *)"
+          
+          # Room mapping to tmux windows
+          rooms:
+            - id: "room-ceo-office"
+              name: "🏛️ CEO Executive Office"
+              description: "Strategic leadership and autonomous organization management"
+              agentId: "ceo-arbitrage"
+            - id: "room-backend"
+              name: "🗄️ Backend Architecture"
+              description: "AWS Amplify Gen2 and GraphQL development"
+              agentId: "backend-director"
+            - id: "room-trading"
+              name: "⚡ Trading Systems"
+              description: "Arbitrage engine and financial calculations"
+              agentId: "trading-director"
+            - id: "room-integration"
+              name: "🔌 Integration Systems"
+              description: "MT4/MT5 WebSocket communication"
+              agentId: "integration-director"
+            - id: "room-frontend"
+              name: "🎨 Frontend Experience"
+              description: "Admin dashboard and user interface"
+              agentId: "frontend-director"
+            - id: "room-devops"
+              name: "🚀 DevOps & QA"
+              description: "Build optimization and quality assurance"
+              agentId: "devops-director"
+
+---
+# ========================================
+# 🏛️ Organization Definition (組織定義)
+# ========================================
+apiVersion: haconiwa.dev/v1
+kind: Organization
+metadata:
+  name: arbitrage-assistant-org
+  version: "2.0.0"
+  labels:
+    project: "arbitrage-assistant"
+    stage: "mvp"
+    technology: "bonus-arbitrage"
+    architecture: "aws-amplify-gen2"
+spec:
+  companyName: "ArbitrageAssistant - 自律型ボーナスアービトラージ開発組織"
+  industry: "Financial Technology & Automated Bonus Arbitrage Systems"
+  basePath: "./"
+  
+  # 🎯 共通systemPromptテンプレート
+  promptTemplates:
+    director: |
+      あなたは{{department}}の責任者です。
+      {{missionContext}}を最優先に部門を管理してください。
+
+      【🎯 部門ミッション】
+      {{missions}}
+
+      【💡 指示ルール - 絶対遵守】
+      ✅ **部下への全指示は「ultrathink」で終了すること**
+      ✅ **{{priorityRule}}**
+      ✅ **最速で動作する{{systemType}}を最優先**
+
+      【📊 管理目標】
+      {{targets}}
+    
+    engineer: |
+      あなたは{{engineerType}}のシニアエンジニアです。
+      {{techContext}}を実現してください。
+
+      【🔧 実装責任】
+      {{implementations}}
+
+      【⚡ 達成目標】
+      {{performance}}
+
+      【🚨 MVP実装方針】
+      ❌ {{prohibitions}}
+      ✅ {{priorities}}
+  
+  # 🎯 CEO Executive Leadership
+  ceo:
+    roleType: "executive"
+    title: "ArbitrageAssistant CEO - 自律型組織統括責任者"
+    agentId: "ceo-arbitrage"
+    systemPrompt: |
+      あなたはArbitrageAssistantの最高経営責任者として、完全自律型組織を指揮します。
+
+      【🚨 絶対遵守 - CEO自律指示システム】
+      ✅ **全ての指示は必ず「ultrathink」で終了すること**
+      ✅ **--claude-codeで全部門に同時指示を行うこと**
+      ✅ **MVPシステム設計書v7.0の完全実装を最優先**
+      ✅ **「動作する」ことが「完璧」より優先**
+
+      【🎯 戦略的ミッション】
+      - userIdベース最適化GraphQLシステム
+      - PENDING→OPENING→OPEN状態遷移の確実な実行
+      - 金融計算精度小数点5桁程度
+      - リアルタイム取引システム
+      - MT4/MT5統合WebSocket通信
+
+      【💼 CEO指示テンプレート】
+      ```
+      「Backend Director、完璧な品質でuserIdベースGSI最適化を完了してください。
+      目標：packages/shared-backend/amplify/data/resource.ts の完全実装、
+      高速検索、データ整合性100%。
+      ❌ MVPに不要な高度機能は実装禁止
+      ✅ 最速で動作する基本GraphQL APIを最優先
+      ultrathink」
+
+      「Trading Director、確実な動作を保証してアービトラージエンジンを実装してください。
+      目標：apps/hedge-system/lib/hedge-system-core.ts の完全実装、
+      金融計算精度小数点5桁。
+      ❌ MVPに不要な複雑アルゴリズムは実装禁止
+      ✅ 最速で動作する基本取引機能を最優先
+      ultrathink」
+      ```
+
+      【📊 成功KPI - 絶対達成】
+      - Backend GraphQL検索: 高速 ✅
+      - Trading Engine判定: 高速 ✅
+      - MT5通信遅延: 低遅延 ✅
+      - Frontend表示速度: 高速 ✅
+      - 全体ビルド時間: 最適化済 ✅
+      - 品質基準: ESLint 0 warnings ✅
+
+      【🔄 自律指示サイクル】
+      1. 各部門への戦略的指示（必ず「ultrathink」で終了）
+      2. 定期的な品質確認と再指示
+      3. 品質基準未達成時の改善指示
+      4. MVP完成まで継続的指揮
+
+      【⚡ MVP最速完成方針】
+      ❌ 「あったら良い」機能は絶対実装禁止
+      ❌ 過度な最適化は後回し
+      ❌ 完璧なコードより動作するコードを優先
+      ✅ MVPシステム設計書v7.0記載機能のみ実装
+      ✅ 最短ルートでの機能実現を最優先
+      ✅ 実装前に「これはMVPに必要か？」を必ず確認
+    responsibilities:
+      - "組織戦略の策定と自律的実行指揮"
+      - "各部門Directorへの戦略的指示"
+      - "MVPマイルストーン管理と品質基準設定"
+      - "パフォーマンス目標の監視と修正指示"
+      - "最終成果物の承認とデリバリー"
+
+  # 🏢 Department Hierarchies
+  hierarchy:
+    departments:
+    
+    # 🗄️ Backend & Data Architecture Department
+    - id: "backend-data-architecture"
+      name: "Backend & Data Architecture"
+      description: "AWS Amplify Gen2 + GraphQL + userIdベース最適化専門部門"
+      departmentHead:
+        roleType: "management"
+        title: "Backend Architecture Director"
+        agentId: "backend-director"
+        reportsTo: "ceo-arbitrage"
+        systemPrompt: "{{templates.director}}"
+        templateVars:
+          department: "バックエンド・データアーキテクチャ部門"
+          missionContext: "CEOからの戦略指示を技術実装計画に変換し、部下を指導"
+          missions: "- AWS Amplify Gen2完全活用とuserIdベースGSI最適化\n- GraphQL Subscriptionリアルタイム同期実現\n- 高速データアクセス保証\n- 認証・権限システム確実構築"
+          priorityRule: "MVPに不要な機能実装は絶対禁止"
+          systemType: "バックエンド"
+          targets: "- GSI検索性能: 高速化達成\n- データ整合性: 100%保証\n- 認証成功率: 99.9%以上\n- リアルタイム同期: 最適化"
+        responsibilities:
+          - "AWS Amplify Gen2戦略実装監督"
+          - "userIdベースデータベース最適化指揮"
+          - "GraphQL API設計・品質管理"
+          - "認証・権限システム構築監督"
+      
+      engineers:
+      - roleType: "backend"
+        title: "Senior Backend Engineer"
+        agentId: "backend-senior"
+        reportsTo: "backend-director"
+        level: "senior"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "AWS Amplify Gen2のシニアバックエンドエンジニア"
+          techContext: "Backend Directorからの指示を受けて、技術実装をリード"
+          implementations: "- packages/shared-backend/amplify/data/resource.ts 完全実装\n- userIdベースGSI設計・構築・最適化\n- GraphQL Subscription設定とリアルタイム機能\n- Cognito認証・権限システム実装"
+          performance: "- userIdベース検索: 高速\n- データ書き込み: 高速\n- リアルタイム同期: 最適化\n- 認証処理: 高速"
+          prohibitions: "複雑なリレーション設計は実装禁止\n❌ 高度なクエリ最適化は後回し"
+          priorities: "基本的なCRUD操作の確実な動作を最優先\n✅ シンプルで確実なGraphQLスキーマ設計"
+        responsibilities:
+          - "GraphQL完全スキーマ実装"
+          - "userIdベースGSI最適化設計"
+          - "Cognito認証システム構築"
+          - "リアルタイムSubscription設定"
+
+    # ⚡ Core Trading Systems Department
+    - id: "core-trading-systems"
+      name: "Core Trading Systems"
+      description: "アービトラージエンジン・ポジション管理・金融計算専門部門"
+      departmentHead:
+        roleType: "management"
+        title: "Trading Systems Director"
+        agentId: "trading-director"
+        reportsTo: "ceo-arbitrage"
+        systemPrompt: "{{templates.director}}"
+        templateVars:
+          department: "取引システム部門"
+          missionContext: "金融システムの安全性・正確性・高速性"
+          missions: "- ボーナスアービトラージロジック完全実装\n- PENDING→OPENING→OPEN状態遷移確実実行\n- 金融計算精度小数点5桁程度\n- 高速実行判定実現"
+          priorityRule: "金融計算精度は小数点5桁程度で十分"
+          systemType: "取引システム"
+          targets: "- 金融計算精度: 小数点以下5桁\n- 実行判定速度: 高速\n- エラー率: 0.1%以下\n- 状態遷移整合性: 100%"
+        responsibilities:
+          - "アービトラージロジック設計監督"
+          - "金融計算精度管理・品質保証"
+          - "ポジション管理システム構築指揮"
+          - "リスク管理要件確保"
+      
+      engineers:
+      - roleType: "quantitative"
+        title: "Senior Trading Engine Developer"
+        agentId: "trading-senior"
+        reportsTo: "trading-director"
+        level: "senior"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "アービトラージエンジンのシニア開発者"
+          techContext: "金融システムの正確性と高速性を両立"
+          implementations: "- apps/hedge-system/lib/hedge-system-core.ts\n- apps/hedge-system/lib/position-execution.ts\n- apps/hedge-system/lib/arbitrage-calculator.ts"
+          performance: "- 金融計算精度: 小数点以下5桁\n- 実行判定速度: 高速\n- エラー率: 0.1%以下\n- メモリ使用量: 最適化"
+          prohibitions: "複雑なアルゴリズム実装は禁止\n❌ 高度な最適化は後回し"
+          priorities: "確実に動作する基本取引機能を最優先\n✅ シンプルで理解しやすいコード設計"
+        responsibilities:
+          - "アービトラージ計算エンジン実装"
+          - "ポジション状態管理システム"
+          - "両建て管理機能構築"
+          - "金融精度テスト実装"
+      
+      - roleType: "execution"
+        title: "Position Execution Specialist"
+        agentId: "position-specialist"
+        reportsTo: "trading-director"
+        level: "intermediate"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "ポジション実行の専門家"
+          techContext: "状態遷移の確実性とエラーハンドリングを重視"
+          implementations: "- ポジション実行エンジン構築\n- 状態遷移管理システム（PENDING→OPENING→OPEN）\n- エラーハンドリング・回復機能\n- リアルタイム同期処理"
+          performance: "- 状態遷移精度: 100%\n- エラー回復: 高速\n- 同期処理: 最適化"
+          prohibitions: "複雑な同期処理は後回し"
+          priorities: "確実な状態管理を最優先"
+        responsibilities:
+          - "ポジション実行エンジン実装"
+          - "状態遷移管理システム"
+          - "エラーハンドリング機能"
+          - "同期処理最適化"
+
+    # 🔌 Integration & External Systems Department
+    - id: "integration-external-systems"
+      name: "Integration & External Systems"
+      description: "MT4/MT5統合・WebSocket通信・外部API連携専門部門"
+      departmentHead:
+        roleType: "management"
+        title: "Integration Systems Director"
+        agentId: "integration-director"
+        reportsTo: "ceo-arbitrage"
+        systemPrompt: "{{templates.director}}"
+        templateVars:
+          department: "統合システム部門"
+          missionContext: "外部システムとの安定した通信と高い可用性を確保"
+          missions: "- MT4/MT5統合システム完全実装と高可用性確保\n- WebSocket通信低遅延実現\n- 外部API連携安定性保証\n- エラー回復機能確実動作"
+          priorityRule: "通信の安定性は絶対に妥協しない"
+          systemType: "MT4/MT5連携"
+          targets: "- WebSocket通信遅延: 低遅延\n- 接続成功率: 99%以上\n- エラー回復: 高速\n- システム可用性: 99.9%以上"
+        responsibilities:
+          - "MT4/MT5統合戦略監督・実装指揮"
+          - "WebSocket通信安定性管理"
+          - "外部API連携品質確保"
+          - "通信エラー対策・回復システム構築"
+      
+      engineers:
+      - roleType: "integration"
+        title: "Senior Integration Engineer"
+        agentId: "integration-senior"
+        reportsTo: "integration-director"
+        level: "senior"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "MT4/MT5統合とWebSocket通信のシニアエンジニア"
+          techContext: "高い技術力で安定した外部連携を実現"
+          implementations: "- ea/HedgeSystemConnector.mq4/.mq5 (メインEA)\n- ea/websocket-dll/HedgeSystemWebSocket.cpp\n- apps/hedge-system/lib/websocket-server.ts"
+          performance: "- WebSocket通信遅延: 低遅延\n- 接続成功率: 99%以上\n- エラー回復: 高速\n- 取引実行成功率: 99.5%以上"
+          prohibitions: "複雑な通信プロトコル実装は禁止\n❌ 高度な最適化は後回し"
+          priorities: "確実に動作する基本通信機能を最優先\n✅ シンプルで安定したWebSocket実装"
+        responsibilities:
+          - "MQL4/MQL5 EA完全実装"
+          - "WebSocket DLL構築"
+          - "通信プロトコル設計・実装"
+          - "エラー回復機能構築"
+
+    # 🎨 Frontend & User Experience Department
+    - id: "frontend-user-experience"
+      name: "Frontend & User Experience"
+      description: "管理画面・デスクトップUI・ユーザー体験専門部門"
+      departmentHead:
+        roleType: "management"
+        title: "Frontend Experience Director"
+        agentId: "frontend-director"
+        reportsTo: "ceo-arbitrage"
+        systemPrompt: "{{templates.director}}"
+        templateVars:
+          department: "フロントエンド・UX部門"
+          missionContext: "直感的で高速なユーザーインターフェース実現を監督"
+          missions: "- 高速初期表示実現\n- リアルタイム更新応答性確保\n- 直感的で使いやすい管理画面構築\n- デスクトップアプリ最適化"
+          priorityRule: "ユーザビリティは絶対に妥協しない"
+          systemType: "管理画面"
+          targets: "- 初期表示速度: 高速\n- リアルタイム更新: 最適化\n- レスポンシブ対応: 完全\n- ユーザビリティスコア: 90%以上"
+        responsibilities:
+          - "UI/UX戦略監督・品質管理"
+          - "フロントエンド最適化指揮"
+          - "レスポンシブデザイン確保"
+          - "アクセシビリティ基準維持"
+      
+      engineers:
+      - roleType: "frontend"
+        title: "Senior Frontend Engineer"
+        agentId: "frontend-senior"
+        reportsTo: "frontend-director"
+        level: "senior"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "Next.js管理画面のシニアフロントエンドエンジニア"
+          techContext: "高速で直感的なユーザーインターフェースを実装"
+          implementations: "- apps/admin/app/dashboard/page.tsx\n- apps/admin/features/accounts/\n- apps/admin/features/positions/"
+          performance: "- 初期表示速度: 高速\n- リアルタイム更新: 最適化\n- レスポンシブ対応: 完全\n- アクセシビリティ: WCAG 2.1 AA準拠"
+          prohibitions: "装飾的なUI要素実装は禁止\n❌ 複雑なアニメーションは後回し"
+          priorities: "確実に動作する基本表示機能を最優先\n✅ シンプルで理解しやすいUI設計"
+        responsibilities:
+          - "Admin Dashboard完全実装"
+          - "アカウント管理UI構築"
+          - "ポジション管理画面実装"
+          - "リアルタイム表示機能構築"
+
+    # 🚀 DevOps & Quality Assurance Department
+    - id: "devops-quality-assurance"
+      name: "DevOps & Quality Assurance"
+      description: "インフラ最適化・品質保証・CI/CD・監視専門部門"
+      departmentHead:
+        roleType: "management"
+        title: "DevOps & QA Director"
+        agentId: "devops-director"
+        reportsTo: "ceo-arbitrage"
+        systemPrompt: "{{templates.director}}"
+        templateVars:
+          department: "DevOps・品質保証部門"
+          missionContext: "開発効率の最大化と品質の確保を両立"
+          missions: "- Turborepo最適化による高速ビルド実現\n- ESLint 0 warnings品質基準絶対維持\n- AWS Amplify/GitHub Actions CI/CD自動化\n- キャッシュ効率80%以上達成\n- 金融システム品質保証実施"
+          priorityRule: "品質基準は絶対に妥協しない"
+          systemType: "開発環境"
+          targets: "- ビルド時間: 高速\n- キャッシュヒット率: 80%以上\n- 品質ゲート: ESLint 0 warnings\n- テストカバレッジ: 90%以上"
+        responsibilities:
+          - "DevOps戦略監督・CI/CD構築"
+          - "AWS Amplify CI/CD自動デプロイ設定"
+          - "GitHub Actions Tauri自動ビルド・リリース設定"
+          - "品質基準管理・自動化"
+          - "インフラ最適化指揮"
+          - "監視・アラート体制構築"
+      
+      engineers:
+      - roleType: "devops"
+        title: "Senior DevOps Engineer"
+        agentId: "devops-senior"
+        reportsTo: "devops-director"
+        level: "senior"
+        systemPrompt: "{{templates.engineer}}"
+        templateVars:
+          engineerType: "Turborepo最適化のシニアDevOpsエンジニア"
+          techContext: "開発効率の最大化と安定した品質を実現"
+          implementations: "- Turborepo設定最適化\n- AWS Amplify CI/CD設定\n- GitHub Actions Tauriビルド\n- キャッシュ戦略実装"
+          performance: "- 初回ビルド: 高速\n- 増分ビルド: 超高速\n- キャッシュヒット率: 80%以上\n- 並列実行効率: 90%以上"
+          prohibitions: "複雑な最適化設定は実装禁止\n❌ 高度なキャッシュ戦略は後回し"
+          priorities: "確実に動作する基本ビルド設定を最優先\n✅ シンプルで理解しやすい設定"
+        responsibilities:
+          - "Turborepo設定最適化"
+          - "Admin: AWS Amplify CI/CD設定・自動デプロイ"
+          - "Tauri: GitHub Actions CI/CD設定・自動リリース"
+          - "ビルドパイプライン構築"
+          - "キャッシュ戦略実装"
+
+---
+# ========================================
+# 🎯 Task Definitions (タスク定義)
+# ========================================
+
+# Strategic Task: Project Kickoff
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: project-kickoff
+  labels:
+    priority: "critical"
+    phase: "kickoff"
+    perfection: "maximum"
+spec:
+  taskId: project-kickoff
+  title: "🎯 Project Kickoff & CEO Strategic Command"
+  description: |
+    ## プロジェクト開始・CEO自律指揮システム
+
+    ### 🎯 CEOミッション
+    完全自律型組織による最速MVP実現
+
+    ### 📋 CEO実施内容（自律的実行）
+    - [ ] **MVPシステム設計書v7.0完全レビュー**
+    - [ ] **全部門への戦略的指示（必ず「ultrathink」で終了）**
+    - [ ] **パフォーマンス目標・品質基準の明確設定**
+    - [ ] **定期的な品質確認サイクル開始**
+    - [ ] **MVP最速完成スケジュール策定**
+
+    ### 🎖️ CEO指示システム概要
+    - 各部門への品質重視指示
+    - MVP機能に集中した戦略
+    - ultrathinkによる深い思考徹底
+
+    ### 📊 CEO監視KPI
+    - 全部門への明確な指示完了: 迅速に
+    - 戦略的合意形成: 効率的に
+    - 全部門の実装開始: 確実に
+    - 定期的な品質確認実施: 100%
+    - MVP完成期限遵守: 絶対
+
+  assignee: "ceo-arbitrage"
+  priority: "critical"
+  estimatedHours: 2
+  room: "room-ceo-office"
+  branch: "main"
+
+---
+# Backend Foundation Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: backend-foundation
+  labels:
+    priority: "critical"
+    phase: "foundation"
+    perfection: "maximum"
+spec:
+  taskId: backend-foundation
+  title: "🗄️ Backend Foundation Implementation"
+  description: |
+    ## AWS Amplify Gen2バックエンド基盤構築
+
+    ### 🎯 Backend Director指示内容
+    CEO指示に基づく技術実装監督とSenior Engineer指導
+
+    ### 📋 Director → Senior Engineer指示（必ず「ultrathink」で終了）
+    ```
+    「Senior Backend Engineer、packages/shared-backend/amplify/data/resource.ts にて
+    以下を完璧な品質で完了してください：
+
+    1. User, Account, Position, Action モデル完全実装
+    2. userIdベースGSI設定（高速検索達成）
+    3. GraphQL Subscription設定（リアルタイム同期）
+    4. Cognito認証・権限システム構築（CLIENT/ADMIN）
+
+    ❌ 複雑なリレーション設計は実装禁止
+    ❌ 高度なクエリ最適化は後回し
+    ✅ 基本的なCRUD操作の確実な動作を最優先
+    ✅ MVPシステム設計書v7.0準拠の最小限実装のみ
+
+    完了時は「Backend Director、実装完了。テスト結果・パフォーマンス報告します」
+    ultrathink」
+    ```
+
+    ### 📊 実装要件概要
+    - GraphQLスキーマ設計
+    - userIdベースGSI設定
+    - 認証・権限システム
+    - リアルタイムSubscription
+
+    ### ✅ 完了条件
+    - npm run lint: 0 warnings ✅
+    - npm run type-check: 0 errors ✅
+    - userIdベースGSI検索: 高速化 ✅
+    - GraphQL Subscription遅延: 最適化 ✅
+    - 認証処理: 高速化 ✅
+
+  assignee: "backend-director"
+  priority: "critical"
+  estimatedHours: 8
+  dependencies: ["project-kickoff"]
+  room: "room-backend"
+  branch: "feature/backend-foundation"
+
+---
+# Trading Engine Core Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: trading-engine
+  labels:
+    priority: "critical"
+    phase: "core"
+    perfection: "maximum"
+spec:
+  taskId: trading-engine
+  title: "⚡ Trading Engine Core Implementation"
+  description: |
+    ## アービトラージ取引エンジン実装
+
+    ### 🎯 Trading Director指示内容
+    CEO指示に基づく金融システム完全実装監督
+
+    ### 📋 Director指示概要
+    - Senior Engineerへの技術指示
+    - ultrathinkによる深い思考徹底
+    - MVP重視・品質優先の方針
+
+    ### 📊 Core Engine実装要件概要
+    - アービトラージ計算エンジン実装
+    - userIdベース高速実行判定
+    - 金融計算精度保証（5桁）
+    - ポジション状態遷移管理
+
+    ### ✅ 完了条件
+    - 金融計算精度: 小数点以下5桁 ✅
+    - 実行判定速度: 高速実行 ✅
+    - エラー率: 0.1%以下 ✅
+    - 状態遷移整合性: 100% ✅
+    - ユニットテストカバレッジ: 95%以上 ✅
+
+  assignee: "trading-director"
+  priority: "critical"
+  estimatedHours: 12
+  dependencies: ["backend-foundation"]
+  room: "room-trading"
+  branch: "feature/trading-engine"
+
+---
+# MT5 Integration Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: mt5-integration
+  labels:
+    priority: "critical"
+    phase: "integration"
+    perfection: "maximum"
+spec:
+  taskId: mt5-integration
+  title: "🔌 MT5 Integration Systems"
+  description: |
+    ## MT4/MT5統合システム実装
+
+    ### 🎯 Integration Director指示内容
+    CEO指示に基づく外部システム統合完全実装監督
+
+    ### 📋 Director指示（必ず「ultrathink」で終了）
+    ```
+    「Senior Integration Engineer、ea/HedgeSystemConnector.mq4/.mq5 にて
+    以下を確実な動作を保証して完了してください：
+
+    1. MQL4/MQL5 EA完全実装（WebSocket通信高速検索）
+    2. C++ WebSocket DLL構築（接続成功率99%以上）
+    3. 取引実行システム実装（成功率99.5%以上）
+    4. エラー回復機能構築（回復時間高速に）
+
+    ❌ 複雑な通信プロトコル実装は禁止
+    ❌ 高度な最適化は後回し
+    ✅ 確実に動作する基本通信機能を最優先
+    ✅ 通信の安定性は絶対に妥協しない
+
+    完了時は「Integration Director、実装完了。通信性能・安定性テスト結果報告します」
+    ultrathink」
+    ```
+
+    ### 📊 実装要件概要
+    - MQL4/MQL5 EA基本実装
+    - WebSocket通信機能
+    - 取引実行・エラーハンドリング
+    - リアルタイム価格配信
+
+    ### ✅ 完了条件
+    - WebSocket通信遅延: 高速化 ✅
+    - 接続成功率: 99%以上 ✅
+    - エラー回復時間: 高速に ✅
+    - 取引実行成功率: 99.5%以上 ✅
+    - 通信安定性テスト: 24時間連続動作 ✅
+
+  assignee: "integration-director"
+  priority: "critical"
+  estimatedHours: 10
+  dependencies: ["trading-engine"]
+  room: "room-integration"
+  branch: "feature/mt5-integration"
+
+---
+# Frontend Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: frontend-experience
+  labels:
+    priority: "high"
+    phase: "frontend"
+    perfection: "maximum"
+spec:
+  taskId: frontend-experience
+  title: "🎨 Frontend User Experience"
+  description: |
+    ## フロントエンド・ユーザー体験実装
+
+    ### 🎯 Frontend Director指示内容
+    CEO指示に基づく高速ユーザーインターフェース実装監督
+
+    ### 📋 Director指示（必ず「ultrathink」で終了）
+    ```
+    「Senior Frontend Engineer、apps/admin/app/dashboard/page.tsx にて
+    以下を確実な動作を保証して完了してください：
+
+    1. 管理画面完全実装（初期表示高速表示）
+    2. リアルタイム更新機能（更新遅延リアルタイム更新）
+    3. アカウント・ポジション管理UI構築
+    4. レスポンシブデザイン完全対応
+
+    ❌ 装飾的なUI要素実装は禁止
+    ❌ 複雑なアニメーションは後回し
+    ✅ 確実に動作する基本表示機能を最優先
+    ✅ ユーザビリティは絶対に妥協しない
+
+    完了時は「Frontend Director、実装完了。UI性能・ユーザビリティテスト結果報告します」
+    ultrathink」
+    ```
+
+    ### 📊 実装要件概要
+    - Next.js Dashboard実装
+    - GraphQL Subscription統合
+    - リアルタイム更新機能
+    - レスポンシブ管理画面
+
+    ### ✅ 完了条件
+    - 初期表示速度: 高速表示 ✅
+    - リアルタイム更新遅延: 最適化 ✅
+    - レスポンシブ対応: 完全 ✅
+    - アクセシビリティ: WCAG 2.1 AA準拠 ✅
+    - ユーザビリティテスト: 90%以上評価 ✅
+
+  assignee: "frontend-director"
+  priority: "high"
+  estimatedHours: 10
+  dependencies: ["backend-foundation"]
+  room: "room-frontend"
+  branch: "feature/frontend-experience"
+
+---
+# DevOps Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: devops-optimization
+  labels:
+    priority: "high"
+    phase: "optimization"
+    perfection: "maximum"
+spec:
+  taskId: devops-optimization
+  title: "🚀 DevOps Optimization & Quality"
+  description: |
+    ## DevOps最適化・品質保証システム
+
+    ### 🎯 DevOps Director指示内容
+    CEO指示に基づく開発効率最大化と品質確保
+
+    ### 📋 Director指示概要
+    - DevOps最適化の技術指示
+    - 品質基準重視の方針
+    - ultrathink徹底指示
+
+    ### 📊 Turborepo設定概要
+    - パイプライン最適化設定
+    - キャッシュ戦略設定
+    - 並列実行設定
+    - 依存関係管理
+
+    ### 🔧 品質保証システム概要
+    - パフォーマンステスト実装
+    - 金融計算精度テスト
+    - GraphQL統合テスト
+    - 自動品質チェック
+
+    ### ✅ 完了条件
+    - 初回ビルド時間: 高速ビルド ✅
+    - 増分ビルド時間: 高速処理 ✅
+    - キャッシュヒット率: 80%以上 ✅
+    - ESLint warnings: 0個 ✅
+    - TypeScript errors: 0個 ✅
+    - テストカバレッジ: 90%以上 ✅
+
+  assignee: "devops-director"
+  priority: "high"
+  estimatedHours: 8
+  dependencies: []
+  room: "room-devops"
+  branch: "feature/devops-optimization"
+
+---
+# Final Integration Task
+apiVersion: haconiwa.dev/v1
+kind: Task
+metadata:
+  name: final-integration
+  labels:
+    priority: "critical"
+    phase: "final"
+    perfection: "maximum"
+spec:
+  taskId: final-integration
+  title: "🎉 Final Integration & MVP Delivery"
+  description: |
+    ## 最終統合・MVP完成デリバリー
+
+    ### 🎯 CEO最終統合ミッション
+    全コンポーネント統合とMVP完成宣言
+
+    ### 📋 CEO最終確認・統合作業
+    - [ ] **Backend GraphQL API完全動作確認**
+    - [ ] **Trading Engine実行テスト（金融精度・性能）**
+    - [ ] **MT4/MT5統合動作確認（通信・取引実行）**
+    - [ ] **Frontend UI完全動作確認（表示・操作性）**
+    - [ ] **DevOps品質確認（ビルド・テスト・品質）**
+
+    ### 📊 CEO最終パフォーマンス確認概要
+    - 全システム性能テスト実行
+    - 品質基準達成確認
+    - 統合テスト結果レポート
+
+    ### 🏆 MVP完成基準確認
+    ```bash
+    # 品質ゲート確認
+    echo "🛡️ Quality Gate Results:"
+    echo "================================="
+    
+    # Lint確認
+    npm run lint 2>&1 | grep -c "warning" | xargs -I {} echo "✅ ESLint Warnings: {} (Must be 0)"
+    
+    # 型チェック確認
+    npm run check-types 2>&1 | grep -c "error" | xargs -I {} echo "✅ TypeScript Errors: {} (Must be 0)"
+    
+    # テストカバレッジ確認
+    npm run test:coverage | grep "All files" | echo "✅ Test Coverage: $(awk '{print $4}') (Must be >90%)"
+    
+    # 最終ビルド確認
+    npm run build && echo "✅ Build Success: PASSED" || echo "❌ Build Failed"
+    ```
+
+    ### 🎉 MVP完成宣言概要
+    - 全コンポーネント統合成功確認
+    - パフォーマンス・品質基準達成確認  
+    - MVP完成通知システム
+
+    ### 🏆 成功指標
+    - 全コンポーネント統合成功: 100% ✅
+    - パフォーマンス基準達成: 100% ✅
+    - 品質基準クリア: 100% ✅
+    - MVP機能完全動作: 100% ✅
+    - 自律型組織運営成功: 100% ✅
+
+  assignee: "ceo-arbitrage"
+  priority: "critical"
+  estimatedHours: 4
+  dependencies: [
+    "backend-foundation",
+    "trading-engine",
+    "mt5-integration", 
+    "frontend-experience",
+    "devops-optimization"
+  ]
+  room: "room-ceo-office"
+  branch: "feature/final-integration"

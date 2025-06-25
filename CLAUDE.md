@@ -41,6 +41,15 @@ npm run lint       # 全Lint
 npm run test       # 全テスト
 ```
 
+### Haconiwa自律実行
+```bash
+npm run start:haconiwa   # tmux環境構築（既存セッション保護）
+npm run setup:claude     # 全ウィンドウClaude Code設定統一
+npm run auto:haconiwa    # Claude Code起動 + 自律指示配信
+```
+
+**重要**: 既存Claude Codeセッション完全保護機能実装済み
+
 ### アプリ別
 ```bash
 # Hedge System (Tauri)

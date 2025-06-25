@@ -1,0 +1,14 @@
+{
+  "arbitrage-assistant-mvp": {
+    "room-trading-systems": 0
+  },
+  "arbitrage-assistant": {
+    "room-ceo-office": 0,
+    "room-database-schema": 1,
+    "room-core-engine": 2,
+    "room-mt5-integration": 3,
+    "room-ui-development": 4,
+    "room-monorepo-architecture": 5,
+    "room-quality-assurance": 6
+  }
+}
