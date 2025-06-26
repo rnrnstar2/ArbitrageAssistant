@@ -1,15 +1,7 @@
 {
-  "arbitrage-assistant-mvp": {
-    "room-trading-systems": 0
-  },
   "arbitrage-assistant": {
-    "room-ceo": 0,
-    "room-admin": 1,
-    "room-executive": 2,
-    "room-backend": 3,
-    "room-trading": 4,
-    "room-integration": 5,
-    "room-frontend": 6,
-    "room-devops": 7
+    "room-01": 0,
+    "room-02": 1,
+    "room-executive": 2
   }
 }

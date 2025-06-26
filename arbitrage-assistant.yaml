@@ -95,15 +95,20 @@ spec:
     memoryUsage: "< 2GB"
     cpuUsage: "< 80%"
   
-  # タスクブランチ管理
+  # タスクブランチ管理 - 動的ペーン名更新対応
   branchStrategy:
     patterns: ["feature/*", "bugfix/*", "hotfix/*", "mvp/*", "task/*"]
     isolationLevel: "room"
     autoCleanup: true
     maxBranches: 10
+    dynamicPaneNames: true
+    namingFormats:
+      - "feature/01_ai_strategy"
+      - "feature-02_tech_architecture"
+      - "feature_03_financial_planning"
   
-  # 6 Window構成（CEO + 5 Directors）
-  grid: "6x1"
+  # 8x4 Grid構成（32ペーン・8 Window）- READMEベストプラクティス準拠
+  grid: "8x4"
   
   # Room定義（各Windowに対応）
   rooms:
@@ -136,6 +141,16 @@ spec:
       name: "🚀 DevOps & QA"
       description: "インフラ最適化・品質保証・CI/CD・監視専門部門"
       agentId: "devops-director"
+    
+    - id: "room-executive"
+      name: "🏢 Executive Conference"
+      description: "重要意思決定・緊急対応・戦略会議専用室"
+      agentId: "executive-board"
+    
+    - id: "room-standby"
+      name: "⏳ Standby Operations"
+      description: "待機・監視・バックアップ作業専用室"
+      agentId: "standby-agent"
 
   nations:
     - id: arbitrage-nation
