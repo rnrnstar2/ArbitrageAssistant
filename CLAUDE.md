@@ -41,14 +41,34 @@ npm run lint       # 全Lint
 npm run test       # 全テスト
 ```
 
-### Haconiwa自律実行
+### Haconiwaタスクベース並列開発
 ```bash
-npm run start:haconiwa   # tmux環境構築（既存セッション保護）
-npm run setup:claude     # 全ウィンドウClaude Code設定統一
-npm run auto:haconiwa    # Claude Code起動 + 自律指示配信
+# 1. 宣言的設定適用
+haconiwa apply -f arbitrage-assistant.yaml
+
+# 2. Space開始
+haconiwa space start -c arbitrage-assistant
+
+# 3. Claude Codeエージェント起動
+haconiwa space run -c arbitrage-assistant --claude-code
+
+# 4. Space・Room管理
+haconiwa space ls                        # Space一覧
+haconiwa space attach -c arbitrage-assistant  # 全体確認
+haconiwa space attach -r room-backend    # Backend Room接続
+
+# 5. タスク管理（実際のAPI）
+haconiwa task new mvp-new-feature        # 新規タスク作成
+haconiwa task assign mvp-graphql-backend backend-director
+haconiwa task show mvp-arbitrage-engine  # タスク詳細
+haconiwa task done mvp-admin-dashboard   # タスク完了
+
+# 6. 監視・分析
+haconiwa monitor -c arbitrage-assistant  # 監視
+haconiwa scan                            # AI分析
 ```
 
-**重要**: 既存Claude Codeセッション完全保護機能実装済み
+**重要**: 実際に動作するhaconiwa APIのみ使用。Git worktreeはタスク管理で自動実行。
 
 ### アプリ別
 ```bash

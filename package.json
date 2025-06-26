@@ -23,13 +23,11 @@
     "clean": "turbo clean && rm -rf node_modules/.cache",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "sync:amplify": "./scripts/sync-amplify-outputs.sh",
+    "haconiwa:start": "./scripts/haconiwa-start.sh",
+    "haconiwa:attach": "haconiwa space attach -c arbitrage-assistant",
+    "haconiwa:list": "haconiwa space list",
     "predev": "npm run sync:amplify",
-    "postinstall": "npm run sync:amplify",
-    "setup:haconiwa": "./scripts/setup-haconiwa-environment.sh",
-    "start:claude": "./scripts/start-claude-all-windows.sh",
-    "start:haconiwa": "./scripts/start-haconiwa-complete.sh",
-    "setup:claude": "./scripts/claude-setup-all-windows.sh",
-    "auto:haconiwa": "./scripts/haconiwa-autonomous.sh"
+    "postinstall": "npm run sync:amplify"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
