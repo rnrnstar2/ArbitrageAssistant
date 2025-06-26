@@ -125,6 +125,34 @@ const schema = a
         allow.groups(["operator"]).to(["read", "update"]),
         allow.groups(["viewer"]).to(["read"]),
       ]),
+
+    // ===== SUBSCRIPTIONS =====
+    // Real-time subscriptions for Position updates
+    onPositionUpdated: a
+      .subscription()
+      .for(a.ref("Position"))
+      .authorization((allow) => [
+        allow.owner(),
+        allow.groups(["admin", "operator", "viewer"]),
+      ]),
+
+    // Real-time subscriptions for Action creation/updates
+    onActionCreated: a
+      .subscription()
+      .for(a.ref("Action"))
+      .authorization((allow) => [
+        allow.owner(),
+        allow.groups(["admin", "operator", "viewer"]),
+      ]),
+
+    // Real-time subscriptions for Account balance changes
+    onAccountBalanceChanged: a
+      .subscription()
+      .for(a.ref("Account"))
+      .authorization((allow) => [
+        allow.owner(),
+        allow.groups(["admin", "operator", "viewer"]),
+      ]),
   })
   .authorization((allow) => [allow.resource(postConfirmation)]);
 

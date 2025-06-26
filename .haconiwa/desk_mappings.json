@@ -1,30 +1,30 @@
 [
   {
     "desk_id": "desk-room-01-00",
-    "agent_id": "exec-01",
+    "agent_id": "ceo-main",
     "org_id": "org-01",
     "role": "pm",
     "room_id": "room-01",
     "directory_name": "exec-01",
-    "title": "Executive Team - Executive 1 - Alpha Room"
+    "title": "Executive Team - Chief Executive Officer - Alpha Room"
   },
   {
     "desk_id": "desk-room-01-01",
-    "agent_id": "exec-02",
+    "agent_id": "director-coordinator",
     "org_id": "org-01",
     "role": "wk-a",
     "room_id": "room-01",
     "directory_name": "exec-02",
-    "title": "Executive Team - Executive 2 - Alpha Room"
+    "title": "Executive Team - Director Coordinator - Alpha Room"
   },
   {
     "desk_id": "desk-room-01-02",
-    "agent_id": "exec-03",
+    "agent_id": "progress-monitor",
     "org_id": "org-01",
     "role": "wk-b",
     "room_id": "room-01",
     "directory_name": "exec-03",
-    "title": "Executive Team - Executive 3 - Alpha Room"
+    "title": "Executive Team - Progress Monitor - Alpha Room"
   },
   {
     "desk_id": "desk-room-01-03",

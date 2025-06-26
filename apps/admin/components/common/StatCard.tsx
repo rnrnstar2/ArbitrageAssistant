@@ -6,9 +6,10 @@ interface StatCardProps {
   value: number | string;
   format?: 'currency' | 'number';
   color?: 'blue' | 'green' | 'orange' | 'red' | 'purple';
+  icon?: React.ReactNode;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'number', color = 'blue' }) => {
+export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'number', color = 'blue', icon }) => {
   const formatValue = (value: number | string, format: string) => {
     if (typeof value === 'string') {
       return value;
@@ -35,8 +36,11 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'numb
 
   return (
     <Card className="p-6">
-      <div className={`text-2xl font-bold ${getColorClass(color)}`}>
-        {formatValue(value, format)}
+      <div className="flex items-center justify-between mb-2">
+        <div className={`text-2xl font-bold ${getColorClass(color)}`}>
+          {formatValue(value, format)}
+        </div>
+        {icon && <div className={`${getColorClass(color)}`}>{icon}</div>}
       </div>
       <div className="text-sm text-gray-600">{title}</div>
     </Card>

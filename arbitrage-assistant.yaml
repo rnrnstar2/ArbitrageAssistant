@@ -12,61 +12,173 @@ metadata:
 spec:
   companyName: "ArbitrageAssistant Development"
   industry: "FinTech Software Development"
+  basePath: "/Users/rnrnstar/github/ArbitrageAssistant/arbitrage-assistant-org"
   hierarchy:
-    CEO: "CEO Arbitrage"
-    Directors: ["Backend Director", "Trading Director", "Integration Director", "Frontend Director", "DevOps Director"]
-    Specialists: ["GraphQL Specialist", "Arbitrage Specialist", "MT5 Connector Specialist", "React Specialist", "Build Optimization Engineer"]
-    Engineers: ["AWS Integration Expert", "Position Manager", "WebSocket Engineer", "Desktop App Engineer", "Quality Assurance Engineer"]
-  teams:
-    - name: "Backend Architecture Team"
-      description: "AWS Amplify Gen2 + GraphQL + userIdベース最適化専門部門"
-      roles:
-        - name: "Backend Director"
-          description: "バックエンドアーキテクチャの設計・実装・最適化責任者"
-        - name: "GraphQL Specialist" 
-          description: "GraphQL実装・最適化専門家"
-        - name: "AWS Integration Expert"
-          description: "AWS Amplify統合・Cognito認証専門家"
-    
-    - name: "Trading Systems Team"
-      description: "アービトラージエンジン・ポジション管理・金融計算専門部門"
-      roles:
-        - name: "Trading Director"
-          description: "取引システム設計・実装・リスク管理責任者"
-        - name: "Arbitrage Specialist"
-          description: "アービトラージ計算・アルゴリズム専門家"
-        - name: "Position Manager"
-          description: "ポジション管理・状態遷移専門家"
-    
-    - name: "Integration Systems Team"
-      description: "MT4/MT5統合・WebSocket通信・外部API連携専門部門"
-      roles:
-        - name: "Integration Director"
-          description: "外部統合システム設計・実装・保守責任者"
-        - name: "MT5 Connector Specialist"
-          description: "MT4/MT5統合・EA開発専門家"
-        - name: "WebSocket Engineer"
-          description: "WebSocket通信・プロトコル設計専門家"
-    
-    - name: "Frontend Experience Team"
-      description: "管理画面・デスクトップUI・ユーザー体験専門部門"
-      roles:
-        - name: "Frontend Director"
-          description: "フロントエンド全体設計・UX最適化責任者"
-        - name: "React Specialist"
-          description: "React・Next.js・UI実装専門家"
-        - name: "Desktop App Engineer"
-          description: "Tauri・デスクトップアプリ専門家"
-    
-    - name: "DevOps & QA Team"
-      description: "インフラ最適化・品質保証・CI/CD・監視専門部門"
-      roles:
-        - name: "DevOps Director"
-          description: "インフラ・CI/CD・品質管理責任者"
-        - name: "Build Optimization Engineer"
-          description: "Turborepo・ビルド最適化専門家"
-        - name: "Quality Assurance Engineer"
-          description: "テスト・品質保証・監視専門家"
+    departments:
+      # CEO Executive Department
+      - id: "executive"
+        name: "Executive Team"
+        description: "Company leadership and strategic decision making"
+        roles:
+          - roleType: "management"
+            title: "Chief Executive Officer"
+            agentId: "ceo-main"
+            responsibilities:
+              - "Strategic vision and direction"
+              - "Company-wide decision making"
+            environment:
+              HACONIWA_ROLE: "CEO系エージェント"
+              HACONIWA_AGENT_ID: "ceo-main"
+              HACONIWA_ROOM: "room-ceo"
+          - roleType: "coordination"
+            title: "Director Coordinator"
+            agentId: "director-coordinator"
+            responsibilities:
+              - "5 Directors management"
+              - "Cross-team coordination"
+            environment:
+              HACONIWA_ROLE: "CEO系エージェント"
+              HACONIWA_AGENT_ID: "director-coordinator"
+              HACONIWA_ROOM: "room-ceo"
+          - roleType: "monitoring"
+            title: "Progress Monitor"
+            agentId: "progress-monitor"
+            responsibilities:
+              - "Performance tracking"
+              - "KPI monitoring"
+            environment:
+              HACONIWA_ROLE: "CEO系エージェント"
+              HACONIWA_AGENT_ID: "progress-monitor"
+              HACONIWA_ROOM: "room-ceo"
+      
+      # Backend Architecture Department
+      - id: "backend"
+        name: "Backend Architecture Team"
+        description: "AWS Amplify Gen2 + GraphQL + DynamoDB専門部門"
+        roles:
+          - roleType: "management"
+            title: "Backend Director"
+            agentId: "backend-director"
+            responsibilities:
+              - "AWS Amplify Gen2技術統括"
+              - "GraphQL API設計方針"
+            environment:
+              HACONIWA_ROLE: "Backend系エージェント"
+              HACONIWA_AGENT_ID: "backend-director"
+              HACONIWA_ROOM: "room-backend"
+          - roleType: "engineering"
+            title: "Amplify Gen2 Specialist"
+            agentId: "amplify-gen2-specialist"
+            responsibilities:
+              - "packages/shared-backend/amplify/data/resource.ts実装"
+              - "DynamoDB + GSI設計・実装"
+              - "GraphQL Subscription技術実装"
+            environment:
+              HACONIWA_ROLE: "Backend系エージェント"
+              HACONIWA_AGENT_ID: "amplify-gen2-specialist"
+              HACONIWA_ROOM: "room-backend"
+          - roleType: "engineering"
+            title: "Cognito Authentication Expert"
+            agentId: "cognito-auth-expert"
+            responsibilities:
+              - "Amazon Cognito技術統合"
+              - "認証フロー実装"
+      
+      # Trading Systems Department
+      - id: "trading"
+        name: "Trading Systems Team"
+        description: "TypeScript + Tauri + 金融計算ロジック専門部門"
+        roles:
+          - roleType: "management"
+            title: "Trading Flow Director"
+            agentId: "trading-flow-director"
+            responsibilities:
+              - "金融計算ロジック技術統括"
+              - "Position-Trail-Action実装方針"
+          - roleType: "engineering"
+            title: "Entry Flow Specialist"
+            agentId: "entry-flow-specialist"
+            responsibilities:
+              - "apps/hedge-system/lib/位置実行エンジン実装"
+              - "Entry→Trail→Action技術実装"
+          - roleType: "engineering"
+            title: "Settlement Flow Specialist"
+            agentId: "settlement-flow-specialist"
+            responsibilities:
+              - "決済・ロスカット処理技術実装"
+              - "Trail判定アルゴリズム実装"
+      
+      # Integration Systems Department
+      - id: "integration"
+        name: "Integration Systems Team"
+        description: "C++/MQL5 + WebSocket + ea/開発専門部門"
+        roles:
+          - roleType: "management"
+            title: "Integration Director"
+            agentId: "integration-director"
+            responsibilities:
+              - "MT4/MT5技術統括"
+              - "WebSocket通信方針"
+          - roleType: "engineering"
+            title: "MT5 Connector Specialist"
+            agentId: "mt5-connector-specialist"
+            responsibilities:
+              - "ea/HedgeSystemConnector.mq5実装"
+              - "MQL5プログラミング"
+          - roleType: "engineering"
+            title: "WebSocket Engineer"
+            agentId: "websocket-engineer"
+            responsibilities:
+              - "ea/websocket-dll/C++実装"
+              - "WebSocket技術実装"
+      
+      # Frontend Experience Department
+      - id: "frontend"
+        name: "Frontend Experience Team"
+        description: "Next.js + React + Tailwind CSS専門部門"
+        roles:
+          - roleType: "management"
+            title: "Frontend Director"
+            agentId: "frontend-director"
+            responsibilities:
+              - "Next.js技術統括"
+              - "UI/UX実装方針"
+          - roleType: "engineering"
+            title: "React Specialist"
+            agentId: "react-specialist"
+            responsibilities:
+              - "apps/admin/Next.js実装"
+              - "React + Tailwind CSS実装"
+          - roleType: "engineering"
+            title: "Desktop App Engineer"
+            agentId: "desktop-app-engineer"
+            responsibilities:
+              - "apps/hedge-system/Tauri実装"
+              - "Rust + TypeScript統合"
+      
+      # DevOps & QA Department
+      - id: "devops"
+        name: "DevOps & QA Team"
+        description: "Turborepo + GitHub Actions + Vitest専門部門"
+        roles:
+          - roleType: "management"
+            title: "DevOps Director"
+            agentId: "devops-director"
+            responsibilities:
+              - "Turborepoビルド最適化統括"
+              - "CI/CD技術方針"
+          - roleType: "engineering"
+            title: "Build Optimization Engineer"
+            agentId: "build-optimization-engineer"
+            responsibilities:
+              - "turbo.json最適化実装"
+              - ".github/workflows/設定実装"
+          - roleType: "engineering"
+            title: "Quality Assurance Engineer"
+            agentId: "quality-assurance-engineer"
+            responsibilities:
+              - "Vitest + React Testing Library実装"
+              - "ESLint品質チェック実装"
 
 ---
 # ==========================================
@@ -81,76 +193,66 @@ spec:
   # セキュリティポリシー
   securityPolicy:
     requireAuth: true
-    allowedPorts: [3000, 8080, 1420, 5173, 4173]  # Next.js, Tauri, Vite
-    restrictedPaths: ["node_modules", ".git", ".env*", "*.key", "*.pem"]
-    auditLog: true
-    maxSessionTime: "8h"
-    autoLogout: true
+    allowedPorts: [3000, 8080, 1420]
+    restrictedPaths: [".env*", "*.key"]
   
   # パフォーマンス指標
   performanceTargets:
     buildTime: "< 30s"
-    lintTime: "< 10s" 
-    testCoverage: "> 90%"
-    memoryUsage: "< 2GB"
-    cpuUsage: "< 80%"
+    testCoverage: "> 80%"
   
-  # タスクブランチ管理 - 動的ペーン名更新対応
+  # タスクブランチ管理
   branchStrategy:
-    patterns: ["feature/*", "bugfix/*", "hotfix/*", "mvp/*", "task/*"]
+    patterns: ["feature/*", "bugfix/*", "mvp/*"]
     isolationLevel: "room"
     autoCleanup: true
-    maxBranches: 10
-    dynamicPaneNames: true
-    namingFormats:
-      - "feature/01_ai_strategy"
-      - "feature-02_tech_architecture"
-      - "feature_03_financial_planning"
   
-  # 8x4 Grid構成（32ペーン・8 Window）- READMEベストプラクティス準拠
-  grid: "8x4"
+  # 6x3 Grid構成（18ペーン・6 Window）- 現実的構成
+  grid: "6x3"
   
-  # Room定義（各Windowに対応）
+  # Room定義（実際のWindow構成に対応）
   rooms:
+    # Window 0: CEO Executive Office (3 panes)
     - id: "room-ceo"
       name: "🏛️ CEO Executive Office"
-      description: "Strategic MVP leadership using parallel development tools"
-      agentId: "ceo-arbitrage"
+      description: "Strategic leadership with 3-pane configuration: Main, Coordination, Monitoring"
+      paneCount: 3
+      agentIds: ["ceo-main", "director-coordinator", "progress-monitor"]
     
+    # Window 1: Backend Architecture (3 panes)
     - id: "room-backend"
       name: "🗄️ Backend Architecture"
-      description: "AWS Amplify Gen2 + GraphQL + userIdベース最適化専門部門"
-      agentId: "backend-director"
+      description: "Backend Director, Amplify Gen2 Specialist, Cognito Authentication Expert"
+      paneCount: 3
+      agentIds: ["backend-director", "amplify-gen2-specialist", "cognito-auth-expert"]
     
+    # Window 2: Trading Systems (3 panes)
     - id: "room-trading"
       name: "⚡ Trading Systems"
-      description: "アービトラージエンジン・ポジション管理・金融計算専門部門"
-      agentId: "trading-director"
+      description: "Trading Flow Director, Entry Flow Specialist, Settlement Flow Specialist"
+      paneCount: 3
+      agentIds: ["trading-flow-director", "entry-flow-specialist", "settlement-flow-specialist"]
     
+    # Window 3: Integration Systems (3 panes)
     - id: "room-integration"
       name: "🔌 Integration Systems"
-      description: "MT4/MT5統合・WebSocket通信・外部API連携専門部門"
-      agentId: "integration-director"
+      description: "Integration Director, MT5 Connector Specialist, WebSocket Engineer"
+      paneCount: 3
+      agentIds: ["integration-director", "mt5-connector-specialist", "websocket-engineer"]
     
+    # Window 4: Frontend Experience (3 panes)
     - id: "room-frontend"
       name: "🎨 Frontend Experience"
-      description: "管理画面・デスクトップUI・ユーザー体験専門部門"
-      agentId: "frontend-director"
+      description: "Frontend Director, React Specialist, Desktop App Engineer"
+      paneCount: 3
+      agentIds: ["frontend-director", "react-specialist", "desktop-app-engineer"]
     
+    # Window 5: DevOps & QA (3 panes)
     - id: "room-devops"
       name: "🚀 DevOps & QA"
-      description: "インフラ最適化・品質保証・CI/CD・監視専門部門"
-      agentId: "devops-director"
-    
-    - id: "room-executive"
-      name: "🏢 Executive Conference"
-      description: "重要意思決定・緊急対応・戦略会議専用室"
-      agentId: "executive-board"
-    
-    - id: "room-standby"
-      name: "⏳ Standby Operations"
-      description: "待機・監視・バックアップ作業専用室"
-      agentId: "standby-agent"
+      description: "DevOps Director, Build Optimization Engineer, Quality Assurance Engineer"
+      paneCount: 3
+      agentIds: ["devops-director", "build-optimization-engineer", "quality-assurance-engineer"]
 
   nations:
     - id: arbitrage-nation
@@ -163,12 +265,20 @@ spec:
               name: "Development Village"
               companies:
                 - name: arbitrage-assistant
-                  basePath: "./"
+                  basePath: "/Users/rnrnstar/github/ArbitrageAssistant"
+                  organizationRef: "arbitrage-assistant-org"
                   
                   gitRepo:
                     url: "https://github.com/rnrnstar2/ArbitrageAssistant"
                     defaultBranch: "dev"
                     auth: "https"
+                    
+                  buildings:
+                    - id: "hq-tower"
+                      name: "ArbitrageAssistant HQ Tower"
+                      floors:
+                        - id: "executive-floor"
+                          name: "Executive & Development Floor"
                   
                   agentDefaults:
                     type: "claude-code"
@@ -183,6 +293,11 @@ spec:
                       deny:
                         - "Bash(rm -rf /)"
                         - "Bash(sudo *)"
+                    environment:
+                      # 環境変数設定（実験的）
+                      variables:
+                        HACONIWA_ENVIRONMENT: "arbitrage-assistant"
+                        HACONIWA_MVP_MODE: "true"
 
 ---
 # ==========================================
@@ -195,29 +310,18 @@ metadata:
   version: "1.0.0"
 spec:
   id: "task-mvp-graphql-backend"
-  title: "MVP GraphQL バックエンド基盤実装"
+  title: "AWS Amplify Gen2 + DynamoDB実装"
   description: |
-    ArbitrageAssistant MVPのGraphQLバックエンド基盤を実装します。
+    技術実装要件:
+    - packages/shared-backend/amplify/data/resource.ts 
+    - User/Account/Position/Action GraphQLスキーマ
+    - GSI設定 + Cognito認証
+    - GraphQL Subscription
     
-    【必須要件】
-    - User、Account、Position、Actionモデルの基本CRUD
-    - userIdベースGSI設定（高速検索）
-    - GraphQL Subscription（リアルタイム同期）
-    - Cognito認証システム統合
-    
-    【成果物】
-    - packages/shared-backend/amplify/data/resource.ts 完全実装
-    - 基本GraphQLスキーマ定義
-    - リアルタイム機能確認
-    
-    【制約事項】
-    ❌ 複雑なリレーション設計は実装禁止
-    ❌ 高度なクエリ最適化は後回し
-    ✅ 基本的なCRUD操作の確実な動作を最優先
-  assignee: "backend-director"
+    参照: MVPシステム設計.md「2. データベース設計」
+  assignee: "amplify-gen2-specialist"
   priority: "high"
   branch: "feature/01_mvp_graphql_backend"
-  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-backend"
@@ -230,29 +334,18 @@ metadata:
   version: "1.0.0"
 spec:
   id: "task-mvp-arbitrage-engine"
-  title: "MVP アービトラージエンジン基盤実装"
+  title: "TypeScript + Tauri 金融計算ロジック実装"
   description: |
-    ArbitrageAssistant MVPのアービトラージエンジン基盤を実装します。
+    技術実装要件:
+    - apps/hedge-system/lib/hedge-system-core.ts
+    - apps/hedge-system/lib/position-execution.ts
+    - Position状態遷移ロジック
+    - Trail判定アルゴリズム
     
-    【必須要件】
-    - PENDING→OPENING→OPEN状態遷移の確実実行
-    - 金融計算精度小数点5桁程度
-    - 基本アービトラージロジック実装
-    - ポジション管理システム
-    
-    【成果物】
-    - apps/hedge-system/lib/hedge-system-core.ts 基本実装
-    - apps/hedge-system/lib/position-execution.ts 状態管理
-    - アービトラージ計算ロジック
-    
-    【制約事項】
-    ❌ 複雑なアルゴリズム実装は禁止
-    ❌ 高度な最適化は後回し
-    ✅ 確実に動作する基本取引機能を最優先
-  assignee: "trading-director"
+    参照: MVPシステム設計.md「4. 実行パターン詳細」
+  assignee: "trading-flow-director"
   priority: "high"
   branch: "feature/02_mvp_arbitrage_engine"
-  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-trading"
@@ -265,29 +358,18 @@ metadata:
   version: "1.0.0"
 spec:
   id: "task-mvp-mt5-integration"
-  title: "MVP MT5統合システム基盤実装"
+  title: "MQL5 + C++ WebSocket実装"
   description: |
-    ArbitrageAssistant MVPのMT5統合システム基盤を実装します。
+    技術実装要件:
+    - ea/HedgeSystemConnector.mq5
+    - ea/websocket-dll/HedgeSystemWebSocket.cpp
+    - apps/hedge-system/lib/websocket-server.ts
+    - MT4/MT5通信プロトコル
     
-    【必須要件】
-    - WebSocket通信低遅延実現
-    - MT5 EA基本機能実装
-    - エラー回復機能
-    - 通信プロトコル設計
-    
-    【成果物】
-    - ea/HedgeSystemConnector.mq5 基本EA
-    - ea/websocket-dll/HedgeSystemWebSocket.cpp WebSocket実装
-    - apps/hedge-system/lib/websocket-server.ts サーバー側
-    
-    【制約事項】
-    ❌ 複雑な通信プロトコル実装は禁止
-    ❌ 高度な最適化は後回し
-    ✅ 確実に動作する基本通信機能を最優先
+    参照: MVPシステム設計.md「7. WebSocket通信設計」
   assignee: "integration-director"
   priority: "high"
   branch: "feature/03_mvp_mt5_integration"
-  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-integration"
@@ -300,29 +382,18 @@ metadata:
   version: "1.0.0"
 spec:
   id: "task-mvp-admin-dashboard"
-  title: "MVP 管理画面基盤実装"
+  title: "Next.js + React + Tailwind CSS実装"
   description: |
-    ArbitrageAssistant MVPの管理画面基盤を実装します。
+    技術実装要件:
+    - apps/admin/app/dashboard/page.tsx
+    - apps/admin/features/accounts/
+    - apps/admin/features/positions/
+    - GraphQL Subscription連携
     
-    【必須要件】
-    - ポジション・アカウント表示
-    - リアルタイム更新機能
-    - 高速初期表示
-    - 直感的なUI設計
-    
-    【成果物】
-    - apps/admin/app/dashboard/page.tsx メインダッシュボード
-    - apps/admin/features/accounts/ アカウント管理
-    - apps/admin/features/positions/ ポジション表示
-    
-    【制約事項】
-    ❌ 装飾的なUI要素実装は禁止
-    ❌ 複雑なアニメーションは後回し
-    ✅ 確実に動作する基本表示機能を最優先
+    参照: MVPシステム設計.md「5-4. 管理者画面」
   assignee: "frontend-director"
   priority: "high"
   branch: "feature/04_mvp_admin_dashboard"
-  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-frontend"
@@ -335,29 +406,20 @@ metadata:
   version: "1.0.0"
 spec:
   id: "task-mvp-build-optimization"
-  title: "MVP ビルド最適化・品質保証実装"
+  title: "Turborepo + GitHub Actions + Vitest実装"
   description: |
-    ArbitrageAssistant MVPのビルド最適化と品質保証を実装します。
+    技術実装要件:
+    - turbo.json最適化設定
+    - .github/workflows/CI/CD設定
+    - Vitest + React Testing Library
+    - ESLint品質チェック
     
-    【必須要件】
-    - Turborepo設定最適化
-    - ESLint 0 warnings品質基準維持
-    - GitHub Actions CI/CD設定
-    - キャッシュ効率化
-    
-    【成果物】
-    - turbo.json 最適化設定
-    - .github/workflows/ CI/CD設定
-    - 品質チェック自動化
-    
-    【制約事項】
-    ❌ 複雑な最適化設定は実装禁止
-    ❌ 高度なキャッシュ戦略は後回し
-    ✅ 確実に動作する基本ビルド設定を最優先
+    参照: MVPシステム設計.md「10. パフォーマンス最適化」
   assignee: "devops-director"
   priority: "medium"
   branch: "enhancement/05_mvp_build_optimization"
-  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-devops"
+
+# Law CRD は現在サポートされていないため一時的に削除

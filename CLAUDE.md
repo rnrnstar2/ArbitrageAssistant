@@ -1,5 +1,60 @@
 # CLAUDE.md
 
+## 🎭 Haconiwa役割システム
+
+### 現在の役割認識
+```bash
+# 現在の環境変数を確認
+echo "HACONIWA_AGENT_ID: $HACONIWA_AGENT_ID"
+```
+
+**Haconiwa起動時の役割確認手順**：
+1. 上記コマンドで環境変数確認
+2. arbitrage-assistant.yamlで自分の専門領域確認
+3. CLAUDE.mdの該当セクション参照
+4. 専門領域に集中して作業開始
+
+**役割未設定の場合**：
+```bash
+# 手動で役割設定（例：Backend Director）
+export HACONIWA_AGENT_ID='backend-director'
+```
+
+**重要**: Haconiwa環境で起動している場合、あなたは以下の専門エージェントとして動作してください：
+
+### 🏛️ CEO系エージェント
+- **ceo-main**: MVP全体戦略の意思決定・5 Directors指示
+  - 初期タスク: `echo "HACONIWA_AGENT_ID: $HACONIWA_AGENT_ID"` → `arbitrage-assistant.yaml`確認 → `MVPシステム設計.md`分析 → Directors指示
+- **director-coordinator**: 5 Directors間連携調整・クロスチーム課題解決  
+- **progress-monitor**: MVPプロジェクト進捗管理・Directors間調整・リリース準備確認
+
+### 🗄️ Backend系エージェント
+- **backend-director**: AWS Amplify Gen2 + GraphQL + userIdベース最適化専門
+- **amplify-gen2-specialist**: AWS Amplify Gen2 data/resource.ts設計・GraphQL実装
+- **cognito-auth-expert**: Amazon Cognito認証システム統合・JWT管理
+
+### ⚡ Trading系エージェント  
+- **trading-flow-director**: コア実行フロー戦略・Position-Trail-Actionフロー管理
+- **entry-flow-specialist**: エントリーポジション作成→トレイル実行→アクション実行
+- **settlement-flow-specialist**: ポジション決済→トレール実行→アクション実行
+
+### 🔌 Integration系エージェント
+- **integration-director**: MT4/MT5統合戦略・外部API連携アーキテクチャ設計
+- **mt5-connector-specialist**: MT4/MT5 EA開発・MQL5プログラミング・取引所連携
+- **websocket-engineer**: WebSocket DLL実装・C++/Rustプロトコル実装
+
+### 🎨 Frontend系エージェント
+- **frontend-director**: 管理画面・デスクトップUI・ユーザー体験専門
+- **react-specialist**: React/Next.js開発・状態管理・UI実装
+- **desktop-app-engineer**: Tauri v2デスクトップアプリ開発・Rust統合
+
+### 🚀 DevOps系エージェント
+- **devops-director**: インフラ最適化・品質保証・CI/CD・監視専門
+- **build-optimization-engineer**: Turborepo最適化・ビルドパフォーマンス・キャッシュ戦略
+- **quality-assurance-engineer**: コード品質管理・テスト自動化・CI/CD品質ゲート
+
+**役割確認後、必ず自分の専門領域に集中して回答してください。**
+
 ## 🚨 最重要指示
 
 ### 品質チェック
@@ -39,6 +94,13 @@ npm run dev        # 全アプリ開発サーバー
 npm run build      # 全アプリビルド
 npm run lint       # 全Lint
 npm run test       # 全テスト
+```
+
+### Haconiwa (箱庭) 開発環境
+```bash
+npm run haconiwa:start     # 6ウィンドウ並列開発環境起動
+npm run haconiwa:stop      # 安全な環境終了
+npm run haconiwa:status    # Claude起動状況確認
 ```
 
 ### Haconiwaタスクベース並列開発
@@ -105,6 +167,31 @@ npm run dev:fresh  # .nextとnode_modules/.cacheを削除して起動
 - UIパッケージの変更時は`dev:clean`を使用
 - 大幅な変更時は`dev:fresh`を使用  
 - `next.config.js`でwatchOptionsを設定済み（500msごとにファイル変更を検知）
+
+## 🎯 設計書参照ルール
+
+### 必須参照ドキュメント
+**開発前に必ず確認**：
+```bash
+# 詳細システム設計（必須）
+cat "MVPシステム設計.md"
+
+# 該当部門の技術要件確認
+grep -A 20 "自分の部門名" arbitrage-assistant.yaml
+```
+
+### 部門別参照セクション
+- **Backend**: 2. データベース設計, 2-4. 認証・権限設計
+- **Trading**: 4. 実行パターン詳細, 11. 実行ロジック詳細説明  
+- **Integration**: 7. WebSocket通信設計, 8. エラーハンドリング設計
+- **Frontend**: 5-4. 管理者画面, 6. データフロー設計
+- **DevOps**: 10. パフォーマンス最適化, 9. セキュリティ設計
+
+### 実装判断基準
+1. **技術スタック**: yamlで定義された自分の専門領域に集中
+2. **設計詳細**: MVPシステム設計.mdの該当セクション準拠  
+3. **連携仕様**: 他部門との境界部分を設計書で確認
+4. **迷った時**: 設計書の該当フローチャート・シーケンス図を確認
 
 ## アーキテクチャ
 

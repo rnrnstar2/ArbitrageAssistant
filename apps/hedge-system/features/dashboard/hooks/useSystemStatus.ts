@@ -64,7 +64,7 @@ export function useSystemStatus() {
         
         setSystemStatus({
           isInitialized: true,
-          isRunning: coreStatus === 'RUNNING',
+          isRunning: typeof coreStatus === 'object' ? coreStatus.isRunning : coreStatus === 'RUNNING',
           connectedAccounts: accounts.length,
           totalAccounts: accounts.length,
           activeSubscriptions: 1, // MVP: 固定値

@@ -5,6 +5,10 @@ export interface DashboardStats {
   pendingActions: number;
   totalVolume: number;
   totalPnL: number;
+  totalBalance: number;
+  totalCredit: number;
+  totalEquity: number;
+  systemHealth: 'healthy' | 'warning' | 'error';
 }
 
 export interface ClientStatus {
@@ -13,6 +17,8 @@ export interface ClientStatus {
   status: "online" | "offline";
   lastSeen: string;
   accountCount: number;
+  version: string;
+  accountId: string;
 }
 
 // Import types from shared-amplify (統一)

@@ -7,3 +7,5 @@ export { CompactSystemOverview } from './CompactSystemOverview';
 export { EnhancedSystemOverview } from './EnhancedSystemOverview';
 export { MinimalSystemOverview } from './MinimalSystemOverview';
 export { ActionExecutionPanel } from './ActionExecutionPanel';
+export { SettingsPanel } from './SettingsPanel';
+export { TauriIntegration } from './TauriIntegration';

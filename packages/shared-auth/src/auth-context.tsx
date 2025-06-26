@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   }, [options, enableDebugLogs]);
 
   // 認証状態の管理（初期状態を同期的に設定）
-  const [state, setState] = useState(() => ({
+  const [state, setState] = useState<Pick<AuthContextType, 'user' | 'isAuthenticated' | 'isLoading' | 'authToken' | 'groups'>>(() => ({
     user: null,
     isAuthenticated: false,
     isLoading: true,
@@ -63,7 +63,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       if (enableDebugLogs) {
         console.log('🔄 Auth state updated:', newState);
       }
-      setState(newState);
+      setState({
+        user: newState.user,
+        isAuthenticated: newState.isAuthenticated,
+        isLoading: newState.isLoading,
+        authToken: newState.authToken,
+        groups: newState.groups
+      });
       
       // 初回の認証チェック完了時にフラグを設定
       if (!isInitialized && !newState.isLoading) {
@@ -76,7 +82,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
     // 初期状態を即座に取得
     const initialState = authService.getState();
-    setState(initialState);
+    setState({
+      user: initialState.user,
+      isAuthenticated: initialState.isAuthenticated,
+      isLoading: initialState.isLoading,
+      authToken: initialState.authToken,
+      groups: initialState.groups
+    });
     if (enableDebugLogs) {
       console.log('🔄 Initial auth state set:', initialState);
     }

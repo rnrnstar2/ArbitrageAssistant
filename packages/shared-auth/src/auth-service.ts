@@ -45,7 +45,7 @@ export class AuthService {
       await this.checkAuthState();
     } catch (error) {
       const context = AuthErrorHandler.createContext('initial_auth_check', this.appType);
-      AuthErrorHandler.handle(error, context);
+      AuthErrorHandler.handle(error instanceof Error ? error : new Error(String(error)), context);
       // checkAuthState の finally ブロックで isLoading = false が設定されるため、ここでは設定しない
     }
   }
