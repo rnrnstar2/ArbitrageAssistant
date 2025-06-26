@@ -118,7 +118,7 @@ spec:
                   
                   gitRepo:
                     url: "https://github.com/rnrnstar2/ArbitrageAssistant"
-                    defaultBranch: "main"
+                    defaultBranch: "dev"
                     auth: "https"
                   
                   agentDefaults:
@@ -334,7 +334,7 @@ spec:
   assignee: "backend-director"
   priority: "high"
   branch: "feature/01_mvp_graphql_backend"
-  defaultBranch: "main"
+  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-backend"
@@ -369,7 +369,7 @@ spec:
   assignee: "trading-director"
   priority: "high"
   branch: "feature/02_mvp_arbitrage_engine"
-  defaultBranch: "main"
+  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-trading"
@@ -404,7 +404,7 @@ spec:
   assignee: "integration-director"
   priority: "high"
   branch: "feature/03_mvp_mt5_integration"
-  defaultBranch: "main"
+  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-integration"
@@ -439,7 +439,7 @@ spec:
   assignee: "frontend-director"
   priority: "high"
   branch: "feature/04_mvp_admin_dashboard"
-  defaultBranch: "main"
+  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-frontend"
@@ -474,7 +474,7 @@ spec:
   assignee: "devops-director"
   priority: "medium"
   branch: "enhancement/05_mvp_build_optimization"
-  defaultBranch: "main"
+  defaultBranch: "dev"
   worktree: true
   spaceRef: "arbitrage-assistant-space"
   room: "room-devops"
