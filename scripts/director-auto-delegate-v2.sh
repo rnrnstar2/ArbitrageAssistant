@@ -199,47 +199,34 @@ EOF
     # 実行ログに記録
     echo "- **$specialist_name** (ペイン $pane): $task_file" >> "$EXECUTION_LOG"
     
-    # 強化された指示送信メッセージ作成
-    ENHANCED_INSTRUCTION="【Director指示 v2.0】$DIRECTOR_ID → $specialist_name
-🆔 タスクID: task-${TIMESTAMP}-${specialist_name}
-📁 タスクファイル: $task_file
-🎯 指示内容: $INSTRUCTION
-
-🛡️【MVP準拠絶対指示】
-• MVPシステム設計.md記載の機能のみ実装
-• forbidden-edits.md の禁止事項は死んでも実装禁止
-• 迷ったら実装しない・必要最小限のみ
-• 実装前にmvp-compliance-check.shでチェック必須
-• Over-Engineering絶対禁止
-
-📝 作業管理:
-• タスク開始: ./scripts/task-execute.sh $task_file start
-• 進捗更新: ./scripts/task-execute.sh $task_file progress
-• タスク完了: ./scripts/task-execute.sh $task_file complete
-• 対話モード: ./scripts/task-execute.sh $task_file
-
-✅ 指示受信完了。MVP準拠を守って作業開始します。ultrathink"
+    # シンプルなtmux指示送信（双方向通信削除）
+    echo "📤 指示送信: $specialist_name (ペイン $pane)"
     
-    # 双方向通信システムで指示送信
-    COMM_SYSTEM="$(dirname "$0")/tmux-communication-system.sh"
-    if [ -f "$COMM_SYSTEM" ]; then
-        # 双方向通信で指示送信（30秒タイムアウト）
-        echo "📤 双方向指示送信: $specialist_name (ペイン $pane)"
-        if "$COMM_SYSTEM" send "$pane" "$ENHANCED_INSTRUCTION" 30; then
-            echo "  ✅ 双方向指示送信成功（応答確認済み）"
-            echo "  ✅ 双方向指示送信成功（応答確認済み）" >> "$EXECUTION_LOG"
-        else
-            echo "  ⚠️ 双方向指示送信タイムアウト（一方向送信にフォールバック）"
-            echo "  ⚠️ 双方向指示送信タイムアウト（一方向送信にフォールバック）" >> "$EXECUTION_LOG"
-            # フォールバック: 従来の一方向送信
-            tmux send-keys -t "$SESSION_NAME:$pane" " && echo '$ENHANCED_INSTRUCTION'" Enter
-        fi
-    else
-        # 双方向通信システムが利用できない場合のフォールバック
-        echo "  ℹ️ 双方向通信システム未利用（一方向送信）"
-        echo "  ℹ️ 双方向通信システム未利用（一方向送信）" >> "$EXECUTION_LOG"
-        tmux send-keys -t "$SESSION_NAME:$pane" " && echo '$ENHANCED_INSTRUCTION'" Enter
-    fi
+    # ペインをクリアして指示送信
+    tmux send-keys -t "$SESSION_NAME:$pane" "clear" Enter
+    sleep 1
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '【Director指示 v2.0】$DIRECTOR_ID → $specialist_name'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '🆔 タスクID: task-${TIMESTAMP}-${specialist_name}'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '📁 タスクファイル: $task_file'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '🎯 指示内容: $INSTRUCTION'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo ''" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '🛡️【MVP準拠絶対指示】'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• MVPシステム設計.md記載の機能のみ実装'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• forbidden-edits.md の禁止事項は死んでも実装禁止'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• 迷ったら実装しない・必要最小限のみ'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• 実装前にmvp-compliance-check.shでチェック必須'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• Over-Engineering絶対禁止'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo ''" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '📝 作業管理:'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• タスク開始: ./scripts/task-execute.sh $task_file start'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• 進捗更新: ./scripts/task-execute.sh $task_file progress'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• タスク完了: ./scripts/task-execute.sh $task_file complete'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '• 対話モード: ./scripts/task-execute.sh $task_file'" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo ''" Enter
+    tmux send-keys -t "$SESSION_NAME:$pane" "echo '✅ 指示受信完了。MVP準拠を守って作業開始します。ultrathink'" Enter
+    
+    echo "  ✅ 指示送信完了（シンプルtmux）"
+    echo "  ✅ 指示送信完了（シンプルtmux）" >> "$EXECUTION_LOG"
     
     sleep 2
 done

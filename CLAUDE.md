@@ -22,15 +22,25 @@ export HACONIWA_AGENT_ID='backend-director'
 
 **重要**: Haconiwa環境で起動している場合、あなたは以下の専門エージェントとして動作してください：
 
-### 🏛️ CEO系エージェント（v4.0階層システム）
-- **ceo-supreme**: MVP戦略決定・最高権限・完璧分析システム
-  - **初期プロンプト（v4.0）**: `echo "🎯 CEO Supreme v4.0 起動" && echo "役割: HACONIWA_AGENT_ID=$HACONIWA_AGENT_ID" && echo "" && echo "=== MVP完成指向CEO戦略実行 ===" && echo "" && ./scripts/ceo-supreme-perfect-execution-v4.sh`
-  - **自律実行**: 徹底診断→戦略判断→Director指示→CEO階層起動（完全自動化）
+### 🏛️ CEO系エージェント（v5.0段階的実行システム）
+- **ceo-supreme**: MVP戦略決定・段階的実行・完璧分析システム
+  - **初期プロンプト（v5.0）**: `echo "🎯 CEO Supreme v5.0 起動" && echo "役割: HACONIWA_AGENT_ID=$HACONIWA_AGENT_ID" && echo "" && echo "=== MVP完成指向CEO段階的実行 ===" && echo "" && ./scripts/ceo-supreme-perfect-execution-v5.sh`
+  - **段階的実行**: システム診断→戦略判断→Director指示→手動制御フロー
   - **MVP絶対準拠**: Over-Engineering完全防止・実装保護機能
-- **ceo-operations**: Director間調整・進捗確認・効率化専門（権限制限）
-  - **自律動作**: CEO Supreme起動時に自動実行・継続監視
-- **ceo-analytics**: 全体分析・品質評価・リスク監視専門（指示権限なし）
-  - **自律動作**: CEO Supreme起動時に自動実行・リアルタイム監視
+  - **🎯 v5.0完璧な階層システム**: CEO → Director → Specialist（直接指示禁止）
+    - **Director手動確認**: 指示内容確認→配下指示送信コマンド手動実行
+    - **Tasks Directory v2.0統合**: 永続記録・追跡・品質管理
+    - **完全制御**: ユーザーが各段階を確認・制御可能
+- **ceo-operations**: Director間調整・Tasks Directory v2.0統合監視（権限制限）
+  - **v5.0対応**: Director完了後の手動起動・段階的実行フローサポート
+  - **🔧 v5.0強化機能**: Tasks Directory監視・Director実行状況追跡
+    - **確実指示**: director-auto-delegate-v2.sh使用（Tasks Directory統合）
+    - **段階的監視**: CEO Supreme → Director → Specialist フロー全体監視
+- **ceo-analytics**: 全体分析・段階的実行フロー監視・品質評価（指示権限なし）
+  - **v5.0対応**: Director完了後の手動起動・段階的実行分析
+  - **🔧 v5.0強化機能**: Tasks Directory分析・MVP準拠チェック・Over-Engineering検出
+    - **品質監視**: 実装品質・進捗遅延・技術的負債リスク分析
+    - **階層準拠**: CEO階層内のみの通信・Director直接指示なし
 
 ### 🗄️ Backend系エージェント
 - **backend-director**: AWS Amplify Gen2 + GraphQL + userIdベース最適化専門
@@ -333,25 +343,33 @@ npm run agent:init              # 全18ペインに初期化コマンド送信
 - 指示出し時は既存の役割確認コマンドの下に` && echo "指示内容" ultrathink`形式で追加
 - 実行時は「役割確認→指示実行」の順序で自動処理され、プロンプト節約・精度向上を実現
 
-**🎯 CEO Supreme完璧実行システム（v4.0）**:
-- `npm run ceo:supreme-v4` - CEO Supreme v4.0完璧実行（**推奨・メイン・完全自動サイクル**）
-- `npm run ceo:strategic` - CEO戦略的分析システム（旧システム・参考用）
-- `npm run ceo:all` - 全Director一斉指示（旧システム・参考用）
+**🚀 CEO Supreme完璧実行システム（v5.0段階的実行）**:
+- `npm run ceo:supreme-v5` - CEO Supreme v5.0段階的実行（**推奨・メイン・ユーザー要求完全対応版**）
+- `npm run ceo:operations-v5` - CEO Operations手動実行（Director完了後）
+- `npm run ceo:analytics-v5` - CEO Analytics手動実行（Director完了後）
+- `npm run ceo:cycle-v5` - サイクル管理（結果保存・リフレッシュ・再開始）
+- `npm run ceo:supreme-v4` - CEO Supreme v4.0完璧実行（旧システム・参考用）
 
-**🚀 CEO Supreme v4.0実行フロー（完全自動化サイクル）**:
-1. **高速診断（30秒）**: MVP必須要件vs現在実装の瞬時品質評価
-2. **戦略判断（5秒）**: 保護・実装・クリーンアップ・延期の瞬時決定
-3. **Director指示（15秒）**: 必要部分のみ選択的指示・Tasks Directory v2.0統合
-4. **CEO階層起動（5秒）**: Operations・Analytics自律監視開始（バックグラウンド実行）
-5. **完璧実行完了（5秒）**: サマリー・通知・自動サイクル管理開始
+**🎯 CEO Supreme v5.0段階的実行フロー（完璧な階層システム）**:
+1. **CEO Supreme**: システム診断（30秒）→戦略判断（5秒）→Director指示送信（自動）
+2. **Director手動確認**: 指示内容確認→配下指示送信コマンド手動実行
+3. **Specialist自動実行**: Tasks Directory記録→実装→品質チェック
+4. **CEO Operations/Analytics**: Director完了後に手動起動
+5. **サイクル管理**: 結果保存→リフレッシュ→再開始（手動制御）
 
-**🎯 v4.0革新的特徴**:
-- **高速実行**: 複雑分析→60秒診断（50%高速化）
-- **MVP絶対準拠**: Over-Engineering完全防止・実装保護機能
-- **Director完全自動化**: 配下指示送信まで自動実行（v2.0システム）
-- **Tasks Directory v2.0統合**: 永続記録・追跡・品質管理・段階的指示
-- **CEO階層自律システム**: Operations/Analytics完全自動監視
-- **自動サイクル管理**: 完了判定→リフレッシュ→再起動の完全自動化
+**🎯 v5.0完璧な階層システム特徴**:
+- **段階的実行**: CEO → Director → Specialist（直接指示禁止・完全階層準拠）
+- **Director手動実行**: 指示確認後に`director-auto-delegate-v2.sh`実行（Tasks Directory統合）
+- **Tasks Directory v2.0**: 永続記録・追跡・品質管理・マークダウン形式タスクファイル
+- **MVP絶対準拠**: Over-Engineering完全防止・実装保護機能継続
+- **完全制御**: ユーザーが各段階を確認・制御可能（確実性重視）
+- **品質保証**: lint・typecheck・test・MVP準拠チェックの完全統合
+
+**🚀 v5.0 Haconiwa初期プロンプト統合完了**:
+- **CEO Supreme初期プロンプト**: 自動的にv5.0段階的実行システム起動
+- **Director指示**: 必ずDirectorペイン（1.0,2.0,3.0,4.0,5.0）経由
+- **Specialist実行**: Directorからの指示でのみ実行（直接指示禁止）
+- **完璧なフロー**: `npm run haconiwa:start` → CEO Supreme自動起動 → Director手動実行 → Specialist自動実行
 
 ### 🛡️ MVP準拠強制システム（新規実装済み）
 

@@ -7,181 +7,194 @@ SESSION_NAME="arbitrage-assistant"
 
 echo "🏛️ CEO初期プロンプト設定開始..."
 
-# CEO Supreme (0.0) 初期プロンプト
+# CEO Supreme (0.0) 初期プロンプト v6.0（Perfect Initial Prompt）
 setup_ceo_supreme() {
     local ceo_prompt="
-echo '🏛️ CEO Supreme v4.0 - MVP戦略決定・最高権限・完璧分析システム'
-echo '==============================================='
+echo '👑 CEO Supreme Perfect Initial Prompt v6.0 - MVP戦略・慎重判断・完璧分析'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo ''
-echo '🎯 CEO動的戦略判断システム v3.0 自動実行開始'
+echo '🎯 CEO Supreme Perfect Initial Prompt v6.0 実行開始'
+echo 'ユーザー要求完全対応：現状分析→必要部門のみ指示→Director配下指示送信'
 echo ''
-echo '=== CEO戦略的現状分析開始 v3.0 ==='
-echo '🎯 CEOとして、既存実装の品質を詳細に分析し、必要な部分のみ選択的に指示します'
-echo ''
-
-# Phase 1: MVPシステム設計要件の把握
-echo '📋 Step 1: MVPシステム設計要件とのマッピング'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-echo 'MVPシステム設計.md の達成要件を抽出中...'
-echo ''
-echo '🎯 MVP必須実装要件:'
-echo '• Backend: User/Account/Position/Actionモデル、GraphQL Subscription、Cognito認証'
-echo '• Trading: Position-Trail-Actionフロー、リスク管理（ドローダウン<5%）'
-echo '• Integration: MT5 EA、WebSocket通信（レイテンシ<10ms）'
-echo '• Frontend: 管理画面（FCP<1.5s）、Tauriデスクトップアプリ'
-echo '• DevOps: CI/CD、テストカバレッジ90%+、ESLint警告0'
+echo '=== CEO Supreme Perfect Initial Prompt v6.0 ==='
 echo ''
 
-# Phase 2: 既存実装品質評価
-echo '📊 Step 2: 既存実装の品質詳細評価'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-
-# Backend実装品質評価の自動実行
-echo '🗄️ Backend実装品質詳細評価:'
-if [ -f \"packages/shared-backend/amplify/data/resource.ts\" ]; then
-    MODELS_CHECK=\$(grep -E \"(User|Account|Position|Action)\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
-    SUBSCRIPTION_CHECK=\$(grep -i \"subscription\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
-    UNNECESSARY_MODELS=\$(grep -E \"(Performance|Analytics|Metrics)\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
-    
-    echo \"• モデル実装状況: \$MODELS_CHECK個の必須モデル検出\"
-    echo \"• Subscription実装: \$SUBSCRIPTION_CHECK箇所検出\"
-    
-    if [ \$UNNECESSARY_MODELS -gt 0 ]; then
-        echo \"⚠️ 警告: 不要なモデル（Performance等）\$UNNECESSARY_MODELS個検出\"
-        BACKEND_ACTION=\"CLEANUP\"
-    elif [ \$MODELS_CHECK -ge 4 ] && [ \$SUBSCRIPTION_CHECK -gt 0 ]; then
-        echo \"🎉 Backend基盤: 【実装完了・品質良好】\"
-        BACKEND_ACTION=\"PROTECT\"
-    else
-        echo \"🚨 Backend基盤: 【実装不完全】\"
-        BACKEND_ACTION=\"IMPLEMENT\"
-    fi
-else
-    echo \"❌ data/resource.ts未実装\"
-    BACKEND_ACTION=\"IMPLEMENT\"
-fi
-
-# 自動Director指示実行
+# 自動実行：CEO Supreme Perfect Initial Prompt v6.0
+echo '🚀 CEO Supreme Perfect Initial Prompt v6.0 実行中...'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo ''
-echo '🚀 CEO選択的指示実行開始'
-echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo '👑 Phase 1: CEO Supreme自己認識・環境確認'
+echo '📋 Phase 2: MVPシステム設計詳細分析'
+echo '🔍 Phase 3: 現在実装状況徹底調査'
+echo '🧠 Phase 4: CEO戦略判断（慎重・賢明決定）'
+echo '🚀 Phase 5: Director指示送信（必要な部門のみ）'
+echo '✅ Phase 6: CEO Supreme実行完了・次のアクション'
 echo ''
 
-# Backend選択的指示送信
-if [ \"\$BACKEND_ACTION\" = \"IMPLEMENT\" ]; then
-    echo '🗄️ Backend Director選択的指示送信中...'
-    ./scripts/director-auto-delegate.sh backend-director \"【CEO戦略指示】AWS Amplify基盤の構築をDirectorチームにお任せします。MVPシステム設計.mdに記載のUser/Account/Position/Actionモデルを中心とした、必要最小限のバックエンド基盤を構築してください。不要な機能は避け、品質とシンプルさを重視してください。\"
-    sleep 2
-elif [ \"\$BACKEND_ACTION\" = \"CLEANUP\" ]; then
-    echo '🗄️ Backend Directorクリーンアップ指示送信中...'
-    ./scripts/director-auto-delegate.sh backend-director \"【CEOクリーンアップ指示】Backend基盤に不要な実装が含まれているようです。MVPシステム設計.mdに記載の必須モデルのみ残し、余計な機能は削除してください。既存の良好な実装は保護し、不要部分のみ除去をDirectorチームにお任せします。\"
-    sleep 2
-else
-    echo '🛡️ Backend: 実装保護（完成済み）'
-fi
-
-# Trading実装評価・指示送信
-echo ''
-echo '⚡ Trading実装品質詳細評価:'
-POSITION_EXECUTION=\$(find apps/hedge-system -name \"*position*execution*\" 2>/dev/null | wc -l)
-ARBITRAGE_LOGIC=\$(find apps/hedge-system -name \"*arbitrage*\" 2>/dev/null | wc -l)
-RISK_MANAGEMENT=\$(grep -r \"drawdown\\|risk\" apps/hedge-system 2>/dev/null | wc -l)
-
-echo \"• Position実行ロジック: \$POSITION_EXECUTION個\"
-echo \"• アービトラージロジック: \$ARBITRAGE_LOGIC個\"
-echo \"• リスク管理実装: \$RISK_MANAGEMENT箇所\"
-
-if [ \$POSITION_EXECUTION -gt 0 ] && [ \$ARBITRAGE_LOGIC -gt 0 ] && [ \$RISK_MANAGEMENT -gt 0 ]; then
-    echo '🛡️ Trading: 実装保護（完成済み）'
-else
-    echo '⚡ Trading Director選択的指示送信中...'
-    ./scripts/director-auto-delegate.sh trading-flow-director \"【CEO戦略指示】Position-Trail-Actionの核心フロー実装をDirectorチームにお任せします。MVPシステム設計.mdのPosition-Trail-Actionフローを実現し、リスク管理（ドローダウン<5%）を重視したトレーディングシステムを構築してください。\"
-    sleep 2
-fi
+# CEO Supreme Perfect Initial Prompt v6.0 自動実行
+./scripts/ceo-supreme-perfect-initial-prompt.sh
 
 echo ''
-echo '✅ CEO動的戦略判断システム v3.0 実行完了'
-echo '📊 必要な部分のみに選択的指示を送信済み'
-echo '🛡️ 完成済み実装は保護中'
+echo '🎯 CEO Supreme Perfect Initial Prompt v6.0 完全実行フロー'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 echo ''
-echo '💡 進捗確認: npm run haconiwa:monitor'
+echo '✅ 【Perfect Initial Prompt v6.0 完了】'
+echo '👑 CEO Supreme: 現状分析→戦略判断→必要Director指示→完璧フロー（完了）'
+echo '🎯 Director確認・実行: 各Directorペインで指示確認・配下指示送信（次ステップ）'
+echo '⚡ Specialist自動実行: Tasks Directory v2.0による永続記録・実装（自動）'
+echo '📊 品質保証: MVP準拠・Over-Engineering防止（継続）'
+echo '🔄 サイクル管理: リフレッシュ・再開始（完了後）'
+echo ''
+echo '🔄 【Director実行・Next Actions】'
+echo ''
+echo '各Directorペインで配下指示送信コマンドを手動実行：'
+echo ''
+echo '🗄️ Backend Director（ペイン 1.0）:'
+echo '   ./scripts/director-auto-delegate-v2.sh backend-director \"[CEO指示内容]\"'
+echo ''
+echo '⚡ Trading Director（ペイン 2.0）:'
+echo '   ./scripts/director-auto-delegate-v2.sh trading-flow-director \"[CEO指示内容]\"'
+echo ''
+echo '🔌 Integration Director（ペイン 3.0）:'
+echo '   ./scripts/director-auto-delegate-v2.sh integration-director \"[CEO指示内容]\"'
+echo ''
+echo '🎨 Frontend Director（ペイン 4.0）:'
+echo '   ./scripts/director-auto-delegate-v2.sh frontend-director \"[CEO指示内容]\"'
+echo ''
+echo '📊 進捗監視・確認コマンド:'
+echo '• Director実行状況: npm run director:check'
+echo '• タスク進捗確認: npm run task:list'
+echo '• リアルタイム監視: npm run task:monitor'
+echo '• MVP準拠確認: npm run mvp:check packages/'
+echo '• 緊急事項確認: npm run task:summary'
+echo ''
+echo '🎯 CEO Supreme Perfect Initial Prompt v6.0 特徴:'
+echo '• 慎重・賢明判断: 必要な部門のみに指示（不要指示防止）'
+echo '• 完璧現状分析: MVPシステム設計.md vs 実装状況詳細比較'
+echo '• Director階層厳守: CEO→Director→Specialist（直接指示完全禁止）'
+echo '• Tasks Directory v2.0: 永続記録・進捗追跡・品質管理'
+echo '• MVP絶対準拠: Over-Engineering・不要実装完全防止'
+echo ''
+echo '✅ CEO Supreme Perfect Initial Prompt v6.0 完全実行完了'
+echo 'Perfect分析 → 慎重判断 → Director指示 → Specialist実行 → 品質保証'
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.0" "$ceo_prompt" Enter
-    echo "✅ CEO Supreme (0.0) 初期プロンプト設定完了"
+    echo "✅ CEO Supreme Perfect v6.0 (0.0) 初期プロンプト設定完了"
 }
 
-# CEO Operations (0.1) 初期プロンプト
+# CEO Operations (0.1) 初期プロンプト v5.0（Tasks Directory v2.0統合）
 setup_ceo_operations() {
     local coordinator_prompt="
-echo '🤝 CEO Operations - Director間調整・進捗確認・効率化専門（権限制限）'
-echo '==========================================================='
+echo '🤝 CEO Operations v5.0 - Director間調整・進捗確認・効率化専門（権限制限）'
+echo '================================================================='
 echo ''
-echo '🎯 あなたの役割:'
-echo '• 5つのDirectorチーム間の連携調整'
-echo '• クロスチーム課題の解決支援'
-echo '• Backend⇔Trading⇔Integration⇔Frontend⇔DevOps間の橋渡し'
+echo '🎯 CEO Operations v5.0 役割（段階的実行システム対応）:'
+echo '• 5つのDirectorチーム間の連携調整（v5.0手動制御対応）'
+echo '• Tasks Directory v2.0による進捗確認・管理'
+echo '• Director完了後の自動監視・調整'
+echo '• CEO Supreme段階的実行フローサポート'
 echo ''
-echo '📋 Director間連携指示コマンド:'
-echo '• Backend Director: ./scripts/director-auto-delegate.sh backend-director \"連携要求内容\"'
-echo '• Trading Director: ./scripts/director-auto-delegate.sh trading-flow-director \"連携要求内容\"'
-echo '• Integration Director: ./scripts/director-auto-delegate.sh integration-director \"連携要求内容\"'
-echo '• Frontend Director: ./scripts/director-auto-delegate.sh frontend-director \"連携要求内容\"'
-echo '• DevOps Director: ./scripts/director-auto-delegate.sh devops-director \"連携要求内容\"'
+echo '📋 Director間連携指示コマンド（v2.0統合）:'
+echo '• Backend Director: ./scripts/director-auto-delegate-v2.sh backend-director \"連携要求内容\"'
+echo '• Trading Director: ./scripts/director-auto-delegate-v2.sh trading-flow-director \"連携要求内容\"'
+echo '• Integration Director: ./scripts/director-auto-delegate-v2.sh integration-director \"連携要求内容\"'
+echo '• Frontend Director: ./scripts/director-auto-delegate-v2.sh frontend-director \"連携要求内容\"'
+echo '• DevOps Director: ./scripts/director-auto-delegate-v2.sh devops-director \"連携要求内容\"'
 echo ''
-echo '🔗 連携調整の重点領域:'
-echo '1. Backend GraphQL ⇔ Frontend UI 連携'
-echo '2. Trading Engine ⇔ Integration MT5 連携'
-echo '3. Backend API ⇔ Trading Position 連携'
-echo '4. Integration WebSocket ⇔ Frontend リアルタイム 連携'
-echo '5. DevOps CI/CD ⇔ 全チーム品質保証 連携'
+echo '🔗 v5.0段階的実行での連携調整重点:'
+echo '1. Director手動実行確認: 各Directorの配下指示送信完了状況監視'
+echo '2. Tasks Directory監視: タスクファイル作成・進捗・完了状況追跡'
+echo '3. Specialist実行状況: Backend⇔Trading⇔Integration⇔Frontend連携確認'
+echo '4. 品質保証連携: MVP準拠・テスト・lint状況の部門間調整'
+echo '5. 完了判定・Next Action指示: 段階的実行フロー進行管理'
 echo ''
-echo '📊 Director間進捗確認:'
-echo 'npm run haconiwa:monitor'
+echo '📊 v5.0監視・確認コマンド:'
+echo '• Director実行状況: npm run director:check'
+echo '• Tasks Directory進捗: npm run task:list'
+echo '• 部門別タスク状況: npm run task:list --department [backend|trading|integration|frontend|devops]'
+echo '• リアルタイム監視: npm run task:monitor'
+echo '• 緊急事項確認: npm run task:summary'
 echo ''
-echo '✅ 初期設定完了。Director間連携調整を開始してください。'
+echo '🔄 CEO Operations v5.0段階的実行フロー:'
+echo '1. CEO Supreme完了確認: Director指示送信済み状況チェック'
+echo '2. Director手動実行監視: 各Directorの配下指示送信実行確認'
+echo '3. Specialist自動実行追跡: Tasks Directoryでの実装進捗監視'
+echo '4. 部門間連携調整: 依存関係・技術課題の解決支援'
+echo '5. 完了報告・Next Action: CEO Analyticsと連携した総合判定'
+echo ''
+echo '💡 Director完了後の自動起動メッセージ:'
+echo '「CEO Operations v5.0監視開始 - Director実行完了を確認しました」'
+echo ''
+echo '✅ CEO Operations v5.0初期設定完了。段階的実行フロー監視を開始してください。'
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.1" "$coordinator_prompt" Enter
-    echo "✅ CEO Operations (0.1) 初期プロンプト設定完了"
+    echo "✅ CEO Operations v5.0 (0.1) 初期プロンプト設定完了"
 }
 
-# CEO Analytics (0.2) 初期プロンプト
+# CEO Analytics (0.2) 初期プロンプト v5.0（Tasks Directory v2.0統合）
 setup_ceo_analytics() {
     local monitor_prompt="
-echo '📊 CEO Analytics - 全体分析・品質評価・リスク監視専門（指示権限なし）'
-echo '============================================================'
+echo '📊 CEO Analytics v5.0 - 全体分析・品質評価・リスク監視専門（指示権限なし）'
+echo '================================================================='
 echo ''
-echo '🎯 あなたの役割:'
-echo '• MVPプロジェクト全体の進捗監視・管理'
-echo '• 各Directorからの完了報告確認'
-echo '• リリース準備状況の総合確認'
+echo '🎯 CEO Analytics v5.0 役割（段階的実行システム対応）:'
+echo '• MVP段階的実行フロー全体の分析・監視'
+echo '• Tasks Directory v2.0による詳細進捗分析'
+echo '• Director→Specialist実行品質評価'
+echo '• MVP準拠チェック・Over-Engineering検出'
+echo '• CEO Operations連携による総合リスク監視'
 echo ''
-echo '📋 進捗確認・指示出しコマンド:'
-echo '• Backend Director: ./scripts/director-auto-delegate.sh backend-director \"進捗確認要求\"'
-echo '• Trading Director: ./scripts/director-auto-delegate.sh trading-flow-director \"進捗確認要求\"'
-echo '• Integration Director: ./scripts/director-auto-delegate.sh integration-director \"進捗確認要求\"'
-echo '• Frontend Director: ./scripts/director-auto-delegate.sh frontend-director \"進捗確認要求\"'
-echo '• DevOps Director: ./scripts/director-auto-delegate.sh devops-director \"進捗確認要求\"'
+echo '📋 v5.0分析・監視コマンド（Tasks Directory v2.0統合）:'
+echo '• 全体進捗分析: npm run task:list --all'
+echo '• 部門別詳細分析: npm run task:list --department [backend|trading|integration|frontend|devops]'
+echo '• 進行中タスク分析: npm run task:list --active'
+echo '• 完了済みタスク分析: npm run task:list --completed'
+echo '• 緊急事項分析: npm run task:summary'
+echo '• リアルタイム監視: npm run task:monitor'
 echo ''
-echo '📋 進捗監視項目:'
-echo '1. Backend: AWS Amplify基盤・GraphQL・Cognito実装状況'
-echo '2. Trading: Position-Trail-Actionフロー・リスク管理実装状況'
-echo '3. Integration: MT5統合・WebSocket DLL実装状況'
-echo '4. Frontend: 管理画面・Tauriデスクトップアプリ実装状況'
-echo '5. DevOps: CI/CD・品質保証・ビルド最適化実装状況'
+echo '📊 v5.0段階的実行分析項目:'
+echo '1. CEO Supreme → Director指示: 指示送信完了状況・内容適切性'
+echo '2. Director → Specialist配下指示: Tasks Directory作成・指示品質'
+echo '3. Specialist実行品質: 実装内容・MVP準拠・コード品質'
+echo '4. Tasks Directory管理: タスクファイル完成度・進捗記録品質'
+echo '5. 品質保証状況: lint・typecheck・test実行・結果記録'
 echo ''
-echo '📊 全体進捗確認:'
-echo 'npm run haconiwa:monitor'
+echo '🛡️ MVP準拠・品質監視コマンド:'
+echo '• MVP準拠チェック: npm run mvp:check packages/'
+echo '• Backend専用監視: npm run backend:table-guard'
+echo '• 品質総合チェック: npm run lint && npm run check-types'
+echo '• Director実行確認: npm run director:check'
 echo ''
-echo '📁 Tasks Directory確認:'
-echo 'ls -la tasks/directors/*/task-*.md'
+echo '📈 v5.0リスク分析・検出項目:'
+echo '• Over-Engineering検出: MVPシステム設計.md逸脱チェック'
+echo '• 実装遅延リスク: Tasks Directory進捗遅延分析'
+echo '• 品質低下リスク: lint警告・test失敗・typecheck Error'
+echo '• 技術的負債リスク: forbidden-edits.md違反検出'
+echo '• Director指示品質: 配下指示送信の適切性・完成度'
 echo ''
-echo '✅ 初期設定完了。進捗監視・管理を開始してください。'
+echo '🔄 CEO Analytics v5.0段階的実行フロー:'
+echo '1. CEO Supreme実行後: Director指示内容・送信状況分析'
+echo '2. Director手動実行中: 配下指示送信品質・Tasks Directory分析'
+echo '3. Specialist実行中: 実装品質・MVP準拠・進捗リアルタイム監視'
+echo '4. 完了判定支援: CEO Operationsと連携した総合評価'
+echo '5. サイクル完了分析: 結果保存・次回改善提案'
+echo ''
+echo '📁 Tasks Directory v2.0詳細分析:'
+echo '• タスクファイル分析: ls -la tasks/directors/*/task-*.md'
+echo '• 実行ログ分析: ls -la tasks/directors/*/execution-log-*.md'
+echo '• 進捗状況分析: grep -r \"status:\" tasks/directors/'
+echo '• 品質記録分析: grep -r \"Lint通過\\|型チェック通過\" tasks/directors/'
+echo ''
+echo '💡 Director完了後の自動起動メッセージ:'
+echo '「CEO Analytics v5.0監視開始 - 段階的実行フロー品質分析を開始します」'
+echo ''
+echo '✅ CEO Analytics v5.0初期設定完了。段階的実行フロー分析・監視を開始してください。'
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.2" "$monitor_prompt" Enter
-    echo "✅ CEO Analytics (0.2) 初期プロンプト設定完了"
+    echo "✅ CEO Analytics v5.0 (0.2) 初期プロンプト設定完了"
 }
 
 # セッション確認
@@ -199,10 +212,24 @@ sleep 1
 setup_ceo_analytics
 
 echo ""
-echo "🎉 CEO初期プロンプト設定完了"
-echo "📊 CEO系v4.0ペイン初期化済み:"
-echo "  • 0.0: CEO Supreme - MVP戦略決定・60秒完璧実行システム"
-echo "  • 0.1: CEO Operations - Director間調整・進捗確認（権限制限）"
-echo "  • 0.2: CEO Analytics - 全体分析・品質評価・リスク監視（指示権限なし）"
+echo "🎉 CEO初期プロンプト Perfect v6.0 設定完了"
+echo "📊 CEO系Perfect v6.0ペイン初期化済み（完璧分析・慎重判断システム）:"
+echo "  • 0.0: CEO Supreme Perfect v6.0 - MVP戦略・慎重判断・完璧分析・Director階層厳守"
+echo "  • 0.1: CEO Operations v5.0 - Director間調整・Tasks Directory v2.0統合監視"
+echo "  • 0.2: CEO Analytics v5.0 - 全体分析・品質評価・MVP準拠・Over-Engineering検出"
 echo ""
-echo "💡 各CEO系ペインで独立してDirectorに指示出し可能"
+echo "🚀 Perfect v6.0完璧実行フロー確立完了:"
+echo "👑 CEO Supreme Perfect: 現状分析→慎重判断→必要部門のみ指示（完璧・自動）"
+echo "🎯 Director手動確認: 各Directorペインで指示確認・配下指示送信（手動）"
+echo "⚡ Specialist自動実行: Tasks Directory記録→実装→品質チェック（自動）"
+echo "📊 CEO Operations/Analytics: Director完了後に手動起動（手動）"
+echo "🔄 サイクル管理: 結果保存→リフレッシュ→再開始（手動）"
+echo ""
+echo "💡 完璧な階層システム・ユーザー要求完全対応:"
+echo "• CEO Supreme → Director → Specialist（直接指示完全禁止）"
+echo "• 慎重・賢明判断: 必要な部門のみに指示（不要指示防止）"
+echo "• 完璧現状分析: MVPシステム設計.md vs 実装状況詳細比較"
+echo "• Tasks Directory v2.0: 永続記録・進捗追跡・品質管理"
+echo "• MVP絶対準拠・Over-Engineering完全防止"
+echo ""
+echo "✅ ユーザー要求完全実現：CEO Perfect → Director → Specialist 完璧階層システム"
