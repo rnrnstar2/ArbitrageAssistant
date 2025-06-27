@@ -7,44 +7,114 @@ SESSION_NAME="arbitrage-assistant"
 
 echo "🏛️ CEO初期プロンプト設定開始..."
 
-# CEO Main (0.0) 初期プロンプト
-setup_ceo_main() {
+# CEO Supreme (0.0) 初期プロンプト
+setup_ceo_supreme() {
     local ceo_prompt="
-echo '🏛️ CEO Main - MVP全体戦略の意思決定・5 Directors動的指示'
+echo '🏛️ CEO Supreme v4.0 - MVP戦略決定・最高権限・完璧分析システム'
 echo '==============================================='
 echo ''
-echo '🎯 あなたの役割:'
-echo '• MVPシステム設計.mdに基づく戦略的意思決定'
-echo '• 5つのDirectorチームへの選択的指示出し'
-echo '• プロジェクト全体の戦略的統括'
+echo '🎯 CEO動的戦略判断システム v3.0 自動実行開始'
 echo ''
-echo '📋 利用可能な指示出しコマンド:'
-echo '• Backend Director: ./scripts/director-auto-delegate.sh backend-director \"指示内容\"'
-echo '• Trading Director: ./scripts/director-auto-delegate.sh trading-flow-director \"指示内容\"'
-echo '• Integration Director: ./scripts/director-auto-delegate.sh integration-director \"指示内容\"'
-echo '• Frontend Director: ./scripts/director-auto-delegate.sh frontend-director \"指示内容\"'
-echo '• DevOps Director: ./scripts/director-auto-delegate.sh devops-director \"指示内容\"'
+echo '=== CEO戦略的現状分析開始 v3.0 ==='
+echo '🎯 CEOとして、既存実装の品質を詳細に分析し、必要な部分のみ選択的に指示します'
 echo ''
-echo '🧠 戦略的思考フレームワーク:'
-echo '1. MVPシステム設計.mdで現在必要な機能を確認'
-echo '2. 実装状況を調査（完成済みか未実装か）'
-echo '3. 必要な部分のみ選択的に指示出し'
-echo '4. 不要な機能は指示しない（実装保護）'
+
+# Phase 1: MVPシステム設計要件の把握
+echo '📋 Step 1: MVPシステム設計要件とのマッピング'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo 'MVPシステム設計.md の達成要件を抽出中...'
 echo ''
-echo '📊 現在の進捗確認:'
-echo 'npm run haconiwa:monitor'
+echo '🎯 MVP必須実装要件:'
+echo '• Backend: User/Account/Position/Actionモデル、GraphQL Subscription、Cognito認証'
+echo '• Trading: Position-Trail-Actionフロー、リスク管理（ドローダウン<5%）'
+echo '• Integration: MT5 EA、WebSocket通信（レイテンシ<10ms）'
+echo '• Frontend: 管理画面（FCP<1.5s）、Tauriデスクトップアプリ'
+echo '• DevOps: CI/CD、テストカバレッジ90%+、ESLint警告0'
 echo ''
-echo '✅ 初期設定完了。戦略的判断を開始してください。'
+
+# Phase 2: 既存実装品質評価
+echo '📊 Step 2: 既存実装の品質詳細評価'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+
+# Backend実装品質評価の自動実行
+echo '🗄️ Backend実装品質詳細評価:'
+if [ -f \"packages/shared-backend/amplify/data/resource.ts\" ]; then
+    MODELS_CHECK=\$(grep -E \"(User|Account|Position|Action)\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
+    SUBSCRIPTION_CHECK=\$(grep -i \"subscription\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
+    UNNECESSARY_MODELS=\$(grep -E \"(Performance|Analytics|Metrics)\" packages/shared-backend/amplify/data/resource.ts 2>/dev/null | wc -l)
+    
+    echo \"• モデル実装状況: \$MODELS_CHECK個の必須モデル検出\"
+    echo \"• Subscription実装: \$SUBSCRIPTION_CHECK箇所検出\"
+    
+    if [ \$UNNECESSARY_MODELS -gt 0 ]; then
+        echo \"⚠️ 警告: 不要なモデル（Performance等）\$UNNECESSARY_MODELS個検出\"
+        BACKEND_ACTION=\"CLEANUP\"
+    elif [ \$MODELS_CHECK -ge 4 ] && [ \$SUBSCRIPTION_CHECK -gt 0 ]; then
+        echo \"🎉 Backend基盤: 【実装完了・品質良好】\"
+        BACKEND_ACTION=\"PROTECT\"
+    else
+        echo \"🚨 Backend基盤: 【実装不完全】\"
+        BACKEND_ACTION=\"IMPLEMENT\"
+    fi
+else
+    echo \"❌ data/resource.ts未実装\"
+    BACKEND_ACTION=\"IMPLEMENT\"
+fi
+
+# 自動Director指示実行
+echo ''
+echo '🚀 CEO選択的指示実行開始'
+echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+echo ''
+
+# Backend選択的指示送信
+if [ \"\$BACKEND_ACTION\" = \"IMPLEMENT\" ]; then
+    echo '🗄️ Backend Director選択的指示送信中...'
+    ./scripts/director-auto-delegate.sh backend-director \"【CEO戦略指示】AWS Amplify基盤の構築をDirectorチームにお任せします。MVPシステム設計.mdに記載のUser/Account/Position/Actionモデルを中心とした、必要最小限のバックエンド基盤を構築してください。不要な機能は避け、品質とシンプルさを重視してください。\"
+    sleep 2
+elif [ \"\$BACKEND_ACTION\" = \"CLEANUP\" ]; then
+    echo '🗄️ Backend Directorクリーンアップ指示送信中...'
+    ./scripts/director-auto-delegate.sh backend-director \"【CEOクリーンアップ指示】Backend基盤に不要な実装が含まれているようです。MVPシステム設計.mdに記載の必須モデルのみ残し、余計な機能は削除してください。既存の良好な実装は保護し、不要部分のみ除去をDirectorチームにお任せします。\"
+    sleep 2
+else
+    echo '🛡️ Backend: 実装保護（完成済み）'
+fi
+
+# Trading実装評価・指示送信
+echo ''
+echo '⚡ Trading実装品質詳細評価:'
+POSITION_EXECUTION=\$(find apps/hedge-system -name \"*position*execution*\" 2>/dev/null | wc -l)
+ARBITRAGE_LOGIC=\$(find apps/hedge-system -name \"*arbitrage*\" 2>/dev/null | wc -l)
+RISK_MANAGEMENT=\$(grep -r \"drawdown\\|risk\" apps/hedge-system 2>/dev/null | wc -l)
+
+echo \"• Position実行ロジック: \$POSITION_EXECUTION個\"
+echo \"• アービトラージロジック: \$ARBITRAGE_LOGIC個\"
+echo \"• リスク管理実装: \$RISK_MANAGEMENT箇所\"
+
+if [ \$POSITION_EXECUTION -gt 0 ] && [ \$ARBITRAGE_LOGIC -gt 0 ] && [ \$RISK_MANAGEMENT -gt 0 ]; then
+    echo '🛡️ Trading: 実装保護（完成済み）'
+else
+    echo '⚡ Trading Director選択的指示送信中...'
+    ./scripts/director-auto-delegate.sh trading-flow-director \"【CEO戦略指示】Position-Trail-Actionの核心フロー実装をDirectorチームにお任せします。MVPシステム設計.mdのPosition-Trail-Actionフローを実現し、リスク管理（ドローダウン<5%）を重視したトレーディングシステムを構築してください。\"
+    sleep 2
+fi
+
+echo ''
+echo '✅ CEO動的戦略判断システム v3.0 実行完了'
+echo '📊 必要な部分のみに選択的指示を送信済み'
+echo '🛡️ 完成済み実装は保護中'
+echo ''
+echo '💡 進捗確認: npm run haconiwa:monitor'
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.0" "$ceo_prompt" Enter
-    echo "✅ CEO Main (0.0) 初期プロンプト設定完了"
+    echo "✅ CEO Supreme (0.0) 初期プロンプト設定完了"
 }
 
-# Director Coordinator (0.1) 初期プロンプト
-setup_director_coordinator() {
+# CEO Operations (0.1) 初期プロンプト
+setup_ceo_operations() {
     local coordinator_prompt="
-echo '🤝 Director Coordinator - 5 Directors間連携調整・クロスチーム課題解決'
+echo '🤝 CEO Operations - Director間調整・進捗確認・効率化専門（権限制限）'
 echo '==========================================================='
 echo ''
 echo '🎯 あなたの役割:'
@@ -73,13 +143,13 @@ echo '✅ 初期設定完了。Director間連携調整を開始してくださ�
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.1" "$coordinator_prompt" Enter
-    echo "✅ Director Coordinator (0.1) 初期プロンプト設定完了"
+    echo "✅ CEO Operations (0.1) 初期プロンプト設定完了"
 }
 
-# Progress Monitor (0.2) 初期プロンプト
-setup_progress_monitor() {
+# CEO Analytics (0.2) 初期プロンプト
+setup_ceo_analytics() {
     local monitor_prompt="
-echo '📊 Progress Monitor - MVPプロジェクト進捗管理・リリース準備確認'
+echo '📊 CEO Analytics - 全体分析・品質評価・リスク監視専門（指示権限なし）'
 echo '============================================================'
 echo ''
 echo '🎯 あなたの役割:'
@@ -111,7 +181,7 @@ echo '✅ 初期設定完了。進捗監視・管理を開始してください�
 ultrathink"
 
     tmux send-keys -t "$SESSION_NAME:0.2" "$monitor_prompt" Enter
-    echo "✅ Progress Monitor (0.2) 初期プロンプト設定完了"
+    echo "✅ CEO Analytics (0.2) 初期プロンプト設定完了"
 }
 
 # セッション確認
@@ -122,17 +192,17 @@ if ! tmux has-session -t $SESSION_NAME 2>/dev/null; then
 fi
 
 # CEO系3ペインに初期プロンプト設定
-setup_ceo_main
+setup_ceo_supreme
 sleep 1
-setup_director_coordinator
+setup_ceo_operations
 sleep 1
-setup_progress_monitor
+setup_ceo_analytics
 
 echo ""
 echo "🎉 CEO初期プロンプト設定完了"
-echo "📊 CEO系3ペイン初期化済み:"
-echo "  • 0.0: CEO Main - 戦略的意思決定・Director指示"
-echo "  • 0.1: Director Coordinator - Director間連携調整"
-echo "  • 0.2: Progress Monitor - 進捗監視・リリース準備"
+echo "📊 CEO系v4.0ペイン初期化済み:"
+echo "  • 0.0: CEO Supreme - MVP戦略決定・60秒完璧実行システム"
+echo "  • 0.1: CEO Operations - Director間調整・進捗確認（権限制限）"
+echo "  • 0.2: CEO Analytics - 全体分析・品質評価・リスク監視（指示権限なし）"
 echo ""
 echo "💡 各CEO系ペインで独立してDirectorに指示出し可能"

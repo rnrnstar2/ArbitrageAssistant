@@ -155,34 +155,6 @@ const schema = a
         allow.groups(["admin", "operator", "viewer"]),
       ]),
 
-    // ===== PERFORMANCE METRICS =====
-    Performance: a
-      .model({
-        userId: a.string().required(),
-        positionId: a.string().required(),
-        executionType: a.ref("ExecutionType").required(),
-        executionTime: a.integer().required(),
-        success: a.boolean().required(),
-        finalPrice: a.float(),
-        profit: a.float(),
-        errorMessage: a.string(),
-        retryCount: a.integer().default(0),
-        timestamp: a.datetime().required(),
-        position: a.belongsTo("Position", "positionId"),
-        createdAt: a.datetime(),
-        updatedAt: a.datetime(),
-      })
-      .secondaryIndexes((index) => [
-        index("userId").sortKeys(["timestamp"]),
-        index("positionId").sortKeys(["timestamp"]),
-        index("executionType").sortKeys(["timestamp"]),
-      ])
-      .authorization((allow) => [
-        allow.authenticated().to(["create", "read"]),
-        allow.groups(["admin"]).to(["create", "read", "update", "delete"]),
-        allow.groups(["operator"]).to(["read"]),
-        allow.groups(["viewer"]).to(["read"]),
-      ]),
   })
   .authorization((allow) => [allow.resource(postConfirmation)]);
 

@@ -265,9 +265,9 @@ perform_immediate_recovery() {
     for pane in "${failed_panes_immediate[@]}"; do
         # エージェントID決定
         case $pane in
-            "0.0") agent_id="ceo-main" ;;
-            "0.1") agent_id="director-coordinator" ;;
-            "0.2") agent_id="progress-monitor" ;;
+            "0.0") agent_id="ceo-supreme" ;;
+            "0.1") agent_id="ceo-operations" ;;
+            "0.2") agent_id="ceo-analytics" ;;
             "1.0") agent_id="backend-director" ;;
             "1.1") agent_id="amplify-gen2-specialist" ;;
             "1.2") agent_id="cognito-auth-expert" ;;
@@ -529,9 +529,9 @@ echo "📊 起動モード: $PARALLEL_MODE"
 
 # エージェント定義配列
 declare -a AGENTS=(
-    "0.0|ceo-main|CEO Main (ceo-main) - MVP全体戦略の意思決定・5 Directors指示|$BASE_DIR"
-    "0.1|director-coordinator|Director Coordinator (director-coordinator) - 5 Directors間連携調整・クロスチーム課題解決|$BASE_DIR"
-    "0.2|progress-monitor|Progress Monitor (progress-monitor) - MVPプロジェクト進捗管理・Directors間調整・リリース準備確認|$BASE_DIR"
+    "0.0|ceo-supreme|CEO Supreme v4.0 (ceo-supreme) - MVP戦略決定・最高権限・完璧分析システム|$BASE_DIR"
+    "0.1|ceo-operations|CEO Operations (ceo-operations) - Director間調整・進捗確認・効率化専門（権限制限）|$BASE_DIR"
+    "0.2|ceo-analytics|CEO Analytics (ceo-analytics) - 全体分析・品質評価・リスク監視専門（指示権限なし）|$BASE_DIR"
     "1.0|backend-director|Backend Director (backend-director) - AWS Amplify Gen2 + GraphQL + userIdベース最適化専門|$BASE_DIR"
     "1.1|amplify-gen2-specialist|Amplify Gen2 Specialist (amplify-gen2-specialist) - AWS Amplify Gen2 data/resource.ts設計・GraphQL実装|$BASE_DIR/packages/shared-backend"
     "1.2|cognito-auth-expert|Cognito Authentication Expert (cognito-auth-expert) - Amazon Cognito認証システム統合・JWT管理|$BASE_DIR"
@@ -652,9 +652,9 @@ if [ "$claude_panes" -ne "$total_panes" ]; then
         
         # 環境変数再設定 + Claude起動
         case $pane in
-            "0.0") agent_id="ceo-main" ;;
-            "0.1") agent_id="director-coordinator" ;;
-            "0.2") agent_id="progress-monitor" ;;
+            "0.0") agent_id="ceo-supreme" ;;
+            "0.1") agent_id="ceo-operations" ;;
+            "0.2") agent_id="ceo-analytics" ;;
             "1.0") agent_id="backend-director" ;;
             "1.1") agent_id="amplify-gen2-specialist" ;;
             "1.2") agent_id="cognito-auth-expert" ;;
@@ -754,7 +754,7 @@ echo "📋 実際のpane構成確認："
 tmux list-panes -t "$SESSION_NAME" -a -F "  Window #{window_index}: Pane #{pane_index} (#{pane_title})"
 echo ""
 echo "📋 利用可能なウィンドウ（6x3 Grid = 18エージェント）："
-echo "  Window 0: 🏛️CEO-Strategy (CEO Main, Director Coordinator, Progress Monitor)"
+echo "  Window 0: 🏛️CEO-Strategy v4.0 (CEO Supreme, CEO Operations, CEO Analytics)"
 echo "  Window 1: 🗄️Backend-AWS (Backend Director, Amplify Gen2 Specialist, Cognito Authentication Expert)" 
 echo "  Window 2: ⚡Trading-Engine (Trading Flow Director, Entry Flow Specialist, Settlement Flow Specialist)"
 echo "  Window 3: 🔌Integration-MT5 (Integration Director, MT5 Connector Specialist, WebSocket Engineer)"
@@ -802,10 +802,10 @@ echo "  2. 6x3 Grid構成（18エージェント）起動"
 echo "  3. 全ペイン環境変数設定"
 echo "  4. CEO系3ペイン初期プロンプト設定"
 echo ""
-echo "🏛️ CEO系初期プロンプト設定完了："
-echo "  🎯 CEO Main (0.0) - MVP全体戦略・Director指示出し準備完了"
-echo "  🤝 Director Coordinator (0.1) - Directors間連携調整準備完了"
-echo "  📊 Progress Monitor (0.2) - MVP進捗監視準備完了"
+echo "🏛️ CEO系v4.0初期プロンプト設定完了："
+echo "  🎯 CEO Supreme (0.0) - MVP戦略決定・完璧分析システム準備完了"
+echo "  🤝 CEO Operations (0.1) - Director間調整・進捗確認準備完了"
+echo "  📊 CEO Analytics (0.2) - 全体分析・品質評価・リスク監視準備完了"
 echo ""
 echo "📋 CEO系ペインが指示出し可能なDirector："
 echo "    ├─ Backend Director (1.0) - AWS Amplify実装統括"

@@ -131,7 +131,12 @@ export class HedgeSystemCore {
     this.actionSync = new ActionSync(this.wsServer);
     
     // TrailEngineとPriceMonitorの相互依存関係を解決
-    this.trailEngine = getTrailEngine();
+    // 統合強化：ActionFlowEngineとWebSocketHandlerを渡してトレール→自動実行を実現
+    this.trailEngine = getTrailEngine(
+      undefined, // PriceMonitorは後で設定
+      this.positionExecutor.actionEngine, // ActionFlowEngine
+      this.wsServer // WebSocketHandler
+    );
     this.priceMonitor = getPriceMonitor(this.trailEngine);
     
     // PositionExecutorにTrailEngineを設定

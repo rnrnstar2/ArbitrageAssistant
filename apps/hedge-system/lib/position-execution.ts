@@ -4,6 +4,8 @@ import {
   Symbol, 
   ExecutionType, 
   ActionStatus,
+  ActionType,
+  Action,
   CreatePositionInput, 
   UpdatePositionInput,
   MarketCondition
@@ -28,7 +30,10 @@ import {
   updatePosition,
   listUserPositions,
   recordExecutionResult,
-  getPerformanceMetrics
+  getPerformanceMetrics,
+  subscribeToActions,
+  listUserActions,
+  updateAction
 } from '@repo/shared-amplify';
 
 /**
@@ -983,10 +988,21 @@ export class PositionExecutor {
 
   constructor(wsHandler: WebSocketHandler, trailEngine?: TrailEngine) {
     this.wsHandler = wsHandler;
-    this.trailEngine = trailEngine;
     this.entryFlowEngine = new EntryFlowEngine();
     this.trailFlowEngineInstance = new TrailFlowEngine();
     this.actionFlowEngine = new ActionFlowEngine();
+    
+    // TrailEngineの統合強化：ActionFlowEngineとWebSocketHandlerを注入
+    if (trailEngine) {
+      this.trailEngine = trailEngine;
+      // 既存のTrailEngineにActionFlowEngineとWebSocketHandlerを設定
+      this.trailEngine.setExecutionComponents(this.actionFlowEngine, this.wsHandler);
+    } else {
+      // 新しいTrailEngineを作成し、ActionFlowEngineとWebSocketHandlerを渡す
+      const { getTrailEngine } = require('./trail-engine');
+      this.trailEngine = getTrailEngine(undefined, this.actionFlowEngine, this.wsHandler);
+    }
+    
     this.initializeUserId();
   }
 
@@ -1086,6 +1102,59 @@ export class PositionExecutor {
       case PositionStatus.OPEN:
         await this.startTrailMonitoring(position);
         break;
+    }
+  }
+
+  /**
+   * Action Subscription処理（クロスPC協調実行の核心）
+   * 設計書：トレール発動時の別PCでのアクション実行
+   */
+  async handleActionSubscription(action: Action): Promise<void> {
+    const subscriptionStartTime = Date.now();
+    
+    try {
+      // 1. userIdベースの実行担当判定（設計書準拠）
+      if (!this.currentUserId || action.userId !== this.currentUserId) {
+        console.log(`⏭️ Action skipped: not my responsibility (action user: ${action.userId}, my user: ${this.currentUserId})`);
+        return; // 他ユーザーの担当はスキップ
+      }
+      
+      // 2. EXECUTING状態のアクションのみ処理（設計書準拠）
+      if (action.status !== ActionStatus.EXECUTING) {
+        console.log(`⏭️ Action skipped: status not EXECUTING (${action.status})`);
+        return;
+      }
+      
+      console.log(`🎯 Cross-PC action received: ${action.id}, type: ${action.type}, triggeredBy: ${action.triggerPositionId}`);
+      
+      // 3. アクションタイプ別実行（設計書準拠）
+      switch (action.type) {
+        case ActionType.ENTRY:
+          await this.executeCrossPcEntry(action);
+          break;
+          
+        case ActionType.CLOSE:
+          await this.executeCrossPcClose(action);
+          break;
+          
+        default:
+          console.warn(`⚠️ Unknown action type: ${action.type}`);
+          await this.updateActionStatus(action.id, ActionStatus.FAILED);
+      }
+      
+      // 4. パフォーマンス記録
+      const latency = Date.now() - subscriptionStartTime;
+      console.log(`⚡ Cross-PC action processed in ${latency}ms`);
+      
+    } catch (error) {
+      console.error('❌ Action subscription processing failed:', error);
+      
+      // エラー時のアクション状態更新
+      if (action.id) {
+        await this.updateActionStatus(action.id, ActionStatus.FAILED).catch(updateError => {
+          console.error('Failed to update action status:', updateError);
+        });
+      }
     }
   }
 
@@ -1365,6 +1434,177 @@ export class PositionExecutor {
     }
   }
 
+  /**
+   * Action Subscription開始（複数PC間協調実行対応）
+   * 設計書：userIdベースのアクション監視・クロスPC実行
+   */
+  async subscribeToMyActions(): Promise<void> {
+    if (!this.currentUserId) {
+      throw new Error('User not authenticated');
+    }
+    
+    try {
+      const subscription = await subscribeToActions(
+        (action: Action) => {
+          this.handleActionSubscription(action);
+        }
+      );
+      
+      console.log('🎯 Action subscription started for cross-PC coordination, user:', this.currentUserId);
+      
+      // actionSubscriptionの管理（必要に応じて）
+      // this.actionSubscription = subscription;
+      
+    } catch (error) {
+      console.error('Failed to start action subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 複合サブスクリプション開始（Position + Action）
+   * 設計書：完全なリアルタイム協調実行システム
+   */
+  async startRealtimeCoordination(): Promise<void> {
+    console.log('🚀 Starting enhanced realtime coordination system...');
+    
+    // Position + Action の両方を監視
+    await Promise.all([
+      this.subscribeToMyPositions(),
+      this.subscribeToMyActions()
+    ]);
+    
+    console.log('✅ Enhanced realtime coordination system started');
+  }
+
+  // ========================================
+  // クロスPC協調実行メソッド
+  // ========================================
+
+  /**
+   * クロスPCエントリー実行
+   * 設計書：トレール発動時の別PCでの新規ポジション作成
+   */
+  private async executeCrossPcEntry(action: Action): Promise<void> {
+    const startTime = Date.now();
+    
+    try {
+      // 1. 対象ポジション取得（actionが指定するpositionId）
+      const targetPosition = await this.getPositionByActionId(action.positionId);
+      if (!targetPosition) {
+        throw new Error(`Target position not found: ${action.positionId}`);
+      }
+      
+      // 2. 市場条件取得
+      const currentPrice = this.getCurrentMarketPrice(targetPosition.symbol);
+      
+      const marketCondition: MarketCondition = {
+        symbol: targetPosition.symbol,
+        currentPrice,
+        spread: 0.0001,
+        volatility: 0.005,
+        liquidity: 0.8,
+        timestamp: new Date().toISOString()
+      };
+      
+      // 3. ポジション状態をOPENINGに更新
+      await this.updatePositionStatus(targetPosition.id, PositionStatus.OPENING);
+      
+      // 4. エントリー実行
+      const executionResult = await this.entryFlowEngine.executeOrder(
+        targetPosition,
+        marketCondition,
+        this.wsHandler
+      );
+      
+      if (executionResult.success) {
+        // 5. アクション完了
+        await this.updateActionStatus(action.id, ActionStatus.EXECUTED);
+        
+        console.log(`✅ Cross-PC entry completed: position ${targetPosition.id}, action ${action.id}`);
+      } else {
+        throw new Error('Entry execution failed');
+      }
+      
+      const executionTime = Date.now() - startTime;
+      console.log(`⚡ Cross-PC entry executed in ${executionTime}ms`);
+      
+    } catch (error) {
+      console.error('❌ Cross-PC entry failed:', error);
+      
+      // エラー時のアクション状態更新
+      await this.updateActionStatus(action.id, ActionStatus.FAILED);
+      
+      // ポジション状態をCANCELEDに更新
+      if (action.positionId) {
+        await this.updatePositionStatus(action.positionId, PositionStatus.CANCELED);
+      }
+    }
+  }
+
+  /**
+   * クロスPC決済実行
+   * 設計書：トレール発動時の別PCでのポジション決済
+   */
+  private async executeCrossPcClose(action: Action): Promise<void> {
+    const startTime = Date.now();
+    
+    try {
+      // 1. 対象ポジション取得
+      const targetPosition = await this.getPositionByActionId(action.positionId);
+      if (!targetPosition) {
+        throw new Error(`Target position not found: ${action.positionId}`);
+      }
+      
+      // 2. ポジション状態確認（OPENのみ決済可能）
+      if (targetPosition.status !== PositionStatus.OPEN) {
+        console.warn(`⚠️ Position not OPEN, cannot close: ${targetPosition.id} (status: ${targetPosition.status})`);
+        await this.updateActionStatus(action.id, ActionStatus.FAILED);
+        return;
+      }
+      
+      // 3. 現在価格取得
+      const currentPrice = this.getCurrentMarketPrice(targetPosition.symbol);
+      
+      // 4. ポジション状態をCLOSINGに更新
+      await this.updatePositionStatus(targetPosition.id, PositionStatus.CLOSING);
+      
+      // 5. 決済実行
+      const executionResult = await this.actionFlowEngine.executeClose(
+        targetPosition,
+        'CROSS_PC_TRAIL_CLOSE',
+        currentPrice,
+        this.wsHandler
+      );
+      
+      if (executionResult.success) {
+        // 6. アクション完了
+        await this.updateActionStatus(action.id, ActionStatus.EXECUTED);
+        
+        // 7. トレール条件削除
+        this.trailFlowEngineInstance.removeTrailCondition(targetPosition.id);
+        
+        console.log(`✅ Cross-PC close completed: position ${targetPosition.id}, action ${action.id}`);
+      } else {
+        throw new Error('Close execution failed');
+      }
+      
+      const executionTime = Date.now() - startTime;
+      console.log(`⚡ Cross-PC close executed in ${executionTime}ms`);
+      
+    } catch (error) {
+      console.error('❌ Cross-PC close failed:', error);
+      
+      // エラー時のアクション状態更新
+      await this.updateActionStatus(action.id, ActionStatus.FAILED);
+      
+      // ポジション状態をOPENに戻す（決済失敗時）
+      if (action.positionId) {
+        await this.updatePositionStatus(action.positionId, PositionStatus.OPEN);
+      }
+    }
+  }
+
   // ========================================
   // 取得系メソッド
   // ========================================
@@ -1463,6 +1703,48 @@ export class PositionExecutor {
   // ========================================
   // ヘルパーメソッド
   // ========================================
+
+  /**
+   * アクションIDからポジション取得
+   */
+  private async getPositionByActionId(positionId: string): Promise<Position | null> {
+    try {
+      if (positionId) {
+        const result = await this.listOpenPositions();
+        return result.data.listPositions.items.find(p => p.id === positionId) || null;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Failed to get position for actionId ${positionId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * 現在の市場価格取得（Action Subscription用）
+   */
+  private getCurrentMarketPrice(symbol: Symbol): number {
+    const priceMonitor = this.wsHandler.priceMonitor;
+    const priceData = priceMonitor ? 
+      priceMonitor.getCurrentPrice(symbol) :
+      null;
+    return priceData ? 
+      (typeof priceData === 'number' ? priceData : priceData.bid || priceData.ask || 0) :
+      this.getFallbackPrice(symbol);
+  }
+
+  /**
+   * アクション状態更新
+   */
+  private async updateActionStatus(actionId: string, status: ActionStatus): Promise<void> {
+    try {
+      const { updateAction } = await import('@repo/shared-amplify');
+      await updateAction(actionId, { status });
+    } catch (error) {
+      console.error(`Failed to update action ${actionId} status to ${status}:`, error);
+      throw error;
+    }
+  }
 
   /**
    * ポジション方向決定（改善版）

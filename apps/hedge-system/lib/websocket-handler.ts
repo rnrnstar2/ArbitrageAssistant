@@ -98,8 +98,18 @@ export class WebSocketHandler {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // ミリ秒
   
+  private actionSync?: any; // ActionSyncとの統合用
+  
   constructor() {
     this.setupEventListeners();
+  }
+  
+  /**
+   * ActionSyncとの統合設定
+   */
+  setActionSync(actionSync: any): void {
+    this.actionSync = actionSync;
+    console.log('🔧 ActionSync integration enabled');
   }
   
   // ========================================

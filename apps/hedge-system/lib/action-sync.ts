@@ -722,13 +722,43 @@ export class ActionSync {
   }
 
   /**
-   * WebSocketコマンド送信
+   * WebSocketコマンド送信（統合強化版）
    */
   private async sendWSCommand(command: WSOpenCommand | WSCloseCommand): Promise<void> {
-    console.log('📡 Sending WebSocket command:', command);
-    
-    // TODO: 実際のWebSocketハンドラーとの統合
-    // await this.wsHandler.sendCommand(command.accountId, command);
+    try {
+      if (!this.wsHandler || !this.wsHandler.isConnected()) {
+        throw new Error('WebSocket handler not connected');
+      }
+      
+      console.log('📡 Sending WebSocket command:', command.type, command);
+      
+      // WebSocketHandlerを通じてコマンド送信
+      let result;
+      if (command.type === WSMessageType.OPEN) {
+        result = await this.wsHandler.sendOpenCommand({
+          accountId: command.accountId,
+          positionId: command.positionId,
+          symbol: command.symbol,
+          volume: command.volume,
+          executionType: command.metadata?.executionType
+        });
+      } else if (command.type === WSMessageType.CLOSE) {
+        result = await this.wsHandler.sendCloseCommand({
+          accountId: command.accountId,
+          positionId: command.positionId
+        });
+      }
+      
+      if (result && !result.success) {
+        throw new Error(result.error || 'Command execution failed');
+      }
+      
+      console.log(`✅ WebSocket command sent successfully: ${command.type}`);
+      
+    } catch (error) {
+      console.error('❌ Failed to send WebSocket command:', error);
+      throw error;
+    }
   }
 
   /**

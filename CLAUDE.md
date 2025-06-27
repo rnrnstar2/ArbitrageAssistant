@@ -22,13 +22,15 @@ export HACONIWA_AGENT_ID='backend-director'
 
 **重要**: Haconiwa環境で起動している場合、あなたは以下の専門エージェントとして動作してください：
 
-### 🏛️ CEO系エージェント
-- **ceo-main**: MVP全体戦略の意思決定・5 Directors指示
-  - 初期タスク: `echo "HACONIWA_AGENT_ID: $HACONIWA_AGENT_ID"` → `arbitrage-assistant.yaml`確認 → `MVPシステム設計.md`分析 → Directors指示
-- **director-coordinator**: 5 Directors間連携調整・クロスチーム課題解決
-  - **自律動作**: Haconiwa起動時に初期プロンプト自動実行（CEOからの指示不要）
-- **progress-monitor**: MVPプロジェクト進捗管理・Directors間調整・リリース準備確認
-  - **自律動作**: Haconiwa起動時に初期プロンプト自動実行（CEOからの指示不要）
+### 🏛️ CEO系エージェント（v4.0階層システム）
+- **ceo-supreme**: MVP戦略決定・最高権限・完璧分析システム
+  - **初期プロンプト（v4.0）**: `echo "🎯 CEO Supreme v4.0 起動" && echo "役割: HACONIWA_AGENT_ID=$HACONIWA_AGENT_ID" && echo "" && echo "=== MVP完成指向CEO戦略実行 ===" && echo "" && ./scripts/ceo-supreme-perfect-execution-v4.sh`
+  - **自律実行**: 徹底診断→戦略判断→Director指示→CEO階層起動（完全自動化）
+  - **MVP絶対準拠**: Over-Engineering完全防止・実装保護機能
+- **ceo-operations**: Director間調整・進捗確認・効率化専門（権限制限）
+  - **自律動作**: CEO Supreme起動時に自動実行・継続監視
+- **ceo-analytics**: 全体分析・品質評価・リスク監視専門（指示権限なし）
+  - **自律動作**: CEO Supreme起動時に自動実行・リアルタイム監視
 
 ### 🗄️ Backend系エージェント
 - **backend-director**: AWS Amplify Gen2 + GraphQL + userIdベース最適化専門
@@ -112,38 +114,95 @@ npm run haconiwa:status      # Claude起動状況確認
 - 認証画面からのスタート問題を解決
 - `--dangerously-skip-permissions` オプション維持
 
+### 🔄 tmux双方向通信システム（v2.0）
+Haconiwaの情報伝達を大幅改善する新機能：
+```bash
+# 双方向指示送信（応答確認付き）
+npm run tmux:comm send [pane_id] "[instruction]" [timeout]
+
+# リアルタイム監視ダッシュボード
+npm run tmux:monitor
+
+# 全エージェント一斉通知
+npm run tmux:broadcast "[message]" [priority]
+
+# ペイン出力キャプチャ・分析
+./scripts/tmux-communication-system.sh capture [pane_id] [lines]
+
+# Department別通知
+./scripts/tmux-communication-system.sh dept-notify [dept] "[message]"
+```
+
+### 📋 Tasks Directory v2.0 完全統合
+タスク管理とエージェント連携の最適化：
+```bash
+# タスク一覧・監視
+npm run task:list            # 全タスク一覧
+npm run task:active          # 進行中タスクのみ
+npm run task:completed       # 完了済みタスクのみ
+npm run task:summary         # 緊急事項サマリー
+npm run task:monitor         # リアルタイム監視
+
+# タスク実行・管理（Specialist向け）
+npm run task:execute [task_file] [action]
+./scripts/task-execute.sh tasks/directors/backend/task-001.md start
+./scripts/task-execute.sh tasks/directors/backend/task-001.md progress
+./scripts/task-execute.sh tasks/directors/backend/task-001.md complete
+./scripts/task-execute.sh tasks/directors/backend/task-001.md  # 対話モード
+
+# Director指示送信（改善版・双方向通信対応）
+npm run director:delegate [director-id] "[instruction]"
+./scripts/director-auto-delegate.sh backend-director "AWS Amplify基盤構築"
+```
+
+**🚀 主要改善点**：
+- **双方向通信**: 指示送信→応答確認→タイムアウト管理
+- **リアルタイム監視**: 全18ペインの状態可視化・エラー検出
+- **構造化通信**: JSON形式メッセージ・優先度管理
+- **Tasks Directory完全統合**: タスクファイル自動管理・進捗追跡
+- **品質保証**: 自動lint・typecheck・test実行
+
+### 🔄 エージェント精度維持システム
+作業による精度低下を防ぐリフレッシュ機能：
+```bash
+# 全18ペインで/clear + 初期プロンプト入力
+npm run haconiwa:refresh
+```
+
+**使用タイミング**: 精度低下を感じた時
+
 #### 🚀 起動モード選択（パフォーマンス最適化）
 Haconiwa起動時に以下から選択可能：
 
-1. **順次起動（安全・確実）** - 約60秒
+1. **順次起動（安全・確実）**
    - 一つずつ確実に起動
    - 認証・競合問題ゼロ
    - 安定性最優先
 
-2. **並列起動（高速・並列3個）** - 約20秒 **【推奨】**
+2. **並列起動（安全・並列3個）** **【推奨】**
    - 3ペインずつ並列起動
-   - 安全性と速度のバランス
+   - 安全性と効率のバランス
    - 認証競合回避機能付き
 
-3. **並列起動（最高速・並列6個）** - 約15秒
+3. **並列起動（高効率・並列6個）**
    - 6ペインずつ並列起動  
-   - 最高速度優先
+   - 効率優先
    - 高性能環境推奨
 
 #### 環境変数での自動化
 ```bash
 # 環境変数で起動モード固定（対話なし）
 export HACONIWA_PARALLEL_MODE=parallel_safe   # 並列3個（推奨）
-export HACONIWA_PARALLEL_MODE=parallel_fast   # 並列6個（高速）
+export HACONIWA_PARALLEL_MODE=parallel_fast   # 並列6個（高効率）
 export HACONIWA_PARALLEL_MODE=sequential      # 順次起動
 npm run haconiwa:start
 ```
 
 #### 🎯 ワンコマンド起動（開発効率化）
 ```bash
-npm run haconiwa:fast    # 並列3個起動（対話なし・推奨）- 約20秒
-npm run haconiwa:ultra   # 並列6個起動（対話なし・最高速）- 約15秒  
-npm run haconiwa:safe    # 順次起動（対話なし・安全）- 約60秒
+npm run haconiwa:fast    # 並列3個起動（対話なし・推奨）
+npm run haconiwa:ultra   # 並列6個起動（対話なし・高効率）
+npm run haconiwa:safe    # 順次起動（対話なし・安全）
 ```
 
 **推奨使用法**:
@@ -274,26 +333,25 @@ npm run agent:init              # 全18ペインに初期化コマンド送信
 - 指示出し時は既存の役割確認コマンドの下に` && echo "指示内容" ultrathink`形式で追加
 - 実行時は「役割確認→指示実行」の順序で自動処理され、プロンプト節約・精度向上を実現
 
-**CEO動的戦略判断システム（v2.0）**:
-- `npm run ceo:dynamic` - CEO動的戦略判断システム（**推奨・メイン**）
-- `npm run ceo:guide` - CEO Main専用ガイド（戦略的思考フレームワーク）
+**🎯 CEO Supreme完璧実行システム（v4.0）**:
+- `npm run ceo:supreme-v4` - CEO Supreme v4.0完璧実行（**推奨・メイン・完全自動サイクル**）
 - `npm run ceo:strategic` - CEO戦略的分析システム（旧システム・参考用）
-- `npm run ceo:directive` - CEO統一指示システム（旧システム・参考用）
-- `npm run ceo:improvements` - CEO改良サマリー表示
-- `npm run ceo:coordinator` - Director Coordinator初期プロンプト表示
-- `npm run ceo:monitor` - Progress Monitor初期プロンプト表示
+- `npm run ceo:all` - 全Director一斉指示（旧システム・参考用）
 
-**🧠 CEO動的戦略判断フロー（v2.0）**:
-1. **詳細現状分析**: MVPシステム設計.md要件 vs 現在実装状況の詳細比較
-2. **戦略的ギャップ分析**: ビジネス価値・技術依存関係・リスク評価による戦略判断
-3. **動的指示作成**: 分析結果に基づくDirector別具体的指示の自律作成
-4. **戦略的指示実行**: CEO自身が作成した指示をDirectorに送信
-5. **実行管理**: Director配下指示送信・完了報告の確実な管理
+**🚀 CEO Supreme v4.0実行フロー（完全自動化サイクル）**:
+1. **高速診断（30秒）**: MVP必須要件vs現在実装の瞬時品質評価
+2. **戦略判断（5秒）**: 保護・実装・クリーンアップ・延期の瞬時決定
+3. **Director指示（15秒）**: 必要部分のみ選択的指示・Tasks Directory v2.0統合
+4. **CEO階層起動（5秒）**: Operations・Analytics自律監視開始（バックグラウンド実行）
+5. **完璧実行完了（5秒）**: サマリー・通知・自動サイクル管理開始
 
-**🚨 重要変更: 固定指示システム廃止**:
-- **固定指示禁止**: 従来の画一的指示テンプレートは廃止
-- **動的判断必須**: CEOが現状分析→戦略判断→指示作成を自律実行
-- **CEO系自律エージェント**: director-coordinator・progress-monitorは起動時に初期プロンプト自動実行（CEOからの手動指示不要）
+**🎯 v4.0革新的特徴**:
+- **高速実行**: 複雑分析→60秒診断（50%高速化）
+- **MVP絶対準拠**: Over-Engineering完全防止・実装保護機能
+- **Director完全自動化**: 配下指示送信まで自動実行（v2.0システム）
+- **Tasks Directory v2.0統合**: 永続記録・追跡・品質管理・段階的指示
+- **CEO階層自律システム**: Operations/Analytics完全自動監視
+- **自動サイクル管理**: 完了判定→リフレッシュ→再起動の完全自動化
 
 ### 🛡️ MVP準拠強制システム（新規実装済み）
 
