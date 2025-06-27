@@ -1,203 +1,124 @@
-# 🎯 ArbitrageAssistant MVP開発 タスク実行手順
+# 🎯 Director Coordinator 緊急タスク実行計画
 
-## 📋 実行概要
+## 📊 MVPリリース向け統合調整タスク
 
-**Haconiwa 6x3 Grid構成**に基づく5部門Director並列開発システム
-
-- **組織構成**: CEO → 5 Directors → 18 Specialists
-- **実行方式**: タスクファイル分割による順次実行
-- **品質基準**: ESLint 0 warnings, TypeScript 0 errors, Build Success
+**作成日時**: 2025-06-27 12:00  
+**作成者**: director-coordinator  
+**総合実装完了度**: 80% → **95%目標**
 
 ---
 
-## 🚀 実行フェーズ
+## 🚨 緊急実行順序
 
-### **フェーズ1: 基盤構築（直列実行推奨）**
+### **Phase 1: 基盤安定化（今週完了必須）**
 
-#### 1️⃣ Backend Director（最優先）
+#### 1. 【P0】Frontend型安全性問題解決
 ```bash
-# AWS Amplify Gen2 + GraphQL + DynamoDB
-claude "tasks/director-backend.md を実行して。完了後このファイルを削除"
+# 実行コマンド
+"tasks/directors/frontend/task-001-typescript-errors.md を緊急実行してください。
+TypeScriptエラー25件（admin:11件, hedge-system:14件）を即座に解決。
+完了後このタスクファイルに詳細実行結果を記録"
 ```
-**依存関係**: なし  
-**所要時間**: 約30分  
-**完了条件**: `packages/shared-backend/amplify/data/resource.ts` GraphQLスキーマ完成
+**期限**: 2025-06-27 18:00  
+**影響**: 全システム統合テスト・本番デプロイのブロック解除
 
-#### 2️⃣ Trading Director（Backend完了後）
+#### 2. 【P1】Backend認証グループ統一
 ```bash
-# TypeScript + Tauri 金融計算ロジック
-claude "tasks/director-trading.md を実行して。完了後このファイルを削除"
+# 実行コマンド  
+"tasks/directors/backend/task-001-auth-groups.md を実行してください。
+認証グループ名統一（ADMIN/CLIENT）とパスワードポリシー修正。
+Frontend修正完了を待って統合テスト実施"
 ```
-**依存関係**: Backend GraphQL API  
-**所要時間**: 約45分  
-**完了条件**: `apps/hedge-system/lib/` 金融計算エンジン完成
+**期限**: 2025-06-28 18:00  
+**影響**: 本番デプロイメント・認証フロー安定化
 
----
+### **Phase 2: 機能統合完成（来週完了）**
 
-### **フェーズ2: 統合・UI構築（並列実行可能）**
-
-#### 3️⃣ Integration Director
+#### 3. 【P2】WebSocket-Trading統合
 ```bash
-# MQL5 + C++ WebSocket + MT5統合
-claude "tasks/director-integration.md を実行して。完了後このファイルを削除"
+# 実行コマンド
+"tasks/directors/integration/task-001-websocket-integration.md を実行してください。
+Integration-Trading部門連携でWebSocket通信完全実装。
+trading-directorと連携してMQL5+position-execution.ts統合完成"
 ```
-**依存関係**: Trading Engine連携  
-**所要時間**: 約60分  
-**完了条件**: `ea/HedgeSystemConnector.mq5` + WebSocket統合完成
+**期限**: 2025-06-30 18:00  
+**影響**: MVP核心機能（リアルタイム取引）実現
 
-#### 4️⃣ Frontend Director  
+### **Phase 3: 品質保証強化（最終段階）**
+
+#### 4. 【P3】DevOps監視強化  
 ```bash
-# Next.js + React + Tailwind CSS
-claude "tasks/director-frontend.md を実行して。完了後このファイルを削除"
+# 実行コマンド
+"tasks/directors/devops/task-001-monitoring-enhancement.md を実行してください。
+テストカバレッジ80%監視・パフォーマンス計測・E2Eテスト実装。
+Phase1,2完了後の品質保証として実施"
 ```
-**依存関係**: Backend GraphQL API  
-**所要時間**: 約40分  
-**完了条件**: `apps/admin/` + `apps/hedge-system/` UI完成
+**期限**: 2025-07-03 18:00  
+**影響**: MVP品質保証・継続的改善基盤
 
 ---
 
-### **フェーズ3: 品質・DevOps（最終段階）**
+## 🔗 部門間連携フロー
 
-#### 5️⃣ DevOps Director（全完了後）
-```bash
-# Turborepo + CI/CD + Vitest + 品質チェック
-claude "tasks/director-devops.md を実行して。完了後このファイルを削除"
-```
-**依存関係**: 全部門実装完了  
-**所要時間**: 約20分  
-**完了条件**: CI/CD + テスト + ビルド最適化完成
+```mermaid
+graph TB
+    P1[P0: Frontend型安全性] --> P2[P1: Backend認証統一]
+    P2 --> P3[P2: WebSocket統合]
+    P3 --> P4[P3: DevOps監視]
+    
+    P1 -.->|ブロック解除| Integration[Integration部門]
+    P1 -.->|ブロック解除| Trading[Trading部門]
+    P2 -.->|統合テスト| P3
+    P3 -.->|品質保証| P4
 
----
-
-## ✅ 品質チェック（各Director完了後必須）
-
-### **各Director実行後チェック**
-```bash
-# 1. Lint・型チェック
-npm run lint
-cd apps/hedge-system && npm run check-types  
-cd apps/admin && npm run check-types
-
-# 2. ビルド確認
-npm run build
-
-# 3. テスト実行
-npm run test
-
-# 期待結果: 全てエラー0件
-```
-
-### **エラー発生時の対処**
-```bash
-# 型エラー修正指示例
-"[Director名]: 以下の型エラーを修正してください：
-[エラー内容をコピペ]"
-
-# ビルドエラー調査指示例  
-"DevOps Director: 以下のビルドエラーを調査・修正してください：
-[エラー内容をコピペ]"
+    style P1 fill:#ffcdd2
+    style P2 fill:#fff3e0  
+    style P3 fill:#e1f5fe
+    style P4 fill:#c8e6c9
 ```
 
 ---
 
-## 📊 進捗追跡チェックリスト
+## 📈 期待される成果
 
-### **実装完了チェック**
-- [ ] **Backend**: `packages/shared-backend/amplify/data/resource.ts` GraphQLスキーマ
-- [ ] **Trading**: `apps/hedge-system/lib/hedge-system-core.ts` 金融計算エンジン
-- [ ] **Integration**: `ea/HedgeSystemConnector.mq5` + WebSocket統合
-- [ ] **Frontend**: `apps/admin/` + `apps/hedge-system/` UI実装
-- [ ] **DevOps**: CI/CD + テスト + ビルド最適化
+### **Phase 1完了後**
+- TypeScriptエラー: 25件 → 0件
+- 認証システム: 100%安定化
+- **実装完了度**: 80% → **87%**
 
-### **品質チェック完了**
-- [ ] ESLint: 0 warnings
-- [ ] TypeScript: 0 errors  
-- [ ] Build: Success
-- [ ] Tests: Pass
-- [ ] MVP機能動作確認
+### **Phase 2完了後**  
+- WebSocket通信: 100%実動
+- MVP核心機能: 完全実現
+- **実装完了度**: 87% → **92%**
 
----
-
-## 🚨 緊急時・課題対応
-
-### **技術課題エスカレーション**
-```markdown
-"Human CEO へ報告:
-
-[Director名] で以下の課題が発生：
-- 課題内容: [具体的な技術的課題]
-- 影響度: [High/Medium/Low]
-- 提案解決策: [解決方法]
-- 必要判断: [CEO判断が必要な内容]"
-```
-
-### **優先順位変更**
-**課題発生時の柔軟対応**:
-1. **Backend + Trading**: 必須（金融計算コア）
-2. **Integration**: 重要（MT5連携）
-3. **Frontend**: 中程度（UI/UX）
-4. **DevOps**: 最低限（品質保証）
+### **Phase 3完了後**
+- テストカバレッジ: 80%達成
+- 品質保証: 自動化完成
+- **実装完了度**: 92% → **95%**
 
 ---
 
-## 🎉 MVP完成・リリース手順
+## 🎯 実行ガイドライン
 
-### **全Director完了後**
-```bash
-# 1. 最終品質チェック
-npm run lint
-npm run test  
-npm run build
+### Director向け
+1. **段階的確認**: 各Phase完了後に結果確認・次Phase開始判断
+2. **クロスチーム調整**: Integration-Trading連携の調整実施
+3. **品質保証**: 各タスク完了時の品質チェック徹底
 
-# 2. MVP機能確認
-# - GraphQL API動作確認
-# - 金融計算エンジン動作確認
-# - UI/UX動作確認
-
-# 3. リリース実行
-npm run release:hedge patch
-
-# 4. 完成通知
-osascript -e 'display notification "MVP完成！" with title "ArbitrageAssistant" sound name "Glass"'
-```
+### Specialist向け  
+1. **詳細記録**: 実行内容・結果をタスクファイルに完全記録
+2. **課題報告**: 問題発生時は即座にDirectorに報告・相談
+3. **品質確認**: lint・typecheck・test実行結果の記録必須
 
 ---
 
-## 📈 成功指標・KPI
+## ⏰ 緊急連絡・エスカレーション
 
-### **開発効率**
-- **全体完成時間**: < 3時間
-- **各Director実行時間**: < 60分/部門
-- **品質チェック通過率**: 100%
+**Phase 1遅延リスク**: Frontend型安全性問題が18:00までに解決されない場合、MVPリリーススケジュールに重大影響
 
-### **技術品質**
-- **ESLint warnings**: 0
-- **TypeScript errors**: 0  
-- **Test coverage**: > 80%
-- **Build success**: 100%
+**即座報告事項**: TypeScriptエラー解決困難・追加技術課題発見時
 
 ---
 
-## 🔄 次回開発時の改善
-
-### **学習事項**
-- [ ] 各Director実行時間の記録・最適化
-- [ ] 技術課題の事前回避策検討
-- [ ] 並列実行可能箇所の拡大
-
-### **Haconiwa完全版対応準備**
-- [ ] 真のマルチエージェント並列実行対応
-- [ ] CEO自動指令機能対応
-- [ ] リアルタイム進捗監視対応
-
----
-
-## 📞 サポート・問い合わせ
-
-**Human CEO業務**: `tasks/user-ceo-responsibilities.md` 参照  
-**技術仕様**: `MVPシステム設計.md` 参照  
-**Haconiwa設計**: `arbitrage-assistant.yaml` 参照
-
----
-
-**🚀 準備完了！Human CEOの判断で開発開始してください！**
+**🎯 Director Coordinator としての総括**: 
+現在80%の実装完了度をPhase完了により95%まで押し上げ、MVPリリース準備を完成させます。各Director部門の連携調整により、クリティカルパス問題の完全解決を目指します。
