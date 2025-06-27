@@ -409,17 +409,45 @@ if ! tmux list-sessions >/dev/null 2>&1; then
     sleep 1
 fi
 
-# 新規セッション作成（デタッチド状態）
-echo "🏗️ 新規tmuxセッション作成中..."
-# セッション作成時にbase-indexも設定
-tmux new-session -d -s $SESSION_NAME -c "$BASE_DIR" -n "🏛️CEO-Strategy" \; \
-    set-option -g base-index 0 \; \
-    set-option -g pane-base-index 0
+# .tmux.conf読み込み確認・適用
+echo "🔧 .tmux.conf設定読み込み中..."
+if [ -f "$BASE_DIR/.tmux.conf" ]; then
+    echo "✅ .tmux.conf確認: $BASE_DIR/.tmux.conf"
+    # tmux設定ファイルを明示的に指定して読み込み
+    TMUX_CONFIG_PATH="$BASE_DIR/.tmux.conf"
+else
+    echo "⚠️  .tmux.confが見つかりません。デフォルト設定で継続します。"
+    TMUX_CONFIG_PATH=""
+fi
 
-# セッション固有のbase-index設定
-echo "🔧 base-index 0設定適用中..."
+# 新規セッション作成（デタッチド状態）with .tmux.conf
+echo "🏗️ 新規tmuxセッション作成中（.tmux.conf適用）..."
+if [ -n "$TMUX_CONFIG_PATH" ]; then
+    # .tmux.conf指定でセッション作成
+    tmux -f "$TMUX_CONFIG_PATH" new-session -d -s $SESSION_NAME -c "$BASE_DIR" -n "🏛️CEO-Strategy"
+    echo "✅ .tmux.conf適用でセッション作成完了"
+else
+    # デフォルト設定でセッション作成
+    tmux new-session -d -s $SESSION_NAME -c "$BASE_DIR" -n "🏛️CEO-Strategy"
+    echo "✅ デフォルト設定でセッション作成完了"
+fi
+
+# .tmux.conf設定の確実な適用
+if [ -n "$TMUX_CONFIG_PATH" ]; then
+    echo "🔧 .tmux.conf設定の確実な適用中..."
+    # 既存セッションに.tmux.conf設定を再読み込み
+    tmux source-file "$TMUX_CONFIG_PATH"
+    echo "✅ .tmux.conf設定を再読み込み完了"
+fi
+
+# セッション固有設定適用（.tmux.confの設定を確実に適用）
+echo "🔧 Haconiwa専用設定適用中..."
 tmux set-option -t $SESSION_NAME base-index 0
 tmux set-window-option -t $SESSION_NAME pane-base-index 0
+tmux set-option -t $SESSION_NAME mouse on
+tmux set-option -t $SESSION_NAME history-limit 10000
+tmux set-option -t $SESSION_NAME escape-time 0
+tmux set-option -t $SESSION_NAME renumber-windows on
 
 # 新規セッション安定化のための待機
 sleep 1

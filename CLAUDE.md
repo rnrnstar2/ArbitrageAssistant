@@ -112,15 +112,18 @@ npm run test       # 全テスト
 
 ### Haconiwa (箱庭) 開発環境
 ```bash
-npm run haconiwa:start       # 6ウィンドウ並列開発環境起動（ローカルClaude保持対応）
+npm run haconiwa:start       # 6ウィンドウ並列開発環境起動（.tmux.conf自動読み込み・ローカルClaude保持対応）
 npm run haconiwa:clean-start # 完全クリーン起動（推奨）
 npm run haconiwa:clean-tmux  # TMUX内のみクリーン起動（ローカルClaude保持）
 npm run haconiwa:stop        # 安全な環境終了
 npm run haconiwa:status      # Claude起動状況確認
+npm run tmux:source          # .tmux.conf手動読み込み
+npm run tmux:attach          # .tmux.conf読み込み後セッション接続
 ```
 
-**✅ ローカルClaude保持機能統合完了**:
-- `npm run haconiwa:start` が自動的にローカルClaudeを保持
+**✅ .tmux.conf自動読み込み・ローカルClaude保持機能統合完了**:
+- `npm run haconiwa:start` で.tmux.conf自動読み込み・ローカルClaudeを保持
+- tmuxセッション作成時に.tmux.conf設定を確実に適用
 - 認証画面からのスタート問題を解決
 - `--dangerously-skip-permissions` オプション維持
 
@@ -434,10 +437,10 @@ npm run mvp:check packages/shared-backend/
 - **失敗例**: 指示受信だけで終了（配下への指示送信スキップは禁止）
 
 **Director実行確認システム**:
-- `npm run director:check` - 全Director配下指示送信状況確認
-- `npm run director:monitor` - リアルタイム監視ダッシュボード
-- `./scripts/director-execution-check.sh --check-director [director-id]` - 個別Director確認
-- `./scripts/director-execution-check.sh --last-activity` - 直近の配下指示送信活動確認
+- `npm run task:list` - 全タスク状況確認
+- `npm run task:active` - 進行中タスク確認
+- `npm run task:monitor` - リアルタイム監視ダッシュボード
+- `npm run task:summary` - 緊急事項・重要タスク確認
 
 ### 🧹 入力バッファ残留問題対処法
 

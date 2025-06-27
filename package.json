@@ -43,6 +43,8 @@
     "ceo:supreme-perfect": "./scripts/ceo-supreme-perfect-initial-prompt.sh",
     "ceo:supreme-perfect-force": "./scripts/ceo-supreme-perfect-initial-prompt.sh force",
     "ceo:supreme-perfect-guide": "cat scripts/ceo-supreme-perfect-usage-guide.md",
+    "tmux:source": "tmux source-file .tmux.conf",
+    "tmux:attach": "tmux source-file .tmux.conf && tmux attach -t arbitrage-assistant",
     "ceo:operations-v5": "./scripts/ceo-operations-manual-v5.sh",
     "ceo:analytics-v5": "./scripts/ceo-analytics-manual-v5.sh",
     "ceo:cycle-v5": "./scripts/ceo-cycle-management-v5.sh",
