@@ -33,7 +33,7 @@ const schema = a
         updatedAt: a.datetime(),
       })
       .authorization((allow) => [
-        allow.owner().to(["read", "update"]),
+        allow.authenticated().to(["read", "update"]),
         allow.groups(["admin"]).to(["create", "read", "update", "delete"]),
         allow.authenticated().to(["create"]),
       ]),
@@ -60,7 +60,7 @@ const schema = a
         index("userId"),
       ])
       .authorization((allow) => [
-        allow.owner().to(["create", "read", "update", "delete"]),
+        allow.authenticated().to(["create", "read", "update", "delete"]),
         allow.groups(["admin"]).to(["create", "read", "update", "delete"]),
         allow.groups(["operator"]).to(["read", "update"]),
         allow.groups(["viewer"]).to(["read"]),
@@ -91,10 +91,11 @@ const schema = a
       })
       .secondaryIndexes((index) => [
         index("userId").sortKeys(["status"]),
+        index("userId").name("userIdTrailIndex").sortKeys(["trailWidth"]),
         index("accountId").sortKeys(["status"]),
       ])
       .authorization((allow) => [
-        allow.owner().to(["create", "read", "update", "delete"]),
+        allow.authenticated().to(["create", "read", "update", "delete"]),
         allow.groups(["admin"]).to(["create", "read", "update", "delete"]),
         allow.groups(["operator"]).to(["read", "update"]),
         allow.groups(["viewer"]).to(["read"]),
@@ -120,7 +121,7 @@ const schema = a
         index("positionId").sortKeys(["type"]),
       ])
       .authorization((allow) => [
-        allow.owner().to(["create", "read", "update", "delete"]),
+        allow.authenticated().to(["create", "read", "update", "delete"]),
         allow.groups(["admin"]).to(["create", "read", "update", "delete"]),
         allow.groups(["operator"]).to(["read", "update"]),
         allow.groups(["viewer"]).to(["read"]),
@@ -132,7 +133,7 @@ const schema = a
       .subscription()
       .for(a.ref("Position"))
       .authorization((allow) => [
-        allow.owner(),
+        allow.authenticated(),
         allow.groups(["admin", "operator", "viewer"]),
       ]),
 
@@ -141,7 +142,7 @@ const schema = a
       .subscription()
       .for(a.ref("Action"))
       .authorization((allow) => [
-        allow.owner(),
+        allow.authenticated(),
         allow.groups(["admin", "operator", "viewer"]),
       ]),
 
@@ -150,7 +151,7 @@ const schema = a
       .subscription()
       .for(a.ref("Account"))
       .authorization((allow) => [
-        allow.owner(),
+        allow.authenticated(),
         allow.groups(["admin", "operator", "viewer"]),
       ]),
   })

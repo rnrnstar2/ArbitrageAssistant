@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@repo/ui/components/ui/alert';
 import { CheckCircle2, AlertTriangle, Activity, TrendingUp, Users, Zap, RefreshCw } from 'lucide-react';
 import { Position, PositionStatus, Action, ActionStatus, Account } from '@repo/shared-types';
 import { StatCard } from '../../../components/common';
+import { MonitoringPanel } from './MonitoringPanel';
 
 interface DashboardProps {
   positions: Position[];
@@ -418,6 +419,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <h3 className="text-lg font-semibold mb-4">パフォーマンス指標</h3>
         <PerformanceIndicators positions={positions} accounts={accounts} />
       </div>
+
+      {/* Monitoring Panel */}
+      <MonitoringPanel 
+        isLoading={loading}
+        positions={positions}
+        actions={actions}
+        accounts={accounts}
+      />
 
       {/* Charts and Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

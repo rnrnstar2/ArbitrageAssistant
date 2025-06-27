@@ -246,8 +246,32 @@ export class EntryFlowEngine {
     command: WSOpenCommand,
     wsHandler: WebSocketHandler
   ): Promise<string> {
-    // TODO: WebSocket最適化通信実装
-    return `order_${Date.now()}`;
+    const startTime = Date.now();
+    
+    try {
+      // WebSocketHandler統合でMT4/MT5 EA制御実現
+      const result = await wsHandler.sendOpenCommand({
+        accountId: command.accountId,
+        positionId: command.positionId,
+        symbol: command.symbol,
+        volume: command.volume,
+        executionType: command.metadata?.executionType
+      });
+      
+      const executionTime = Date.now() - startTime;
+      
+      if (result.success) {
+        console.log(`⚡ Optimized open command sent: ${command.positionId} in ${executionTime}ms`);
+        return result.orderId || `optimized_order_${Date.now()}`;
+      } else {
+        throw new Error(result.error || 'Command execution failed');
+      }
+      
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      console.error(`❌ Optimized command failed: ${command.positionId} in ${executionTime}ms`, error);
+      throw error;
+    }
   }
 }
 
@@ -615,8 +639,29 @@ export class ActionFlowEngine {
     command: WSCloseCommand,
     wsHandler: WebSocketHandler
   ): Promise<string> {
-    // TODO: WebSocket最適化通信実装
-    return `close_${Date.now()}`;
+    const startTime = Date.now();
+    
+    try {
+      // WebSocketHandler統合でMT4/MT5 EA制御実現
+      const result = await wsHandler.sendCloseCommand({
+        accountId: command.accountId,
+        positionId: command.positionId
+      });
+      
+      const executionTime = Date.now() - startTime;
+      
+      if (result.success) {
+        console.log(`⚡ Optimized close command sent: ${command.positionId} in ${executionTime}ms`);
+        return result.orderId || `optimized_close_${Date.now()}`;
+      } else {
+        throw new Error(result.error || 'Command execution failed');
+      }
+      
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      console.error(`❌ Optimized close command failed: ${command.positionId} in ${executionTime}ms`, error);
+      throw error;
+    }
   }
 
   private estimateExecutionTime(executionType: ExecutionType): number {
@@ -640,11 +685,15 @@ export class PositionExecutor {
     avgCloseTime: number;
     successRate: number;
     totalExecutions: number;
+    retryCount: number;
+    settlementSuccessRate: number;
   } = {
     avgEntryTime: 0,
     avgCloseTime: 0,
     successRate: 0,
-    totalExecutions: 0
+    totalExecutions: 0,
+    retryCount: 0,
+    settlementSuccessRate: 0
   };
 
   constructor(wsHandler: WebSocketHandler, trailEngine?: TrailEngine) {
@@ -764,10 +813,18 @@ export class PositionExecutor {
     try {
       console.log(`🚀 Fast entry execution started: ${position.id}`);
       
-      // 1. 市場条件取得（模擬データ）
+      // 1. 市場条件取得（実価格フィード統合）
+      const priceMonitor = this.wsHandler.priceMonitor;
+      const priceData = priceMonitor ? 
+        priceMonitor.getCurrentPrice(position.symbol) :
+        null;
+      const currentPrice = priceData ? 
+        (typeof priceData === 'number' ? priceData : priceData.bid || priceData.ask || 0) :
+        this.getFallbackPrice(position.symbol);
+      
       const marketCondition: MarketCondition = {
         symbol: position.symbol,
-        currentPrice: 150.0, // TODO: 実際の価格取得
+        currentPrice,
         spread: 0.0001,
         volatility: 0.005,
         liquidity: 0.8,
@@ -837,8 +894,14 @@ export class PositionExecutor {
     try {
       console.log(`🔄 Fast exit execution started: ${position.id}`);
       
-      // 現在価格取得（模擬）
-      const currentPrice = 150.5; // TODO: 実際の価格取得
+      // 現在価格取得（実価格フィード統合）
+      const priceMonitor = this.wsHandler.priceMonitor;
+      const priceData = priceMonitor ? 
+        priceMonitor.getCurrentPrice(position.symbol) :
+        null;
+      const currentPrice = priceData ? 
+        (typeof priceData === 'number' ? priceData : priceData.bid || priceData.ask || 0) :
+        this.getFallbackPrice(position.symbol);
       
       // 高速決済実行
       const executionResult = await this.actionFlowEngine.executeClose(
@@ -877,7 +940,12 @@ export class PositionExecutor {
       console.error('Exit execution failed:', error);
       
       this.updatePerformanceMetrics('close', totalTime, false);
-      await this.updatePositionStatus(position.id, PositionStatus.CANCELED);
+      
+      // 決済失敗時の自動リトライ機構実装
+      const retryResult = await this.handleSettlementRetry(position, error as Error);
+      if (!retryResult.success) {
+        await this.updatePositionStatus(position.id, PositionStatus.CANCELED);
+      }
     }
   }
 
@@ -891,8 +959,14 @@ export class PositionExecutor {
       
       console.log(`📊 Starting advanced trail monitoring: ${position.id}`);
       
-      // 現在価格でトレール条件初期化
-      const currentPrice = 150.0; // TODO: 実際の価格取得
+      // 現在価格でトレール条件初期化（実価格フィード統合）
+      const priceMonitor = this.wsHandler.priceMonitor;
+      const priceData = priceMonitor ? 
+        priceMonitor.getCurrentPrice(position.symbol) :
+        null;
+      const currentPrice = priceData ? 
+        (typeof priceData === 'number' ? priceData : priceData.bid || priceData.ask || 0) :
+        this.getFallbackPrice(position.symbol);
       this.trailFlowEngineInstance.initializeTrailCondition(position, currentPrice);
       
       // 既存のTrailEngineとの連携
@@ -1169,6 +1243,23 @@ export class PositionExecutor {
       (totalSuccessful + (success ? 1 : 0)) / this.performanceMetrics.totalExecutions;
   }
 
+  /**
+   * フォールバック価格取得（PriceMonitor未利用時）
+   */
+  private getFallbackPrice(symbol: Symbol): number {
+    // 通貨ペア別のフォールバック価格
+    const fallbackPrices: { [key in Symbol]: number } = {
+      [Symbol.USDJPY]: 150.0,
+      [Symbol.EURUSD]: 1.0800,
+      [Symbol.EURGBP]: 0.8500,
+      [Symbol.XAUUSD]: 2000.0
+    };
+    
+    const price = fallbackPrices[symbol] || 1.0;
+    console.warn(`⚠️ Using fallback price for ${symbol}: ${price}`);
+    return price;
+  }
+
   // ========================================
   // GraphQL Service Methods（統合）
   // ========================================
@@ -1262,6 +1353,100 @@ export class PositionExecutor {
   get actionEngine() {
     return this.actionFlowEngine;
   }
+
+  // ========================================
+  // 決済失敗時の自動リトライ機構
+  // ========================================
+
+  /**
+   * 決済失敗時の自動リトライ機構実装
+   */
+  private async handleSettlementRetry(
+    position: Position, 
+    error: Error, 
+    maxRetries: number = 3
+  ): Promise<{ success: boolean; finalError?: Error; retryCount: number }> {
+    let retryCount = 0;
+    let lastError = error;
+
+    console.log(`🔄 Settlement retry initiated for position: ${position.id}, max retries: ${maxRetries}`);
+    
+    for (retryCount = 1; retryCount <= maxRetries; retryCount++) {
+      try {
+        console.log(`🔁 Settlement retry attempt ${retryCount}/${maxRetries} for position: ${position.id}`);
+        
+        // 短時間待機（指数関数的バックオフ）
+        const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        
+        // 現在価格を再取得
+        const priceMonitor = this.wsHandler.priceMonitor;
+        const priceData = priceMonitor ? 
+          priceMonitor.getCurrentPrice(position.symbol) :
+          null;
+        const currentPrice = priceData ? 
+          (typeof priceData === 'number' ? priceData : priceData.bid || priceData.ask || 0) :
+          this.getFallbackPrice(position.symbol);
+        
+        // 決済実行を再試行
+        const executionResult = await this.actionFlowEngine.executeClose(
+          position,
+          'RETRY_CLOSE',
+          currentPrice,
+          this.wsHandler
+        );
+        
+        if (executionResult.success) {
+          console.log(`✅ Settlement retry successful on attempt ${retryCount}: ${position.id}`);
+          
+          // トレール条件削除
+          this.trailFlowEngineInstance.removeTrailCondition(position.id);
+          
+          // 結果記録（リトライ成功）
+          const profit = this.calculateProfit(position, currentPrice);
+          this.actionFlowEngine.recordExecutionResult(
+            position.id,
+            executionResult.executionTime,
+            true,
+            currentPrice,
+            profit
+          );
+          
+          // パフォーマンス記録（リトライ成功）
+          this.updatePerformanceMetrics('close', executionResult.executionTime, true);
+          this.performanceMetrics.retryCount++;
+          this.performanceMetrics.settlementSuccessRate = 
+            (this.performanceMetrics.settlementSuccessRate + 1) / 2;
+          
+          return { success: true, retryCount };
+        } else {
+          throw new Error('Retry execution failed');
+        }
+        
+      } catch (retryError) {
+        lastError = retryError as Error;
+        console.warn(`⚠️ Settlement retry ${retryCount}/${maxRetries} failed: ${lastError.message}`);
+        
+        // 最後のリトライでない場合は続行
+        if (retryCount < maxRetries) {
+          continue;
+        }
+      }
+    }
+    
+    // 全リトライ失敗
+    console.error(`❌ All settlement retries failed for position: ${position.id}`);
+    this.performanceMetrics.retryCount += retryCount;
+    this.performanceMetrics.settlementSuccessRate = 
+      (this.performanceMetrics.settlementSuccessRate + 0) / 2;
+    
+    return { 
+      success: false, 
+      finalError: lastError, 
+      retryCount 
+    };
+  }
+
 }
 
 // ========================================

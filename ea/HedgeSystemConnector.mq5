@@ -31,6 +31,13 @@ private:
     int m_updateInterval;
     bool m_isConnected;
     
+    // パフォーマンス最適化フィールド
+    datetime m_lastConnectionCheck;
+    int m_connectionCheckInterval;
+    int m_reconnectAttempts;
+    int m_maxReconnectAttempts;
+    bool m_fastMode;
+    
 public:
     HedgeSystemConnector();
     ~HedgeSystemConnector();
@@ -59,6 +66,18 @@ private:
     void ClosePositionWithCallback(string positionId, string actionId);
     bool ClosePositionByTicket(ulong ticket);
     void LogMessage(string message);
+    
+    // 高性能JSONパース関数（設計書準拠）
+    bool ExtractJsonString(string json, string key, string &value);
+    bool ExtractJsonDouble(string json, string key, double &value);
+    bool ExtractJsonInt(string json, string key, int &value);
+    bool ValidateMessage(string message, string requiredType);
+    
+    // エラーハンドリング強化関数
+    void SendErrorEvent(string type, string details, int errorCode);
+    bool IsValidSymbol(string symbol);
+    bool IsValidVolume(double volume);
+    void HandleOrderError(int errorCode, string operation, string details);
 };
 
 //+------------------------------------------------------------------+
@@ -117,7 +136,7 @@ void OnTimer()
 }
 
 //+------------------------------------------------------------------+
-//| HedgeSystemConnector コンストラクタ                              |
+//| HedgeSystemConnector コンストラクタ（パフォーマンス最適化）       |
 //+------------------------------------------------------------------+
 HedgeSystemConnector::HedgeSystemConnector()
 {
@@ -129,6 +148,13 @@ HedgeSystemConnector::HedgeSystemConnector()
     m_lastAccountUpdate = 0;
     m_updateInterval = 5; // 5秒間隔
     m_isConnected = false;
+    
+    // パフォーマンス最適化設定
+    m_lastConnectionCheck = 0;
+    m_connectionCheckInterval = 30; // 30秒間隔で接続確認
+    m_reconnectAttempts = 0;
+    m_maxReconnectAttempts = 5;
+    m_fastMode = true; // 高性能モード有効
 }
 
 //+------------------------------------------------------------------+
@@ -179,28 +205,44 @@ void HedgeSystemConnector::Disconnect()
 }
 
 //+------------------------------------------------------------------+
-//| Tickイベント処理                                                |
+//| Tickイベント処理（パフォーマンス最適化版）                       |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::OnTick()
 {
     if(!m_isConnected)
         return;
     
-    // 接続確認
-    if(!WSIsConnected())
+    datetime currentTime = TimeCurrent();
+    
+    // 高性能接続確認（30秒間隔）
+    if(currentTime - m_lastConnectionCheck >= m_connectionCheckInterval)
     {
-        LogMessage("WebSocket connection lost, attempting to reconnect...");
-        m_isConnected = false;
-        if(Connect(m_wsUrl, m_authToken, m_accountId))
+        if(!WSIsConnected())
         {
-            LogMessage("Reconnected successfully");
+            LogMessage("WebSocket connection lost, attempting to reconnect...");
+            m_isConnected = false;
+            m_reconnectAttempts++;
+            
+            if(m_reconnectAttempts <= m_maxReconnectAttempts)
+            {
+                if(Connect(m_wsUrl, m_authToken, m_accountId))
+                {
+                    LogMessage("Reconnected successfully (attempt " + IntegerToString(m_reconnectAttempts) + ")");
+                    m_reconnectAttempts = 0; // リセット
+                }
+            }
+            else
+            {
+                LogMessage("Max reconnection attempts reached, waiting...");
+                m_reconnectAttempts = 0; // リセットして次の周期で再試行
+            }
         }
-        return;
+        m_lastConnectionCheck = currentTime;
     }
     
-    // 受信メッセージの処理
+    // 高速メッセージ受信処理
     string receivedMessage = WSReceiveMessage();
-    if(receivedMessage != "")
+    if(receivedMessage != "" && StringLen(receivedMessage) > 0)
     {
         ProcessIncomingMessage(receivedMessage);
     }
@@ -301,83 +343,78 @@ void HedgeSystemConnector::ProcessIncomingMessage(string message)
 }
 
 //+------------------------------------------------------------------+
-//| コマンド処理（設計書準拠メッセージフォーマット対応）             |
+//| コマンド処理（MVPシステム設計書完全準拠）                        |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::ProcessCommand(string command)
 {
     LogMessage("Processing command: " + command);
     
-    // 設計書準拠のメッセージ処理
-    if(StringFind(command, "\"type\":\"OPEN\"") != -1)
+    // MVPシステム設計書v7.0準拠のメッセージ処理
+    if(StringFind(command, "\"command\":\"OPEN\"") != -1)
     {
-        // 新規ポジション開設（設計書準拠）
-        string positionId = ""; // JSONから抽出が必要
-        string actionId = ""; // JSONから抽出が必要  
-        string symbol = "EURUSD"; // JSONから抽出
-        string side = "BUY"; // JSONから抽出（BUY/SELL）
-        double volume = 0.01; // JSONから抽出
-        double trailWidth = 0.0; // JSONから抽出（オプション）
+        // 新規ポジション開設（設計書7.1準拠）
+        string accountId = "", positionId = "", symbol = "EURUSD", side = "BUY";
+        double volume = 0.01;
         
-        // 簡易JSONパース（実際の実装では適切なJSONライブラリを使用）
-        int pos = StringFind(command, "\"positionId\":\"");
-        if(pos != -1)
+        // 設計書準拠JSONパース（エラーハンドリング強化）
+        if(!ExtractJsonString(command, "accountId", accountId) || 
+           !ExtractJsonString(command, "positionId", positionId) ||
+           !ExtractJsonString(command, "symbol", symbol) ||
+           !ExtractJsonString(command, "side", side) ||
+           !ExtractJsonDouble(command, "volume", volume))
         {
-            int start = pos + 14;
-            int end = StringFind(command, "\"", start);
-            if(end != -1) positionId = StringSubstr(command, start, end - start);
+            LogMessage("ERROR: Invalid OPEN command format - " + command);
+            return;
         }
         
-        pos = StringFind(command, "\"actionId\":\"");
-        if(pos != -1)
-        {
-            int start = pos + 12;
-            int end = StringFind(command, "\"", start);
-            if(end != -1) actionId = StringSubstr(command, start, end - start);
-        }
-        
+        // 注文タイプ判定
         int type = (side == "BUY") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-        ExecuteOrderWithCallback(symbol, type, volume, 0.0, 0.0, 0.0, positionId, actionId);
-    }
-    else if(StringFind(command, "\"type\":\"CLOSE\"") != -1)
-    {
-        // ポジション決済（設計書準拠）
-        string positionId = ""; // JSONから抽出が必要
-        string actionId = ""; // JSONから抽出が必要
         
-        // 簡易JSONパース
-        int pos = StringFind(command, "\"positionId\":\"");
-        if(pos != -1)
+        // 注文実行（高性能化：市場価格取得最適化）
+        double currentPrice = SymbolInfoDouble(symbol, type == ORDER_TYPE_BUY ? SYMBOL_ASK : SYMBOL_BID);
+        ExecuteOrderWithCallback(symbol, type, volume, currentPrice, 0.0, 0.0, positionId, "");
+    }
+    else if(StringFind(command, "\"command\":\"CLOSE\"") != -1)
+    {
+        // ポジション決済（設計書7.1準拠）
+        string accountId = "", positionId = "";
+        
+        // 設計書準拠JSONパース（エラーハンドリング強化）
+        if(!ExtractJsonString(command, "accountId", accountId) || 
+           !ExtractJsonString(command, "positionId", positionId))
         {
-            int start = pos + 14;
-            int end = StringFind(command, "\"", start);
-            if(end != -1) positionId = StringSubstr(command, start, end - start);
+            LogMessage("ERROR: Invalid CLOSE command format - " + command);
+            return;
         }
         
-        pos = StringFind(command, "\"actionId\":\"");
-        if(pos != -1)
-        {
-            int start = pos + 12;
-            int end = StringFind(command, "\"", start);
-            if(end != -1) actionId = StringSubstr(command, start, end - start);
-        }
-        
-        ClosePositionWithCallback(positionId, actionId);
+        ClosePositionWithCallback(positionId, "");
     }
-    else if(StringFind(command, "\"action\":\"modify_position\"") != -1)
+    else
     {
-        // レガシー対応: ポジション修正
-        ulong ticket = 0; // JSONから抽出
-        double sl = 0.0; // JSONから抽出
-        double tp = 0.0; // JSONから抽出
-        ModifyPosition(ticket, sl, tp);
+        LogMessage("WARNING: Unknown command format - " + command);
     }
 }
 
 //+------------------------------------------------------------------+
-//| コールバック付き注文実行                                         |
+//| コールバック付き注文実行（エラーハンドリング強化版）             |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::ExecuteOrderWithCallback(string symbol, int type, double lots, double price, double sl, double tp, string positionId, string actionId)
 {
+    // 入力値検証（エラーハンドリング強化）
+    if(!IsValidSymbol(symbol))
+    {
+        LogMessage("ERROR: Invalid symbol: " + symbol);
+        SendErrorEvent("INVALID_SYMBOL", "Symbol not available: " + symbol, 0);
+        return;
+    }
+    
+    if(!IsValidVolume(lots))
+    {
+        LogMessage("ERROR: Invalid volume: " + DoubleToString(lots, 2));
+        SendErrorEvent("INVALID_VOLUME", "Volume out of range: " + DoubleToString(lots, 2), 0);
+        return;
+    }
+    
     MqlTradeRequest request;
     MqlTradeResult result;
     
@@ -395,16 +432,25 @@ void HedgeSystemConnector::ExecuteOrderWithCallback(string symbol, int type, dou
     request.magic = 123456;
     request.comment = "HedgeSystem[" + positionId + "]";
     
+    // 注文実行
     if(OrderSend(request, result))
     {
-        LogMessage("Order executed successfully. Ticket: " + IntegerToString(result.order));
-        // 設計書準拠のOPENED通知送信
-        SendOpenedEvent(positionId, actionId, (int)result.order, request.price);
+        if(result.retcode == TRADE_RETCODE_DONE)
+        {
+            LogMessage("Order executed successfully. Ticket: " + IntegerToString(result.order) + " Price: " + DoubleToString(result.price, 5));
+            SendOpenedEvent(positionId, actionId, (int)result.order, result.price);
+        }
+        else
+        {
+            LogMessage("Order partially executed or pending. RetCode: " + IntegerToString(result.retcode));
+            HandleOrderError(result.retcode, "OPEN", "Position: " + positionId);
+        }
     }
     else
     {
-        LogMessage("Order execution failed. Error: " + IntegerToString(GetLastError()));
-        // エラー通知も送信可能
+        int errorCode = GetLastError();
+        LogMessage("Order execution failed. Error: " + IntegerToString(errorCode));
+        HandleOrderError(errorCode, "OPEN", "Position: " + positionId + " Symbol: " + symbol + " Volume: " + DoubleToString(lots, 2));
     }
 }
 
@@ -613,23 +659,18 @@ string HedgeSystemConnector::CreatePositionJson()
 }
 
 //+------------------------------------------------------------------+
-//| アカウント情報JSON作成                                           |
+//| アカウント情報JSON作成（MVPシステム設計書v7.0準拠）              |
 //+------------------------------------------------------------------+
 string HedgeSystemConnector::CreateAccountJson()
 {
+    // 設計書7.1準拠フォーマット（口座情報更新）
     string json = "{";
-    json += "\"type\":\"account_update\",";
-    json += "\"account_id\":\"" + m_accountId + "\",";
-    json += "\"timestamp\":" + IntegerToString(TimeCurrent()) + ",";
+    json += "\"event\":\"ACCOUNT_UPDATE\",";
+    json += "\"accountId\":\"" + m_accountId + "\",";
     json += "\"balance\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) + ",";
-    json += "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + ",";
-    json += "\"margin\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN), 2) + ",";
-    json += "\"margin_free\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_FREE), 2) + ",";
-    json += "\"margin_level\":" + DoubleToString(AccountInfoDouble(ACCOUNT_MARGIN_LEVEL), 2) + ",";
     json += "\"credit\":" + DoubleToString(AccountInfoDouble(ACCOUNT_CREDIT), 2) + ",";
-    json += "\"profit\":" + DoubleToString(AccountInfoDouble(ACCOUNT_PROFIT), 2) + ",";
-    json += "\"server\":\"" + AccountInfoString(ACCOUNT_SERVER) + "\",";
-    json += "\"currency\":\"" + AccountInfoString(ACCOUNT_CURRENCY) + "\"";
+    json += "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + ",";
+    json += "\"time\":\"" + TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS) + "\"";
     json += "}";
     
     return json;
@@ -651,16 +692,15 @@ string HedgeSystemConnector::CreateHeartbeatJson()
 }
 
 //+------------------------------------------------------------------+
-//| OPENED イベント送信（設計書準拠）                                |
+//| OPENED イベント送信（MVPシステム設計書v7.0完全準拠）             |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::SendOpenedEvent(string positionId, string actionId, int ticket, double price)
 {
+    // 設計書7.1準拠フォーマット（EA → Hedge System）
     string message = StringFormat(
-        "{\"type\":\"OPENED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"actionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
-        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        "{\"event\":\"OPENED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
         m_accountId,
         positionId,
-        actionId,
         ticket,
         price,
         TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
@@ -668,25 +708,24 @@ void HedgeSystemConnector::SendOpenedEvent(string positionId, string actionId, i
     
     if(WSSendMessage(message))
     {
-        LogMessage("OPENED event sent for position: " + positionId);
+        LogMessage("OPENED event sent for position: " + positionId + " ticket: " + IntegerToString(ticket));
     }
     else
     {
-        LogMessage("Failed to send OPENED event");
+        LogMessage("ERROR: Failed to send OPENED event for position: " + positionId);
     }
 }
 
 //+------------------------------------------------------------------+
-//| CLOSED イベント送信（設計書準拠）                                |
+//| CLOSED イベント送信（MVPシステム設計書v7.0完全準拠）             |
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::SendClosedEvent(string positionId, string actionId, int ticket, double price, double profit)
 {
+    // 設計書7.1準拠フォーマット（決済イベント）
     string message = StringFormat(
-        "{\"type\":\"CLOSED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"actionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"profit\":%.2f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
-        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        "{\"event\":\"CLOSED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"profit\":%.2f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
         m_accountId,
         positionId,
-        actionId,
         ticket,
         price,
         profit,
@@ -695,11 +734,11 @@ void HedgeSystemConnector::SendClosedEvent(string positionId, string actionId, i
     
     if(WSSendMessage(message))
     {
-        LogMessage("CLOSED event sent for position: " + positionId);
+        LogMessage("CLOSED event sent for position: " + positionId + " profit: " + DoubleToString(profit, 2));
     }
     else
     {
-        LogMessage("Failed to send CLOSED event");
+        LogMessage("ERROR: Failed to send CLOSED event for position: " + positionId);
     }
 }
 
@@ -735,4 +774,125 @@ void HedgeSystemConnector::SendStoppedEvent(string positionId, int ticket, doubl
 void HedgeSystemConnector::LogMessage(string message)
 {
     Print("[HedgeSystemConnector] " + message);
+}
+
+//+------------------------------------------------------------------+
+//| 高性能JSONパース関数（設計書準拠・エラーハンドリング強化）       |
+//+------------------------------------------------------------------+
+bool HedgeSystemConnector::ExtractJsonString(string json, string key, string &value)
+{
+    string searchPattern = "\"" + key + "\":\"";
+    int pos = StringFind(json, searchPattern);
+    if(pos == -1) return false;
+    
+    int start = pos + StringLen(searchPattern);
+    int end = StringFind(json, "\"", start);
+    if(end == -1) return false;
+    
+    value = StringSubstr(json, start, end - start);
+    return true;
+}
+
+bool HedgeSystemConnector::ExtractJsonDouble(string json, string key, double &value)
+{
+    string searchPattern = "\"" + key + "\":";
+    int pos = StringFind(json, searchPattern);
+    if(pos == -1) return false;
+    
+    int start = pos + StringLen(searchPattern);
+    int end = StringFind(json, ",", start);
+    if(end == -1) end = StringFind(json, "}", start);
+    if(end == -1) return false;
+    
+    string valueStr = StringSubstr(json, start, end - start);
+    value = StringToDouble(valueStr);
+    return true;
+}
+
+bool HedgeSystemConnector::ExtractJsonInt(string json, string key, int &value)
+{
+    string searchPattern = "\"" + key + "\":";
+    int pos = StringFind(json, searchPattern);
+    if(pos == -1) return false;
+    
+    int start = pos + StringLen(searchPattern);
+    int end = StringFind(json, ",", start);
+    if(end == -1) end = StringFind(json, "}", start);
+    if(end == -1) return false;
+    
+    string valueStr = StringSubstr(json, start, end - start);
+    value = (int)StringToInteger(valueStr);
+    return true;
+}
+
+bool HedgeSystemConnector::ValidateMessage(string message, string requiredType)
+{
+    string extractedType;
+    if(!ExtractJsonString(message, "command", extractedType)) return false;
+    return (extractedType == requiredType);
+}
+
+//+------------------------------------------------------------------+
+//| エラーハンドリング強化関数群                                     |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendErrorEvent(string type, string details, int errorCode)
+{
+    string message = StringFormat(
+        "{\"event\":\"ERROR\",\"accountId\":\"%s\",\"type\":\"%s\",\"details\":\"%s\",\"errorCode\":%d,\"time\":\"%s\"}",
+        m_accountId,
+        type,
+        details,
+        errorCode,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
+    );
+    
+    if(WSSendMessage(message))
+    {
+        LogMessage("ERROR event sent: " + type + " - " + details);
+    }
+}
+
+bool HedgeSystemConnector::IsValidSymbol(string symbol)
+{
+    return SymbolSelect(symbol, true) && SymbolInfoInteger(symbol, SYMBOL_SELECT);
+}
+
+bool HedgeSystemConnector::IsValidVolume(double volume)
+{
+    double minVolume = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MIN);
+    double maxVolume = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_MAX);
+    double volumeStep = SymbolInfoDouble(_Symbol, SYMBOL_VOLUME_STEP);
+    
+    return (volume >= minVolume && volume <= maxVolume && 
+            MathMod(volume, volumeStep) < 0.0000001);
+}
+
+void HedgeSystemConnector::HandleOrderError(int errorCode, string operation, string details)
+{
+    string errorType = "";
+    string errorDetails = operation + " failed: " + details + " ErrorCode: " + IntegerToString(errorCode);
+    
+    switch(errorCode)
+    {
+        case TRADE_RETCODE_INVALID_VOLUME:
+            errorType = "INVALID_VOLUME";
+            break;
+        case TRADE_RETCODE_INVALID_PRICE:
+            errorType = "INVALID_PRICE";
+            break;
+        case TRADE_RETCODE_NO_MONEY:
+            errorType = "INSUFFICIENT_FUNDS";
+            break;
+        case TRADE_RETCODE_MARKET_CLOSED:
+            errorType = "MARKET_CLOSED";
+            break;
+        case TRADE_RETCODE_CONNECTION:
+            errorType = "CONNECTION_ERROR";
+            break;
+        default:
+            errorType = "UNKNOWN_ERROR";
+            break;
+    }
+    
+    SendErrorEvent(errorType, errorDetails, errorCode);
 }

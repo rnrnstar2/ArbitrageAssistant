@@ -21,7 +21,7 @@ export const auth = defineAuth({
       mutable: true,
     },
   },
-  groups: ['ADMIN', 'CLIENT'],
+  groups: ['admin', 'client'],
   accountRecovery: 'EMAIL_ONLY',
   triggers: {
     postConfirmation,

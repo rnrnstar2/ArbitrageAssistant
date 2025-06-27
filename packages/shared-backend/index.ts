@@ -8,3 +8,6 @@ export type { Schema } from './amplify/data/resource';
 
 // Re-export for convenience
 export { data } from './amplify/data/resource';
+
+// Authentication utilities
+export * from './src/auth';

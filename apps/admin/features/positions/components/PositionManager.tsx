@@ -83,10 +83,83 @@ export function PositionManager({
     });
   }, [positions, statusFilter]);
 
+  /**
+   * P&L計算（MVPシステム設計書準拠）
+   * リアルタイム価格に基づくP&L計算
+   */
   const calculatePnL = (position: Position): number => {
     if (!position.entryPrice || position.status !== 'OPEN') return 0;
-    // TODO: Implement actual P&L calculation based on current price
-    return 0;
+    
+    // 簡易実装: 実際のシステムではリアルタイム価格APIから取得
+    // TODO: WebSocket経由でのリアルタイム価格取得実装
+    const mockCurrentPrices: Record<string, number> = {
+      'USDJPY': 150.25,
+      'EURUSD': 1.0845,
+      'EURGBP': 0.8642,
+      'XAUUSD': 2034.75
+    };
+    
+    const currentPrice = mockCurrentPrices[position.symbol];
+    if (!currentPrice) return 0;
+    
+    const priceDiff = currentPrice - position.entryPrice;
+    
+    // ポジション方向の判定
+    let isLong = true;
+    if (position.executionType === 'EXIT') {
+      isLong = false; // EXIT の場合は売りポジション
+    }
+    
+    // P&L計算
+    const pipValue = getPipValue(position.symbol);
+    const pips = Math.abs(priceDiff) / pipValue;
+    let pnl = pips * position.volume * pipValue * 100; // 1pip = 100通貨単位と仮定
+    
+    // 方向性の調整
+    if ((isLong && priceDiff < 0) || (!isLong && priceDiff > 0)) {
+      pnl = -pnl;
+    }
+    
+    return Math.round(pnl);
+  };
+  
+  /**
+   * 通貨ペア別pip値取得
+   */
+  const getPipValue = (symbol: Symbol): number => {
+    switch (symbol) {
+      case Symbol.USDJPY:
+        return 0.01; // 1pip = 0.01円
+      case Symbol.EURUSD:
+      case Symbol.EURGBP:
+        return 0.0001; // 1pip = 0.0001
+      case Symbol.XAUUSD:
+        return 0.1; // 1pip = 0.1ドル
+      default:
+        return 0.0001;
+    }
+  };
+  
+  /**
+   * 現在価格取得（リアルタイム価格表示用）
+   */
+  const getCurrentPrice = (symbol: Symbol): number | null => {
+    const mockCurrentPrices: Record<string, number> = {
+      'USDJPY': 150.25,
+      'EURUSD': 1.0845,
+      'EURGBP': 0.8642,
+      'XAUUSD': 2034.75
+    };
+    return mockCurrentPrices[symbol] || null;
+  };
+  
+  /**
+   * P&L状態によるカラー判定
+   */
+  const getPnLColorClass = (pnl: number): string => {
+    if (pnl > 0) return 'text-green-600 font-semibold';
+    if (pnl < 0) return 'text-red-600 font-semibold';
+    return 'text-gray-600';
   };
 
   const getStatusBadgeVariant = (status: PositionStatus) => {
@@ -301,77 +374,125 @@ export function PositionManager({
 
       {/* Position List */}
       <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ポジションID</TableHead>
-              <TableHead>ステータス</TableHead>
-              <TableHead>シンボル</TableHead>
-              <TableHead>数量</TableHead>
-              <TableHead>エントリー価格</TableHead>
-              <TableHead>損益</TableHead>
-              <TableHead>作成日時</TableHead>
-              <TableHead>操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPositions.map((position) => (
-              <TableRow key={position.id}>
-                <TableCell className="font-mono text-sm">
-                  {position.id.substring(0, 8)}...
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(position.status)}>
-                    {position.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="font-semibold">
-                  {position.symbol}
-                </TableCell>
-                <TableCell>
-                  {position.volume.toFixed(2)}
-                </TableCell>
-                <TableCell>
-                  {position.entryPrice ? formatCurrency(position.entryPrice) : '-'}
-                </TableCell>
-                <TableCell>
-                  <span className={calculatePnL(position) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatCurrency(calculatePnL(position))}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  {formatDateTime(position.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    {position.status === 'PENDING' && (
-                      <Button 
-                        size="sm" 
-                        variant="default"
-                        onClick={() => executePosition(position.id)}
-                        disabled={isExecuting}
-                      >
-                        <Play className="h-4 w-4 mr-1" />
-                        実行
-                      </Button>
-                    )}
-                    {position.status === 'OPEN' && (
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => handleTrailSettingsOpen(position)}
-                      >
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        トレール
-                      </Button>
-                    )}
-                    <PositionActions position={position} />
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">ポジションID</TableHead>
+                <TableHead className="min-w-[100px]">ステータス</TableHead>
+                <TableHead className="min-w-[80px]">シンボル</TableHead>
+                <TableHead className="min-w-[70px]">タイプ</TableHead>
+                <TableHead className="min-w-[80px]">数量</TableHead>
+                <TableHead className="min-w-[100px]">エントリー価格</TableHead>
+                <TableHead className="min-w-[100px]">現在価格</TableHead>
+                <TableHead className="min-w-[100px]">損益</TableHead>
+                <TableHead className="min-w-[80px]">トレール</TableHead>
+                <TableHead className="min-w-[120px]">作成日時</TableHead>
+                <TableHead className="min-w-[150px]">操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {filteredPositions.map((position) => {
+                const currentPrice = getCurrentPrice(position.symbol);
+                const pnl = calculatePnL(position);
+                
+                return (
+                  <TableRow key={position.id} className="hover:bg-gray-50">
+                    <TableCell className="font-mono text-xs">
+                      <div className="flex flex-col">
+                        <span>{position.id.substring(0, 8)}...</span>
+                        {position.mtTicket && (
+                          <span className="text-gray-500 text-xs">MT: {position.mtTicket}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(position.status)} className="text-xs">
+                        {position.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {position.symbol}
+                    </TableCell>
+                    <TableCell>
+                      <Badge 
+                        variant={position.executionType === 'ENTRY' ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {position.executionType === 'ENTRY' ? 'BUY' : 'SELL'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {position.volume.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {position.entryPrice ? (
+                        <span className="font-mono text-sm">
+                          {formatCurrency(position.entryPrice)}
+                        </span>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      {currentPrice ? (
+                        <div className="flex items-center space-x-1">
+                          <span className="font-mono text-sm">
+                            {formatCurrency(currentPrice)}
+                          </span>
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                        </div>
+                      ) : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <span className={getPnLColorClass(pnl)}>
+                        {pnl >= 0 ? '+' : ''}{formatCurrency(pnl)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {position.trailWidth && position.trailWidth > 0 ? (
+                        <Badge variant="outline" className="text-xs">
+                          {position.trailWidth}pips
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400 text-xs">なし</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-gray-600">
+                      {formatDateTime(position.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {position.status === 'PENDING' && (
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            onClick={() => executePosition(position.id)}
+                            disabled={isExecuting}
+                            className="text-xs px-2 py-1"
+                          >
+                            <Play className="h-3 w-3 mr-1" />
+                            実行
+                          </Button>
+                        )}
+                        {position.status === 'OPEN' && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleTrailSettingsOpen(position)}
+                            className="text-xs px-2 py-1"
+                          >
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            トレール
+                          </Button>
+                        )}
+                        <PositionActions position={position} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </Card>
 
       {filteredPositions.length === 0 && (

@@ -84,7 +84,7 @@ export class WebSocketServer {
   private startTime?: Date;
   private eventUnsubscribe?: () => void;
   private onMessageHandler?: (message: WSEvent, clientId: string) => Promise<void>;
-  private priceMonitor?: PriceMonitor;
+  public priceMonitor?: PriceMonitor;
   private config?: WSServerConfig;
   
   // 統計情報
@@ -111,27 +111,68 @@ export class WebSocketServer {
   // ========================================
 
   /**
-   * WebSocketサーバー初期化・開始
+   * WebSocketサーバー初期化・開始（高性能版）
    */
   async initializeServer(port: number = 8080): Promise<void> {
     try {
       const wsConfig: WSServerConfig = {
         port,
-        host: 'localhost',
-        authToken: 'default-token',
-        maxConnections: 10,
-        heartbeatInterval: 30000,
-        connectionTimeout: 60000
+        host: '127.0.0.1', // localhost -> 127.0.0.1で高速化
+        authToken: 'hedge-system-high-performance-token',
+        maxConnections: 50, // 接続数増加
+        heartbeatInterval: 15000, // ハートビート間隔短縮
+        connectionTimeout: 180000 // タイムアウト延長
       };
 
       await this.start(wsConfig);
       this.isInitialized = true;
       
-      console.log(`🚀 WebSocket server initialized on port ${port}`);
+      // システムパフォーマンス監視開始
+      await this.startPerformanceMonitoring();
+      
+      console.log(`🚀 High-performance WebSocket server initialized on port ${port}`);
+      console.log(`📊 Performance monitoring enabled`);
       
     } catch (error) {
       console.error(`❌ Failed to initialize WebSocket server on port ${port}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * パフォーマンス監視開始
+   */
+  private async startPerformanceMonitoring(): Promise<void> {
+    try {
+      // システムパフォーマンス取得
+      const systemPerf = await invoke('get_system_performance') as any;
+      console.log(`💻 System Performance:`, systemPerf);
+      
+      // ネットワーク品質測定
+      const networkQuality = await invoke('get_network_quality') as any;
+      console.log(`🌐 Network Quality:`, networkQuality);
+      
+      // 定期的なパフォーマンス監視（30秒間隔）
+      setInterval(async () => {
+        try {
+          const metrics = await invoke('get_websocket_performance_metrics') as any;
+          
+          // パフォーマンス警告
+          if (metrics.avg_latency_ms > 100) {
+            console.warn(`⚠️ High WebSocket latency: ${metrics.avg_latency_ms}ms`);
+          }
+          
+          if (metrics.error_rate > 5) {
+            console.warn(`⚠️ High error rate: ${metrics.error_rate}%`);
+          }
+          
+        } catch (error) {
+          console.error(`❌ Performance monitoring error:`, error);
+        }
+      }, 30000);
+      
+    } catch (error) {
+      console.error(`❌ Failed to start performance monitoring:`, error);
     }
   }
 
@@ -725,7 +766,7 @@ export class WebSocketServer {
   }
 
   /**
-   * サーバー統計取得（Tauri統合）
+   * サーバー統計取得（Tauri統合・高性能版）
    */
   async getStats(): Promise<WSServerStats> {
     try {
@@ -758,6 +799,189 @@ export class WebSocketServer {
         messagesPerSecond: this.calculateMessagesPerSecond()
       };
     }
+  }
+
+  // ========================================
+  // 高性能機能・Rust統合
+  // ========================================
+
+  /**
+   * 詳細パフォーマンス統計取得
+   */
+  async getDetailedStats(): Promise<any> {
+    try {
+      return await invoke('get_websocket_detailed_stats');
+    } catch (error) {
+      console.error('❌ Failed to get detailed stats:', error);
+      return null;
+    }
+  }
+
+  /**
+   * パフォーマンス最適化実行
+   */
+  async optimizePerformance(): Promise<string> {
+    try {
+      // WebSocket最適化
+      const wsOptimization = await invoke('optimize_websocket_performance') as string;
+      
+      // メモリ最適化
+      const memoryOptimization = await invoke('optimize_memory_usage') as string;
+      
+      console.log(`🔧 WebSocket optimization: ${wsOptimization}`);
+      console.log(`🧹 Memory optimization: ${memoryOptimization}`);
+      
+      return `Optimizations completed: ${wsOptimization}; ${memoryOptimization}`;
+      
+    } catch (error) {
+      console.error('❌ Failed to optimize performance:', error);
+      return 'Performance optimization failed';
+    }
+  }
+
+  /**
+   * 高速ブロードキャスト（Rust実装）
+   */
+  async broadcastHighPerformance(message: WSMessage): Promise<number> {
+    try {
+      const messageStr = JSON.stringify(message);
+      const sentCount = await invoke('broadcast_websocket_message', { message: messageStr }) as number;
+      
+      this.stats.totalMessagesSent += sentCount;
+      console.log(`📡 High-performance broadcast sent to ${sentCount} clients`);
+      
+      return sentCount;
+      
+    } catch (error) {
+      console.error('❌ High-performance broadcast failed:', error);
+      this.stats.errors++;
+      return 0;
+    }
+  }
+
+  /**
+   * 接続品質監視
+   */
+  async getConnectionQuality(clientId: string): Promise<any> {
+    try {
+      return await invoke('get_client_connection_quality', { clientId });
+    } catch (error) {
+      console.error(`❌ Failed to get connection quality for ${clientId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * システムパフォーマンス取得
+   */
+  async getSystemPerformance(): Promise<any> {
+    try {
+      return await invoke('get_system_performance');
+    } catch (error) {
+      console.error('❌ Failed to get system performance:', error);
+      return null;
+    }
+  }
+
+  /**
+   * ネットワーク品質取得
+   */
+  async getNetworkQuality(): Promise<any> {
+    try {
+      return await invoke('get_network_quality');
+    } catch (error) {
+      console.error('❌ Failed to get network quality:', error);
+      return null;
+    }
+  }
+
+  /**
+   * WebSocket パフォーマンスメトリクス取得
+   */
+  async getPerformanceMetrics(): Promise<any> {
+    try {
+      return await invoke('get_websocket_performance_metrics');
+    } catch (error) {
+      console.error('❌ Failed to get performance metrics:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 高性能統計レポート生成
+   */
+  async generatePerformanceReport(): Promise<string> {
+    try {
+      const [detailedStats, systemPerf, networkQuality, perfMetrics] = await Promise.all([
+        this.getDetailedStats(),
+        this.getSystemPerformance(),
+        this.getNetworkQuality(),
+        this.getPerformanceMetrics()
+      ]);
+
+      const report = {
+        timestamp: new Date().toISOString(),
+        websocket: detailedStats,
+        system: systemPerf,
+        network: networkQuality,
+        performance: perfMetrics,
+        summary: {
+          overall_health: this.assessOverallHealth(detailedStats, systemPerf, networkQuality),
+          recommendations: this.generateRecommendations(perfMetrics)
+        }
+      };
+
+      console.log(`📊 Performance report generated`);
+      return JSON.stringify(report, null, 2);
+
+    } catch (error) {
+      console.error('❌ Failed to generate performance report:', error);
+      return JSON.stringify({ error: 'Report generation failed' });
+    }
+  }
+
+  /**
+   * 総合健康状態評価
+   */
+  private assessOverallHealth(wsStats: any, systemPerf: any, networkQuality: any): string {
+    let score = 100;
+
+    // WebSocket統計評価
+    if (wsStats?.performance?.avg_latency_ms > 100) score -= 20;
+    if (wsStats?.performance?.error_rate > 5) score -= 30;
+
+    // システムパフォーマンス評価
+    if (systemPerf?.cpu_usage > 80) score -= 15;
+    if (systemPerf?.memory_usage > 85) score -= 15;
+
+    // ネットワーク品質評価
+    if (networkQuality?.connection_stability === 'POOR') score -= 20;
+
+    if (score >= 80) return 'EXCELLENT';
+    if (score >= 60) return 'GOOD';
+    if (score >= 40) return 'FAIR';
+    return 'POOR';
+  }
+
+  /**
+   * パフォーマンス改善推奨事項生成
+   */
+  private generateRecommendations(metrics: any): string[] {
+    const recommendations = [];
+
+    if (metrics?.avg_latency_ms > 100) {
+      recommendations.push('Consider optimizing message size and frequency');
+    }
+
+    if (metrics?.error_rate > 5) {
+      recommendations.push('Check network stability and message validation');
+    }
+
+    if (metrics?.peak_connections > 100) {
+      recommendations.push('Consider implementing connection pooling');
+    }
+
+    return recommendations;
   }
 
   /**

@@ -34,6 +34,17 @@ HEDGESYSTEMWEBSOCKET_API const char* WSGetLastError();
 // リソース解放関数
 HEDGESYSTEMWEBSOCKET_API void WSFreeString(const char* str);
 
+// パフォーマンス監視API
+HEDGESYSTEMWEBSOCKET_API uint64_t WSGetMessagesSent();
+HEDGESYSTEMWEBSOCKET_API uint64_t WSGetMessagesReceived();
+HEDGESYSTEMWEBSOCKET_API size_t WSGetQueueSize();
+HEDGESYSTEMWEBSOCKET_API int WSGetReconnectAttempts();
+HEDGESYSTEMWEBSOCKET_API int WSGetConnectionState();
+HEDGESYSTEMWEBSOCKET_API uint64_t WSGetConnectionDurationMs();
+
+// DLL管理API
+HEDGESYSTEMWEBSOCKET_API void WSCleanup();
+
 #ifdef __cplusplus
 }
 #endif

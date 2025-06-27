@@ -19,7 +19,15 @@
     "tauri:release": "tauri build --bundles updater",
     "check-types": "tsc --noEmit",
     "build:css": "echo 'CSS is built through globals.css import in Next.js'",
-    "dev:css": "echo 'CSS is watched through Next.js dev server'"
+    "dev:css": "echo 'CSS is watched through Next.js dev server'",
+    "test:websocket:latency": "vitest run --config vitest.integration.config.ts tests/integration/websocket-latency.test.ts",
+    "test:mt5:integration": "vitest run --config vitest.integration.config.ts tests/integration/mt5-integration.test.ts",
+    "test:api:response:time": "vitest run --config vitest.integration.config.ts tests/integration/api-response-time.test.ts", 
+    "test:dll:overhead": "vitest run --config vitest.integration.config.ts tests/integration/dll-overhead.test.ts",
+    "test:dll:compatibility": "vitest run --config vitest.integration.config.ts tests/integration/dll-compatibility.test.ts",
+    "test:websocket:communication": "vitest run --config vitest.integration.config.ts tests/integration/websocket-communication.test.ts",
+    "test:external:api": "vitest run --config vitest.integration.config.ts tests/integration/external-api.test.ts",
+    "test:integration:all": "vitest run --config vitest.integration.config.ts tests/integration/"
   },
   "dependencies": {
     "@repo/shared-amplify": "*",
