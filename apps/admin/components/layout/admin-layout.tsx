@@ -28,7 +28,7 @@ interface AdminLayoutProps {
 interface NavigationItem {
   name: string;
   href: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<any>;
   badge?: string;
   description?: string;
 }
@@ -51,6 +51,12 @@ const navigation: NavigationItem[] = [
     href: '/positions', 
     icon: TrendingUp,
     description: '両建てポジションとトレール設定'
+  },
+  { 
+    name: '両建て管理', 
+    href: '/hedges', 
+    icon: TrendingUp,
+    description: '動的組み替えとクレジット最適化'
   },
   { 
     name: 'アクション管理', 
@@ -78,7 +84,11 @@ function NavigationLayout({ children }: { children: React.ReactNode }) {
   // Breadcrumb生成
   const getBreadcrumbs = () => {
     const segments = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ name: 'ホーム', href: '/', icon: Home }];
+    const breadcrumbs: Array<{
+      name: string;
+      href: string;
+      icon: React.ComponentType<any>;
+    }> = [{ name: 'ホーム', href: '/', icon: Home }];
     
     let path = '';
     segments.forEach((segment) => {
@@ -171,12 +181,12 @@ function NavigationLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center space-x-3 mb-3">
               <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium">
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  {((user as any)?.signInDetails?.loginId || (user as any)?.username || 'Unknown User')?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.email || 'Unknown User'}
+                  {(user as any)?.signInDetails?.loginId || (user as any)?.username || 'Unknown User'}
                 </p>
                 <p className="text-xs text-muted-foreground">管理者</p>
               </div>
@@ -185,7 +195,7 @@ function NavigationLayout({ children }: { children: React.ReactNode }) {
               variant="outline"
               size="sm"
               className="w-full"
-              onClick={() => signOut()}
+              onClick={() => (signOut as any)()}
             >
               ログアウト
             </Button>

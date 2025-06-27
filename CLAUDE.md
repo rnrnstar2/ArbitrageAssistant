@@ -295,6 +295,56 @@ npm run agent:init              # 全18ペインに初期化コマンド送信
 - **動的判断必須**: CEOが現状分析→戦略判断→指示作成を自律実行
 - **CEO系自律エージェント**: director-coordinator・progress-monitorは起動時に初期プロンプト自動実行（CEOからの手動指示不要）
 
+### 🛡️ MVP準拠強制システム（新規実装済み）
+
+**Director/Specialist向けMVP準拠強制機能**:
+```bash
+# 1. 編集禁止リスト確認
+cat scripts/directors/common/forbidden-edits.md
+
+# 2. MVP準拠チェック実行
+./scripts/mvp-compliance-check.sh <ファイル/ディレクトリ>
+
+# 3. MVP保護システム確認
+./scripts/directors/common/mvp-protection.sh
+
+# 4. Director指示時の自動MVP準拠強制
+./scripts/director-auto-delegate.sh [director-id] "[instruction]"
+```
+
+**MVP準拠強制レイヤー**:
+- **CEO戦略判断**: v3.0選択的システムで既存実装保護
+- **Director指示**: 自動でMVP準拠絶対指示を追加送信
+- **Specialist実行**: 編集禁止リスト・準拠チェック機能
+- **コミット保護**: mvp-compliance-check.shで事前検証
+
+**🚨 絶対原則**: MVPシステム設計.md記載外の機能は死んでも実装禁止
+
+### 🗄️ Backend テーブル追加監視システム（追加実装済み）
+
+**バックエンドディレクター向け専用監視機能**:
+```bash
+# 1. テーブル追加チェック（即座確認）
+npm run backend:table-guard
+
+# 2. テーブル状態監視（一回チェック）  
+npm run backend:table-monitor
+
+# 3. リアルタイム監視（継続監視）
+npm run backend:table-watch
+
+# 4. 全体MVP準拠チェック
+npm run mvp:check packages/shared-backend/
+```
+
+**テーブル追加管理**:
+- **許可テーブル**: User/Account/Position/Action のみ
+- **禁止テーブル**: Performance/Analytics/Metrics等は自動検出・警告
+- **Git pre-commit**: data/resource.ts変更時の自動チェック
+- **Director警告**: Haconiwa環境で自動警告送信
+
+**🚨 Backend Director絶対ルール**: data/resource.tsでMVP外テーブル追加は死んでも禁止
+
 **Director自動指示送信システム**:
 - `npm run director:delegate [director-id] [task-description]` - Director配下への自動指示送信
 - CEO→Director指示時に自動的に配下Specialistへの指示送信を実行
@@ -509,7 +559,7 @@ tasks/
 # タスク作成
 ./scripts/task-create.sh backend "AWS Amplify基盤構築" amplify-gen2-specialist
 
-# 自動指示送信（v2.0）
+# 自動指示送信（v2.0・Tasks Directory統合）
 ./scripts/director-auto-delegate-v2.sh backend-director "MVP基盤システム構築"
 
 # 追加指示・フィードバック
@@ -533,19 +583,19 @@ tasks/
 
 #### 共通（監視・確認）
 ```bash
-# 全タスク一覧
+# 全タスク一覧（実装済み）
 ./scripts/task-list.sh --all
 
-# 部門別確認
+# 部門別確認（実装済み）
 ./scripts/task-list.sh --department backend
 
-# 進行中タスクのみ
+# 進行中タスクのみ（実装済み）
 ./scripts/task-list.sh --active
 
-# 個別タスク詳細
+# 個別タスク詳細（実装済み）
 ./scripts/task-status.sh tasks/directors/backend/task-001-amplify.md
 
-# 緊急事項確認
+# 緊急事項確認（実装済み）
 ./scripts/task-list.sh --summary
 ```
 
@@ -561,7 +611,7 @@ tasks/
 # - 詳細技術要件・完了条件を自動追記
 # - amplify-gen2-specialist に通知送信
 
-# 3. Specialist: タスク実行・結果記録
+# 3. Specialist: タスク実行・結果記録（実装済み）
 ./scripts/task-execute.sh tasks/directors/backend/task-XXX-amplify.md
 
 # 4. Director: 結果確認・追加指示

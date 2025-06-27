@@ -44,7 +44,11 @@ export function MonitoringPanel({
     
     // Position履歴からログ生成
     positions.forEach(position => {
-      const timestamp = position.updatedAt ? new Date(position.updatedAt) : new Date(position.createdAt);
+      const timestamp = position.updatedAt 
+        ? new Date(position.updatedAt) 
+        : position.createdAt 
+          ? new Date(position.createdAt)
+          : new Date();
       
       let message = '';
       let level: ExecutionLog['level'] = 'info';
@@ -90,7 +94,11 @@ export function MonitoringPanel({
     
     // Action履歴からログ生成
     actions.forEach(action => {
-      const timestamp = action.updatedAt ? new Date(action.updatedAt) : new Date(action.createdAt);
+      const timestamp = action.updatedAt 
+        ? new Date(action.updatedAt) 
+        : action.createdAt 
+          ? new Date(action.createdAt)
+          : new Date();
       
       let message = '';
       let level: ExecutionLog['level'] = 'info';

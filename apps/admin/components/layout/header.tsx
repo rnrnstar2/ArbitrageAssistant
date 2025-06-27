@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@repo/shared-auth";
-import { Avatar, AvatarFallback } from "../../../../packages/ui/src/components/ui/avatar";
-import { Button } from "../../../../packages/ui/src/components/ui/button";
+import { Avatar, AvatarFallback } from "@repo/ui/components/ui/avatar";
+import { Button } from "@repo/ui/components/ui/button";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -12,16 +12,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../../../../packages/ui/src/components/ui/dropdown-menu";
+} from "@repo/ui/components/ui/dropdown-menu";
 import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuLink,
   navigationMenuTriggerStyle,
-} from "../../../../packages/ui/src/components/ui/navigation-menu";
+} from "@repo/ui/components/ui/navigation-menu";
 import { User, Settings, LogOut, Menu } from "lucide-react";
-import { cn } from "../../../../packages/ui/src/lib/utils";
+import { cn } from "@repo/ui/lib/utils";
 
 const navigationItems = [
   {
@@ -101,7 +101,7 @@ export function Header() {
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm hidden sm:inline-block">
-                  {(user as { signInDetails?: { loginId?: string } })?.signInDetails?.loginId?.split("@")[0] || "管理者"}
+                  {(user as any)?.signInDetails?.loginId?.split("@")[0] || "管理者"}
                 </span>
               </Button>
             </DropdownMenuTrigger>
@@ -110,7 +110,7 @@ export function Header() {
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">管理者アカウント</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {(user as { signInDetails?: { loginId?: string } })?.signInDetails?.loginId || "admin@example.com"}
+                    {(user as any)?.signInDetails?.loginId || "admin@example.com"}
                   </p>
                 </div>
               </DropdownMenuLabel>
@@ -120,7 +120,7 @@ export function Header() {
                 設定
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+              <DropdownMenuItem onClick={() => (signOut as any)()} className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 ログアウト
               </DropdownMenuItem>

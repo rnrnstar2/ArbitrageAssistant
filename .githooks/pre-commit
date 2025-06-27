@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Git pre-commit hook: MVP準拠チェック
+# Backend テーブル追加の監視を含む
+
+echo "🛡️ Pre-commit MVP準拠チェック開始"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Backend テーブルチェック
+DATA_RESOURCE_FILE="packages/shared-backend/amplify/data/resource.ts"
+if git diff --cached --name-only | grep -q "$DATA_RESOURCE_FILE"; then
+    echo "🗄️ Backend data/resource.ts 変更検出"
+    echo "🔍 テーブル追加チェック実行中..."
+    
+    if ! ./scripts/backend-table-guard.sh; then
+        echo ""
+        echo "🚨 Backend テーブル追加チェック失敗"
+        echo "❌ MVP外テーブルが検出されました"
+        echo "🔧 修正後に再度コミットしてください"
+        exit 1
+    fi
+    echo "✅ Backend テーブル: MVP準拠確認"
+fi
+
+# 全体MVP準拠チェック
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|mq5|cpp)$' || true)
+
+if [ -n "$STAGED_FILES" ]; then
+    echo "🔍 全体MVP準拠チェック実行中..."
+    
+    # ステージされたファイルを一時的にチェックアウト
+    for file in $STAGED_FILES; do
+        if [ -f "$file" ]; then
+            if ! ./scripts/mvp-compliance-check.sh "$file" >/dev/null 2>&1; then
+                echo "🚨 MVP準拠チェック失敗: $file"
+                echo "❌ MVP範囲外実装が検出されました"
+                echo "🔧 scripts/directors/common/forbidden-edits.md を確認"
+                exit 1
+            fi
+        fi
+    done
+    echo "✅ 全体MVP準拠: チェック通過"
+fi
+
+echo "✅ Pre-commit チェック完了"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+exit 0

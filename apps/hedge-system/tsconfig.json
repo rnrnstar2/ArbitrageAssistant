@@ -13,6 +13,7 @@
       "@/schema": ["../../packages/shared-backend/amplify/data/resource"],
       "@/backend-types": ["../../packages/shared-backend"]
     },
+    "types": ["vitest/globals"],
     "noEmit": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,

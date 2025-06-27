@@ -242,6 +242,71 @@ export interface ActionSubscriptionFilter {
 }
 
 // =============================================================================
+// Performance Types
+// =============================================================================
+
+export interface Performance {
+  id: string;
+  userId: string;
+  positionId: string;
+  executionType: ExecutionType;
+  executionTime: number;
+  success: boolean;
+  finalPrice?: Nullable<number>;
+  profit?: Nullable<number>;
+  errorMessage?: Nullable<string>;
+  retryCount?: Nullable<number>;
+  timestamp: string;
+  createdAt?: Nullable<string>;
+  updatedAt?: Nullable<string>;
+}
+
+export interface CreatePerformanceInput {
+  userId: string;
+  positionId: string;
+  executionType: ExecutionType;
+  executionTime: number;
+  success: boolean;
+  finalPrice?: number;
+  profit?: number;
+  errorMessage?: string;
+  retryCount?: number;
+  timestamp: string;
+}
+
+export interface PerformanceFilter {
+  userId?: string;
+  positionId?: string;
+  executionType?: ExecutionType;
+  success?: boolean;
+  timestampGte?: string;
+  timestampLte?: string;
+}
+
+export interface PerformanceMetrics {
+  totalPositions: number;
+  openPositions: number;
+  closedPositions: number;
+  avgExecutionTime: number;
+  successRate: number;
+  avgProfit?: number;
+  totalProfit?: number;
+}
+
+// =============================================================================
+// Market Types
+// =============================================================================
+
+export interface MarketCondition {
+  symbol: Symbol;
+  currentPrice: number;
+  spread: number;
+  volatility: number;
+  liquidity: number;
+  timestamp: string;
+}
+
+// =============================================================================
 // WebSocket Types
 // =============================================================================
 

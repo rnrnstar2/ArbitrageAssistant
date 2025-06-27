@@ -68,21 +68,8 @@ if [ "$claude_processes" -gt 0 ] || tmux has-session -t $SESSION_NAME 2>/dev/nul
                 fi
             done
             
-            # 補完検索：ローカルTTYを除外してTMUX内Claudeプロセスを検出
-            echo "  補完検索: 全Claudeプロセスから非ローカルTTYを検出..."
-            all_claude_pids=$(ps aux | grep claude | grep -v grep | awk '{print $2" "$7}')
-            while read -r pid tty_name; do
-                if ps -p $pid > /dev/null 2>&1; then
-                    # ローカルTTY（s003, s005など高CPU使用率）を除外
-                    # 通常、ローカルClaudeは s000-s005 の範囲で動作
-                    tty_num=$(echo $tty_name | sed 's/s//')
-                    if [[ "$tty_num" =~ ^[0-9]+$ ]] && [ "$tty_num" -ge 6 ] && ! echo "$tmux_claude_pids" | grep -q "$pid"; then
-                        echo "  補完検出: 非ローカルTTY $tty_name PID $pid"
-                        tmux_claude_pids="$tmux_claude_pids $pid"
-                        tmux_claude_count=$((tmux_claude_count + 1))
-                    fi
-                fi
-            done <<< "$all_claude_pids"
+            # TTYベースの識別で十分なため、補完検索は実行しない
+            echo "  補完検索: スキップ（TTYベース識別で十分）"
         fi
         
         local_claude_count=$((claude_processes - tmux_claude_count))
@@ -134,6 +121,13 @@ if [ "$claude_processes" -gt 0 ] || tmux has-session -t $SESSION_NAME 2>/dev/nul
         echo "✅ tmuxセッション削除完了"
     else
         echo "✅ tmuxセッションなし（既にクリーン）"
+    fi
+    
+    # tmuxサーバーの起動確認
+    if ! tmux list-sessions >/dev/null 2>&1; then
+        echo "🔄 tmuxサーバーを再起動中..."
+        tmux start-server
+        sleep 0.5
     fi
     
     # Step 3: 環境変数ファイル削除
@@ -334,39 +328,7 @@ start_agent_batch() {
     done
 }
 
-# CEO Main戦略的指示プロンプト生成（階層的命令系統）
-generate_ceo_main_prompt() {
-    cat <<EOF
-echo "HACONIWA_AGENT_ID: \$HACONIWA_AGENT_ID" && cat arbitrage-assistant.yaml | grep -A 10 "ceo-main" && echo "=== CEO Main 役割確認完了 ===" && cat "MVPシステム設計.md" | head -50 && echo "=== MVP設計確認完了 ===" && echo "
-
-🎯 CEO戦略的指示システム - 階層的命令フロー:
-
-【CEO系エージェント管理】
-1. Director Coordinatorに指示:
-tmux send-keys -t arbitrage-assistant:0.1 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 10 \"director-coordinator\" && echo \"=== CEO指示: 5 Directors間連携調整を開始。各部門の技術実装状況を監視し、クロスチーム課題を解決してください ===\" && cat \"MVPシステム設計.md\" | grep -A 20 \"部門間連携\" ultrathink' Enter
-
-2. Progress Monitorに指示:
-tmux send-keys -t arbitrage-assistant:0.2 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 10 \"progress-monitor\" && echo \"=== CEO指示: MVPプロジェクト進捗監視を開始。KPI管理とリリース準備確認を実行してください ===\" && cat \"MVPシステム設計.md\" | grep -A 20 \"進捗管理\" ultrathink' Enter
-
-【5 Directors戦略指示】
-3. Backend Directorに戦略指示:
-tmux send-keys -t arbitrage-assistant:1.0 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 15 \"backend-director\" && echo \"=== CEO戦略指示: AWS Amplify Gen2 + GraphQL + userIdベース最適化を統括。Amplify Gen2 Specialist・Cognito Auth Expertを指導し、packages/shared-backend実装を完遂してください ===\" && cat \"MVPシステム設計.md\" | grep -A 30 \"データベース設計\" ultrathink' Enter
-
-4. Trading Directorに戦略指示:
-tmux send-keys -t arbitrage-assistant:2.0 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 15 \"trading-flow-director\" && echo \"=== CEO戦略指示: Position-Trail-Actionフロー管理を統括。Entry Flow・Settlement Flow Specialistを指導し、apps/hedge-system金融計算ロジックを完遂してください ===\" && cat \"MVPシステム設計.md\" | grep -A 30 \"実行パターン詳細\" ultrathink' Enter
-
-5. Integration Directorに戦略指示:
-tmux send-keys -t arbitrage-assistant:3.0 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 15 \"integration-director\" && echo \"=== CEO戦略指示: MT4/MT5統合戦略・外部API連携アーキテクチャを統括。MT5 Connector・WebSocket Engineerを指導し、ea/統合システムを完遂してください ===\" && cat \"MVPシステム設計.md\" | grep -A 30 \"WebSocket通信設計\" ultrathink' Enter
-
-6. Frontend Directorに戦略指示:
-tmux send-keys -t arbitrage-assistant:4.0 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 15 \"frontend-director\" && echo \"=== CEO戦略指示: 管理画面・デスクトップUI・ユーザー体験を統括。React Specialist・Desktop App Engineerを指導し、apps/admin・apps/hedge-system UI実装を完遂してください ===\" && cat \"MVPシステム設計.md\" | grep -A 30 \"管理者画面\" ultrathink' Enter
-
-7. DevOps Directorに戦略指示:
-tmux send-keys -t arbitrage-assistant:5.0 'echo \"HACONIWA_AGENT_ID: \\\$HACONIWA_AGENT_ID\" && cat arbitrage-assistant.yaml | grep -A 15 \"devops-director\" && echo \"=== CEO戦略指示: インフラ最適化・品質保証・CI/CD・監視を統括。Build Optimization・Quality Assurance Engineerを指導し、Turborepo最適化を完遂してください ===\" && cat \"MVPシステム設計.md\" | grep -A 30 \"パフォーマンス最適化\" ultrathink' Enter
-
-CEO戦略判断に基づき、上記tmuxコマンドで階層的指示を実行してください。各Directorは部下のSpecialistエージェントを管理・指導する責任があります。" ultrathink
-EOF
-}
+# （CEO初期プロンプトシステムに移行済み - ceo-initial-prompts.shを使用）
 
 
 # tmux指示送信関数
@@ -426,6 +388,13 @@ if tmux has-session -t $SESSION_NAME 2>/dev/null; then
     # 認証状態安定化のための短縮待機
     sleep 1
     
+    # tmuxサーバーの起動確認
+    if ! tmux list-sessions >/dev/null 2>&1; then
+        echo "🔄 tmuxサーバーを再起動中..."
+        tmux start-server
+        sleep 0.5
+    fi
+    
     # 古い環境変数ファイルをクリーンアップ（Claude認証情報は保持）
     echo "🧹 古い環境変数ファイルをクリーンアップ中..."
     # 注意: Claude認証情報は ~/.claude に保存されているため、/tmpファイルのみクリーンアップ
@@ -433,17 +402,43 @@ if tmux has-session -t $SESSION_NAME 2>/dev/null; then
     echo "✅ 並列クリーンアップ完了（Claude認証情報は保持）"
 fi
 
+# tmuxサーバーの最終確認
+if ! tmux list-sessions >/dev/null 2>&1; then
+    echo "🔄 tmuxサーバーを起動中..."
+    tmux start-server
+    sleep 1
+fi
+
 # 新規セッション作成（デタッチド状態）
 echo "🏗️ 新規tmuxセッション作成中..."
-tmux new-session -d -s $SESSION_NAME -c "$BASE_DIR" -n "🏛️CEO-Strategy"
+# セッション作成時にbase-indexも設定
+tmux new-session -d -s $SESSION_NAME -c "$BASE_DIR" -n "🏛️CEO-Strategy" \; \
+    set-option -g base-index 0 \; \
+    set-option -g pane-base-index 0
 
-# base-index設定の強制適用
+# セッション固有のbase-index設定
 echo "🔧 base-index 0設定適用中..."
 tmux set-option -t $SESSION_NAME base-index 0
 tmux set-window-option -t $SESSION_NAME pane-base-index 0
 
 # 新規セッション安定化のための待機
 sleep 1
+
+# Window 0の存在確認と修正
+echo "🔍 Window 0の存在確認..."
+if tmux list-windows -t $SESSION_NAME | grep -q "^0:"; then
+    echo "✅ Window 0 確認完了"
+else
+    echo "⚠️ Window 0が見つかりません。Window一覧:"
+    tmux list-windows -t $SESSION_NAME
+    
+    # Window 1が存在する場合はWindow 0にリネーム
+    if tmux list-windows -t $SESSION_NAME | grep -q "^1:"; then
+        echo "🔧 Window 1をWindow 0にリネーム中..."
+        tmux move-window -s $SESSION_NAME:1 -t $SESSION_NAME:0
+        echo "✅ Window 0として再設定完了"
+    fi
+fi
 
 # ===========================================
 # 全ペイン構成作成（6窓 x 3ペイン = 18ペイン）
@@ -475,12 +470,13 @@ echo "🏗️ ペイン構成作成中..."
 
 # Window 0: 🏛️ CEO Executive Office (3 panes)
 echo "📋 Window 0: CEO Executive Office 作成中..."
+# Window 0はすでに作成済み（new-sessionで作成される）
 # Pane 0.1: Director Coordinator (右に分割)
-tmux split-window -t $SESSION_NAME:0.0 -h
+tmux split-window -t $SESSION_NAME:0 -h
 sleep 0.2
 # Pane 0.2: Progress Monitor (左ペインを上下に分割)
 tmux select-pane -t $SESSION_NAME:0.0
-tmux split-window -t $SESSION_NAME:0.0 -v
+tmux split-window -t $SESSION_NAME:0 -v
 
 # ===========================================
 # ペイン構成のみ作成（エージェント起動は後で一括実行）
@@ -778,21 +774,21 @@ echo "  1. CEO初期設定用プロンプト自動入力"
 echo "  2. CEO系エージェント自動指示"
 echo "  3. 全Directors自動指示実行"
 echo ""
-echo "🏛️ CEO系エージェント自動指示開始..."
+echo "🏛️ CEO系エージェント初期プロンプト設定開始..."
 sleep 3
 
-# CEO Main (0.0) への役割確認プロンプト送信
-echo "🎯 CEO Main (0.0) への初期プロンプト送信中..."
-if send_instruction_to_pane "0.0" "$(generate_ceo_main_prompt)"; then
-    echo "✅ CEO初期プロンプト送信完了"
+# CEO初期プロンプト設定スクリプト実行
+echo "🎯 CEO系3ペイン初期プロンプト設定中..."
+if ./scripts/ceo-initial-prompts.sh; then
+    echo "✅ CEO初期プロンプト設定完了"
 else
-    echo "⚠️  CEO初期プロンプト送信に問題が発生（継続実行）"
+    echo "⚠️  CEO初期プロンプト設定に問題が発生（継続実行）"
 fi
 
 echo ""
-echo "✅ CEO階層的指示システム完了！"
-echo "📋 CEO Main (0.0) にのみ初期プロンプトを送信しました"
-echo "🎯 以降の指示はCEOが階層的に実行します"
+echo "✅ CEO初期プロンプトシステム完了！"
+echo "📋 CEO系3ペイン全てに初期プロンプトを設定しました"
+echo "🎯 各CEO系ペインが独立してDirectorに指示出し可能"
 
 echo ""
 echo "💡 次回終了時は: npm run haconiwa:stop を使用してください"
@@ -804,18 +800,25 @@ echo "✅ 実行された内容:"
 echo "  1. 完全自動クリーンアップ"
 echo "  2. 6x3 Grid構成（18エージェント）起動"
 echo "  3. 全ペイン環境変数設定"
-echo "  4. CEO Main (0.0) への戦略プロンプト送信"
+echo "  4. CEO系3ペイン初期プロンプト設定"
 echo ""
-echo "🏛️ 階層的命令フロー:"
-echo "  🎯 CEO Main (0.0) - 戦略プロンプト受信済み"
-echo "  📋 CEOが以下エージェントに指示を出します:"
-echo "    ├─ Director Coordinator (0.1) - Directors間連携調整"
-echo "    ├─ Progress Monitor (0.2) - MVP進捗監視" 
+echo "🏛️ CEO系初期プロンプト設定完了："
+echo "  🎯 CEO Main (0.0) - MVP全体戦略・Director指示出し準備完了"
+echo "  🤝 Director Coordinator (0.1) - Directors間連携調整準備完了"
+echo "  📊 Progress Monitor (0.2) - MVP進捗監視準備完了"
+echo ""
+echo "📋 CEO系ペインが指示出し可能なDirector："
 echo "    ├─ Backend Director (1.0) - AWS Amplify実装統括"
 echo "    ├─ Trading Director (2.0) - Position-Trail-Action統括"
 echo "    ├─ Integration Director (3.0) - MT5統合統括"
 echo "    ├─ Frontend Director (4.0) - 管理画面統括"
 echo "    └─ DevOps Director (5.0) - Turborepo最適化統括"
 echo ""
-echo "⚡ CEOによる階層的指示システムが稼働中！"
-echo "🎯 各DirectorがSpecialistエージェントを管理・指導します"
+echo "⚡ CEO系エージェント初期プロンプト設定システム稼働中！"
+echo "🎯 各CEO系ペインが独立してDirectorに指示出し可能"
+
+# 最後にtmuxセッションにアタッチ
+echo ""
+echo "🔗 tmuxセッションにアタッチ中..."
+sleep 1
+exec tmux attach -t $SESSION_NAME

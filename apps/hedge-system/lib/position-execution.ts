@@ -5,8 +5,12 @@ import {
   ExecutionType, 
   ActionStatus,
   CreatePositionInput, 
-  UpdatePositionInput 
+  UpdatePositionInput,
+  MarketCondition
 } from '@repo/shared-types';
+
+// Re-export for other modules
+export type { MarketCondition };
 import { 
   WSOpenCommand, 
   WSCloseCommand, 
@@ -22,7 +26,9 @@ import {
   positionService,
   createPosition,
   updatePosition,
-  listUserPositions
+  listUserPositions,
+  recordExecutionResult,
+  getPerformanceMetrics
 } from '@repo/shared-amplify';
 
 /**
@@ -37,15 +43,6 @@ import {
  * 5. userId最適化・リアルタイム同期
  */
 
-// 高速処理用型定義
-export interface MarketCondition {
-  symbol: Symbol;
-  currentPrice: number;
-  spread: number;
-  volatility: number;
-  liquidity: number;
-  timestamp: string;
-}
 
 export interface EntryCondition {
   positionId: string;
@@ -70,6 +67,7 @@ export interface TrailCondition {
   direction: 'BUY' | 'SELL';
 }
 
+
 export interface ActionExecution {
   actionId: string;
   positionId: string;
@@ -89,6 +87,16 @@ export class EntryFlowEngine {
   private readonly MAX_EXECUTION_TIME = 5000; // 5秒
   private readonly OPTIMAL_SPREAD_THRESHOLD = 0.0001;
   private readonly MAX_VOLATILITY_THRESHOLD = 0.01;
+  private readonly MAX_RETRIES = 3;
+  
+  // エントリー実行統計
+  private executionStats = {
+    totalAttempts: 0,
+    successfulEntries: 0,
+    failedEntries: 0,
+    avgExecutionTime: 0,
+    lastExecutionTime: 0
+  };
 
   /**
    * エントリー条件判定アルゴリズム
@@ -171,7 +179,33 @@ export class EntryFlowEngine {
       
       const executionTime = Date.now() - startTime;
       
-      console.log(`⚡ Fast entry executed: ${position.id} in ${executionTime}ms`);
+      // 実行統計更新
+      this.updateExecutionStats(true, executionTime);
+      
+      // 詳細ログ記録
+      const detailedLog = {
+        positionId: position.id,
+        symbol: position.symbol,
+        volume: position.volume,
+        executionType: position.executionType,
+        optimizedPrice,
+        executionTime,
+        orderId,
+        marketCondition: {
+          currentPrice: marketCondition.currentPrice,
+          spread: marketCondition.spread,
+          volatility: marketCondition.volatility,
+          liquidity: marketCondition.liquidity
+        },
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log(`⚡ Fast entry executed: ${JSON.stringify(detailedLog)}`);
+      
+      // パフォーマンスDB保存（非ブロッキング）
+      this.saveExecutionResult(position.id, executionTime, true, optimizedPrice).catch(error => {
+        console.error('Failed to save entry execution result:', error);
+      });
       
       return {
         success: true,
@@ -182,6 +216,38 @@ export class EntryFlowEngine {
     } catch (error) {
       const executionTime = Date.now() - startTime;
       console.error('Entry execution failed:', error);
+      
+      // 実行統計更新
+      this.updateExecutionStats(false, executionTime);
+      
+      // エラー詳細ログ
+      const errorLog = {
+        positionId: position.id,
+        symbol: position.symbol,
+        executionTime,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        marketCondition,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error(`❌ Entry execution error details: ${JSON.stringify(errorLog)}`);
+      
+      // パフォーマンスDB保存（エラー情報含む）
+      this.saveExecutionResult(
+        position.id, 
+        executionTime, 
+        false, 
+        marketCondition.currentPrice,
+        undefined,
+        error instanceof Error ? error.message : 'Unknown error'
+      ).catch(saveError => {
+        console.error('Failed to save entry error result:', saveError);
+      });
+      
+      // リトライ判定
+      if (this.shouldRetryEntry(error)) {
+        console.log(`🔄 Entry will be retried for position: ${position.id}`);
+      }
       
       return {
         success: false,
@@ -247,31 +313,116 @@ export class EntryFlowEngine {
     wsHandler: WebSocketHandler
   ): Promise<string> {
     const startTime = Date.now();
+    let retryCount = 0;
+    let lastError: Error | null = null;
     
-    try {
-      // WebSocketHandler統合でMT4/MT5 EA制御実現
-      const result = await wsHandler.sendOpenCommand({
-        accountId: command.accountId,
-        positionId: command.positionId,
-        symbol: command.symbol,
-        volume: command.volume,
-        executionType: command.metadata?.executionType
-      });
-      
-      const executionTime = Date.now() - startTime;
-      
-      if (result.success) {
-        console.log(`⚡ Optimized open command sent: ${command.positionId} in ${executionTime}ms`);
-        return result.orderId || `optimized_order_${Date.now()}`;
-      } else {
-        throw new Error(result.error || 'Command execution failed');
+    // リトライループ
+    while (retryCount < this.MAX_RETRIES) {
+      try {
+        // WebSocketHandler統合でMT4/MT5 EA制御実現
+        const result = await wsHandler.sendOpenCommand({
+          accountId: command.accountId,
+          positionId: command.positionId,
+          symbol: command.symbol as unknown as Symbol,
+          volume: command.volume,
+          executionType: command.metadata?.executionType
+        });
+        
+        const executionTime = Date.now() - startTime;
+        
+        if (result.success) {
+          console.log(`⚡ Optimized open command sent: ${command.positionId} in ${executionTime}ms (retry: ${retryCount})`);
+          return result.orderId || `optimized_order_${Date.now()}`;
+        } else {
+          throw new Error(result.error || 'Command execution failed');
+        }
+        
+      } catch (error) {
+        lastError = error as Error;
+        retryCount++;
+        
+        if (retryCount < this.MAX_RETRIES) {
+          const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+          console.warn(`⚠️ Retrying command ${retryCount}/${this.MAX_RETRIES} after ${waitTime}ms: ${lastError.message}`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-      
-    } catch (error) {
-      const executionTime = Date.now() - startTime;
-      console.error(`❌ Optimized command failed: ${command.positionId} in ${executionTime}ms`, error);
-      throw error;
     }
+    
+    // 全リトライ失敗
+    const executionTime = Date.now() - startTime;
+    console.error(`❌ All retries failed for command: ${command.positionId} in ${executionTime}ms`, lastError);
+    throw lastError || new Error('Command execution failed after all retries');
+  }
+  
+  // 実行統計更新
+  private updateExecutionStats(success: boolean, executionTime: number): void {
+    this.executionStats.totalAttempts++;
+    
+    if (success) {
+      this.executionStats.successfulEntries++;
+    } else {
+      this.executionStats.failedEntries++;
+    }
+    
+    this.executionStats.lastExecutionTime = executionTime;
+    
+    // 平均実行時間の更新
+    const prevAvg = this.executionStats.avgExecutionTime;
+    const prevTotal = this.executionStats.totalAttempts - 1;
+    this.executionStats.avgExecutionTime = 
+      (prevAvg * prevTotal + executionTime) / this.executionStats.totalAttempts;
+  }
+  
+  // パフォーマンスDB保存
+  private async saveExecutionResult(
+    positionId: string,
+    executionTime: number,
+    success: boolean,
+    finalPrice?: number,
+    profit?: number,
+    errorMessage?: string
+  ): Promise<void> {
+    try {
+      await recordExecutionResult({
+        positionId,
+        executionType: ExecutionType.ENTRY,
+        executionTime,
+        success,
+        finalPrice,
+        profit,
+        errorMessage,
+        retryCount: this.executionStats.totalAttempts - 1
+      });
+    } catch (error) {
+      console.error('Failed to save execution result:', error);
+    }
+  }
+  
+  // リトライ判定
+  private shouldRetryEntry(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    
+    // リトライ可能なエラータイプ
+    const retryableErrors = [
+      'NETWORK_ERROR',
+      'TIMEOUT',
+      'CONNECTION_REFUSED',
+      'ECONNRESET'
+    ];
+    
+    return retryableErrors.some(type => 
+      error.message.includes(type) || error.message.includes(type.toLowerCase())
+    );
+  }
+  
+  // 実行統計取得
+  getExecutionStats() {
+    return {
+      ...this.executionStats,
+      successRate: this.executionStats.totalAttempts > 0 ?
+        this.executionStats.successfulEntries / this.executionStats.totalAttempts : 0
+    };
   }
 }
 
@@ -471,6 +622,18 @@ export class ActionFlowEngine {
   private executionQueue: Map<string, ActionExecution> = new Map();
   private readonly MAX_EXECUTION_TIME = 3000; // 3秒
   private readonly MAX_RETRIES = 3;
+  private readonly BATCH_SIZE = 10; // 並列処理のバッチサイズ
+  private readonly PARTIAL_CLOSE_PRECISION = 0.01; // 部分決済の最小単位
+  
+  // 決済フロー統計
+  private settlementStats = {
+    totalSettlements: 0,
+    successfulSettlements: 0,
+    failedSettlements: 0,
+    avgSettlementTime: 0,
+    partialSettlements: 0,
+    batchSettlements: 0
+  };
 
   /**
    * 決済実行ロジック（高速版）
@@ -525,7 +688,7 @@ export class ActionFlowEngine {
   }
 
   /**
-   * 強制決済処理（ロスカット等）
+   * 強制決済処理（ロスカット等）- 高速バッチ処理版
    */
   async forceClose(
     positions: Position[],
@@ -538,13 +701,19 @@ export class ActionFlowEngine {
     const closed: string[] = [];
     const failed: string[] = [];
     
-    // 並列決済実行
-    const closePromises = positions
-      .filter(p => p.status === PositionStatus.OPEN)
-      .map(async (position) => {
+    // OPENポジションのみフィルタリング
+    const openPositions = positions.filter(p => p.status === PositionStatus.OPEN);
+    
+    // バッチ処理で高速化
+    for (let i = 0; i < openPositions.length; i += this.BATCH_SIZE) {
+      const batch = openPositions.slice(i, i + this.BATCH_SIZE);
+      
+      // バッチ内並列処理
+      const batchPromises = batch.map(async (position) => {
         const currentPrice = currentPrices[position.symbol];
         if (!currentPrice) {
           failed.push(position.id);
+          console.warn(`⚠️ No price for symbol: ${position.symbol}, position: ${position.id}`);
           return;
         }
         
@@ -554,17 +723,32 @@ export class ActionFlowEngine {
             closed.push(position.id);
           } else {
             failed.push(position.id);
+            console.error(`❌ Close failed for position: ${position.id}, reason: ${reason}`);
           }
         } catch (error) {
           failed.push(position.id);
+          console.error(`❌ Exception during close for position: ${position.id}`, error);
         }
       });
-    
-    await Promise.allSettled(closePromises);
+      
+      // バッチ完了待機
+      await Promise.allSettled(batchPromises);
+      
+      // バッチ間の負荷分散（必要に応じて）
+      if (i + this.BATCH_SIZE < openPositions.length) {
+        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms待機
+      }
+    }
     
     const totalTime = Date.now() - startTime;
     
-    console.log(`🚨 Force close completed: ${closed.length} closed, ${failed.length} failed in ${totalTime}ms`);
+    // 統計更新
+    this.settlementStats.batchSettlements++;
+    this.settlementStats.totalSettlements += openPositions.length;
+    this.settlementStats.successfulSettlements += closed.length;
+    this.settlementStats.failedSettlements += failed.length;
+    
+    console.log(`🚨 Force close completed: ${closed.length} closed, ${failed.length} failed in ${totalTime}ms (${openPositions.length} positions, ${Math.ceil(openPositions.length / this.BATCH_SIZE)} batches)`);
     
     return {
       closed,
@@ -576,14 +760,14 @@ export class ActionFlowEngine {
   /**
    * 結果記録（パフォーマンス統計）
    */
-  recordExecutionResult(
+  async recordExecutionResult(
     positionId: string,
     executionTime: number,
     success: boolean,
     finalPrice?: number,
     profit?: number,
     errorMessage?: string
-  ): void {
+  ): Promise<void> {
     
     const execution = this.executionQueue.get(positionId);
     if (execution) {
@@ -603,7 +787,22 @@ export class ActionFlowEngine {
     
     console.log(`📊 Execution result recorded: ${JSON.stringify(logData)}`);
     
-    // TODO: パフォーマンスDBへの保存
+    // パフォーマンスDBへの保存
+    try {
+      await recordExecutionResult({
+        positionId,
+        executionType: execution?.executionType || ExecutionType.EXIT,
+        executionTime,
+        success,
+        finalPrice,
+        profit,
+        errorMessage,
+        retryCount: execution?.retryCount || 0
+      });
+      console.log(`✅ Performance data saved to DB for position: ${positionId}`);
+    } catch (error) {
+      console.error('Failed to save performance data:', error);
+    }
   }
 
   /**
@@ -662,6 +861,92 @@ export class ActionFlowEngine {
       console.error(`❌ Optimized close command failed: ${command.positionId} in ${executionTime}ms`, error);
       throw error;
     }
+  }
+
+  /**
+   * 部分決済実行
+   */
+  async executePartialClose(
+    position: Position,
+    closeVolume: number,
+    reason: string,
+    currentPrice: number,
+    wsHandler: WebSocketHandler
+  ): Promise<{ success: boolean; executionTime: number; remainingVolume?: number }> {
+    
+    const startTime = Date.now();
+    
+    try {
+      // ボリューム検証
+      if (closeVolume <= 0 || closeVolume > position.volume) {
+        throw new Error(`Invalid close volume: ${closeVolume} (position volume: ${position.volume})`);
+      }
+      
+      // 最小単位への丸め
+      const roundedVolume = Math.round(closeVolume / this.PARTIAL_CLOSE_PRECISION) * this.PARTIAL_CLOSE_PRECISION;
+      
+      const command = {
+        type: WSMessageType.CLOSE,
+        accountId: position.accountId,
+        positionId: position.id,
+        symbol: position.symbol,
+        side: this.getOppositePositionSide(position),
+        volume: roundedVolume, // 部分決済ボリューム
+        price: currentPrice,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          executionType: ExecutionType.EXIT,
+          timestamp: new Date().toISOString(),
+          closeReason: reason,
+          isPartialClose: true,
+          originalVolume: position.volume
+        }
+      } as unknown as WSCloseCommand;
+
+      const orderId = await this.sendOptimizedCloseCommand(command, wsHandler);
+      
+      const executionTime = Date.now() - startTime;
+      const remainingVolume = position.volume - roundedVolume;
+      
+      // 統計更新
+      this.settlementStats.partialSettlements++;
+      this.settlementStats.totalSettlements++;
+      this.settlementStats.successfulSettlements++;
+      
+      console.log(`⚡ Partial close executed: ${position.id}, closed: ${roundedVolume}, remaining: ${remainingVolume} in ${executionTime}ms`);
+      
+      return {
+        success: true,
+        executionTime,
+        remainingVolume
+      };
+      
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      console.error('Partial close execution failed:', error);
+      
+      // 統計更新
+      this.settlementStats.totalSettlements++;
+      this.settlementStats.failedSettlements++;
+      
+      return {
+        success: false,
+        executionTime
+      };
+    }
+  }
+
+  /**
+   * 決済統計取得
+   */
+  getSettlementStats() {
+    return {
+      ...this.settlementStats,
+      successRate: this.settlementStats.totalSettlements > 0 ?
+        this.settlementStats.successfulSettlements / this.settlementStats.totalSettlements : 0,
+      avgBatchSize: this.settlementStats.batchSettlements > 0 ?
+        this.settlementStats.totalSettlements / this.settlementStats.batchSettlements : 0
+    };
   }
 
   private estimateExecutionTime(executionType: ExecutionType): number {
@@ -917,7 +1202,7 @@ export class PositionExecutor {
         
         // 結果記録
         const profit = this.calculateProfit(position, currentPrice);
-        this.actionFlowEngine.recordExecutionResult(
+        await this.actionFlowEngine.recordExecutionResult(
           position.id,
           executionResult.executionTime,
           true,
@@ -1029,7 +1314,7 @@ export class PositionExecutor {
       }
       
       // 4. 結果記録（ロスカット）
-      this.actionFlowEngine.recordExecutionResult(
+      await this.actionFlowEngine.recordExecutionResult(
         event.positionId,
         Date.now() - startTime,
         true,
@@ -1059,21 +1344,25 @@ export class PositionExecutor {
       throw new Error('User not authenticated');
     }
     
-    // TODO: Fix schema mismatch - regenerate amplify_outputs.json
-    const subscription = (amplifyClient as any).models?.Position?.observeQuery({
-      filter: { userId: { eq: this.currentUserId } }
-    })?.subscribe({
-      next: (data: any) => {
-        data?.items?.forEach((position: any) => {
+    // shared-amplifyのsubscription serviceを使用
+    try {
+      const { subscribeToPositions } = await import('@repo/shared-amplify');
+      
+      const subscription = await subscribeToPositions(
+        (position: Position) => {
           this.handlePositionSubscription(position);
-        });
-      },
-      error: (error: any) => {
-        console.error('Position subscription error:', error);
-      }
-    });
-    
-    console.log('📡 Position subscription started for user:', this.currentUserId);
+        }
+      );
+      
+      console.log('📡 Position subscription started for user:', this.currentUserId);
+      
+      // subscriptionの管理（必要に応じて）
+      // this.positionSubscription = subscription;
+      
+    } catch (error) {
+      console.error('Failed to start position subscription:', error);
+      throw error;
+    }
   }
 
   // ========================================
@@ -1206,11 +1495,11 @@ export class PositionExecutor {
    * 通貨ペア別乗数
    */
   private getSymbolMultiplier(symbol: Symbol): number {
-    const multipliers: { [key in Symbol]: number } = {
-      [Symbol.USDJPY]: 100000,
-      [Symbol.EURUSD]: 100000,
-      [Symbol.EURGBP]: 100000,
-      [Symbol.XAUUSD]: 100
+    const multipliers: Record<Symbol, number> = {
+      'USDJPY': 100000,
+      'EURUSD': 100000,
+      'EURGBP': 100000,
+      'XAUUSD': 100
     };
     return multipliers[symbol] || 100000;
   }
@@ -1249,10 +1538,10 @@ export class PositionExecutor {
   private getFallbackPrice(symbol: Symbol): number {
     // 通貨ペア別のフォールバック価格
     const fallbackPrices: { [key in Symbol]: number } = {
-      [Symbol.USDJPY]: 150.0,
-      [Symbol.EURUSD]: 1.0800,
-      [Symbol.EURGBP]: 0.8500,
-      [Symbol.XAUUSD]: 2000.0
+      'USDJPY': 150.0,
+      'EURUSD': 1.0800,
+      'EURGBP': 0.8500,
+      'XAUUSD': 2000.0
     };
     
     const price = fallbackPrices[symbol] || 1.0;
@@ -1404,7 +1693,7 @@ export class PositionExecutor {
           
           // 結果記録（リトライ成功）
           const profit = this.calculateProfit(position, currentPrice);
-          this.actionFlowEngine.recordExecutionResult(
+          await this.actionFlowEngine.recordExecutionResult(
             position.id,
             executionResult.executionTime,
             true,
@@ -1548,13 +1837,28 @@ export class PositionService {
     avgExecutionTime: number;
     successRate: number;
   }> {
-    // TODO: 実装を完成させる
-    return {
-      totalPositions: 0,
-      openPositions: 0,
-      closedPositions: 0,
-      avgExecutionTime: 0,
-      successRate: 0
-    };
+    try {
+      // shared-amplifyのgetPerformanceMetricsを使用
+      const metrics = await getPerformanceMetrics(userId, timeRange);
+      
+      return {
+        totalPositions: metrics.totalPositions,
+        openPositions: metrics.openPositions,
+        closedPositions: metrics.closedPositions,
+        avgExecutionTime: metrics.avgExecutionTime,
+        successRate: metrics.successRate
+      };
+    } catch (error) {
+      console.error('Failed to get performance metrics:', error);
+      
+      // エラー時のフォールバック
+      return {
+        totalPositions: 0,
+        openPositions: 0,
+        closedPositions: 0,
+        avgExecutionTime: 0,
+        successRate: 0
+      };
+    }
   }
 }

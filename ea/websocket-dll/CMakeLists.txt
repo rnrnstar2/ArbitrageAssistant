@@ -9,7 +9,8 @@ if(WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
     add_definitions(-DHEDGESYSTEMWEBSOCKET_EXPORTS)
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -fPIC")
+    add_definitions(-DHEDGESYSTEMWEBSOCKET_EXPORTS)
 endif()
 
 # 依存関係の検索
@@ -17,18 +18,31 @@ find_package(Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 # websocketpp の検索（システムにインストールされている場合）
-find_path(WEBSOCKETPP_INCLUDE_DIR websocketpp/config/asio_client.hpp)
+find_path(WEBSOCKETPP_INCLUDE_DIR websocketpp/config/asio_client.hpp
+    PATHS
+    /opt/homebrew/include
+    /usr/local/include
+    /usr/include
+)
 
 if(NOT WEBSOCKETPP_INCLUDE_DIR)
     message(STATUS "websocketpp not found in system, downloading...")
     
+    # websocketppは実行時には必要ないヘッダーオンリーライブラリなので、
+    # ヘッダーファイルのみをダウンロード
     include(FetchContent)
     FetchContent_Declare(
         websocketpp
         GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
         GIT_TAG        0.8.2
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND ""
     )
-    FetchContent_MakeAvailable(websocketpp)
+    FetchContent_GetProperties(websocketpp)
+    if(NOT websocketpp_POPULATED)
+        FetchContent_Populate(websocketpp)
+    endif()
     set(WEBSOCKETPP_INCLUDE_DIR ${websocketpp_SOURCE_DIR})
 endif()
 

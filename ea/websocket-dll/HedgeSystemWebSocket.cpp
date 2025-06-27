@@ -1,5 +1,4 @@
 #include "HedgeSystemWebSocket.h"
-#include <iostream>
 #include <string>
 #include <queue>
 #include <mutex>
@@ -9,6 +8,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+#include <array>
 #include <unordered_map>
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/client.hpp>

@@ -14,6 +14,7 @@ export { ActionService } from './action';
 export { AccountService } from './account';
 export { UserService } from './user';
 export { SubscriptionService } from './subscription';
+export { PerformanceService } from './performance';
 
 // 📍 Position関連操作
 export {
@@ -70,8 +71,17 @@ export {
   subscriptionService
 } from './subscription';
 
+// 📊 Performance関連操作
+export {
+  createPerformance,
+  listPerformanceRecords,
+  getPerformanceMetrics,
+  recordExecutionResult
+} from './performance';
+
 // 🔧 Service Instances (singletons)
 export { actionService } from './action';
 export { positionService } from './position';
 export { accountService } from './account';
 export { userService } from './user';
+export { performanceService } from './performance';

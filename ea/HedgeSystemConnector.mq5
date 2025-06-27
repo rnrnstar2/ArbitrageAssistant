@@ -17,6 +17,17 @@
 #import
 
 //+------------------------------------------------------------------+
+//| Input Parameters                                                |
+//+------------------------------------------------------------------+
+input string   WS_URL            = "wss://localhost:3456/ws";    // WebSocket URL
+input string   AUTH_TOKEN        = "demo-auth-token";            // 認証トークン
+input int      UPDATE_INTERVAL   = 1000;                         // 更新間隔(ミリ秒)
+input bool     FAST_MODE         = true;                         // 高速モード
+input int      HEARTBEAT_INTERVAL = 5000;                        // ハートビート間隔(ミリ秒)
+input int      MAX_RECONNECT     = 10;                           // 最大再接続試行回数
+input bool     DEBUG_MODE        = true;                         // デバッグモード
+
+//+------------------------------------------------------------------+
 //| Expert Advisor クラス                                            |
 //+------------------------------------------------------------------+
 class HedgeSystemConnector
@@ -67,11 +78,23 @@ private:
     bool ClosePositionByTicket(ulong ticket);
     void LogMessage(string message);
     
+    // トレール機能
+    void ProcessTrailTriggered(string message);
+    void ProcessTrailUpdate(string message);
+    void SendTrailEvent(string positionId, string eventType, double trailPrice, double stopLoss);
+    bool UpdatePositionTrail(string positionId, double newStopLoss);
+    
     // 高性能JSONパース関数（設計書準拠）
     bool ExtractJsonString(string json, string key, string &value);
     bool ExtractJsonDouble(string json, string key, double &value);
     bool ExtractJsonInt(string json, string key, int &value);
     bool ValidateMessage(string message, string requiredType);
+    
+    // 本番環境対応機能
+    bool ValidateProductionEnvironment();
+    void SendConnectionValidation();
+    void SendPerformanceMetrics();
+    bool CheckSystemHealth();
     
     // エラーハンドリング強化関数
     void SendErrorEvent(string type, string details, int errorCode);
@@ -91,9 +114,21 @@ HedgeSystemConnector g_connector;
 int OnInit()
 {
     // パラメータの設定
-    string wsUrl = "wss://your-websocket-url.com/ws";
-    string authToken = "your-auth-token";
+    string wsUrl = WS_URL;
+    string authToken = AUTH_TOKEN;
     string accountId = AccountInfoString(ACCOUNT_NAME) + "_" + IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
+    
+    // デバッグモードのログ出力
+    if(DEBUG_MODE)
+    {
+        Print("=== HedgeSystemConnector Initialization ===");
+        Print("WebSocket URL: ", wsUrl);
+        Print("Account ID: ", accountId);
+        Print("Update Interval: ", UPDATE_INTERVAL, " ms");
+        Print("Fast Mode: ", FAST_MODE ? "Enabled" : "Disabled");
+        Print("Heartbeat Interval: ", HEARTBEAT_INTERVAL, " ms");
+        Print("Max Reconnect Attempts: ", MAX_RECONNECT);
+    }
     
     // 接続の試行
     if(!g_connector.Connect(wsUrl, authToken, accountId))
@@ -146,15 +181,15 @@ HedgeSystemConnector::HedgeSystemConnector()
     m_lastHeartbeat = 0;
     m_lastPositionUpdate = 0;
     m_lastAccountUpdate = 0;
-    m_updateInterval = 5; // 5秒間隔
+    m_updateInterval = UPDATE_INTERVAL / 1000; // ミリ秒を秒に変換
     m_isConnected = false;
     
     // パフォーマンス最適化設定
     m_lastConnectionCheck = 0;
     m_connectionCheckInterval = 30; // 30秒間隔で接続確認
     m_reconnectAttempts = 0;
-    m_maxReconnectAttempts = 5;
-    m_fastMode = true; // 高性能モード有効
+    m_maxReconnectAttempts = MAX_RECONNECT;
+    m_fastMode = FAST_MODE;
 }
 
 //+------------------------------------------------------------------+
@@ -174,15 +209,29 @@ bool HedgeSystemConnector::Connect(string url, string token, string accountId)
     m_authToken = token;
     m_accountId = accountId;
     
+    // 本番環境検証
+    if(!ValidateProductionEnvironment())
+    {
+        LogMessage("Production environment validation failed");
+        return false;
+    }
+    
     if(WSConnect(m_wsUrl, m_authToken))
     {
         m_isConnected = true;
         m_lastHeartbeat = TimeCurrent();
+        m_reconnectAttempts = 0; // 成功時はリセット
         LogMessage("Connected to Hedge System WebSocket");
         
         // 初回データ送信
         SendAccountUpdate();
         SendPositionUpdate();
+        
+        // 接続検証送信
+        SendConnectionValidation();
+        
+        // 初回ヘルスチェック
+        CheckSystemHealth();
         
         return true;
     }
@@ -258,8 +307,8 @@ void HedgeSystemConnector::OnTimer()
     
     datetime currentTime = TimeCurrent();
     
-    // ハートビート送信
-    if(currentTime - m_lastHeartbeat >= m_updateInterval)
+    // ハートビート送信（設定間隔）
+    if(currentTime - m_lastHeartbeat >= HEARTBEAT_INTERVAL / 1000)
     {
         SendHeartbeat();
         m_lastHeartbeat = currentTime;
@@ -277,6 +326,32 @@ void HedgeSystemConnector::OnTimer()
     {
         SendAccountUpdate();
         m_lastAccountUpdate = currentTime;
+    }
+    
+    // パフォーマンス監視（1分間隔）
+    static datetime lastPerformanceCheck = 0;
+    if(currentTime - lastPerformanceCheck >= 60)
+    {
+        SendPerformanceMetrics();
+        lastPerformanceCheck = currentTime;
+    }
+    
+    // システムヘルスチェック（5分間隔）
+    static datetime lastHealthCheck = 0;
+    if(currentTime - lastHealthCheck >= 300)
+    {
+        if(!CheckSystemHealth())
+        {
+            LogMessage("WARNING: System health check failed");
+        }
+        lastHealthCheck = currentTime;
+    }
+    
+    // 受信メッセージ処理
+    string receivedMessage = WSReceiveMessage();
+    if(StringLen(receivedMessage) > 0)
+    {
+        ProcessIncomingMessage(receivedMessage);
     }
 }
 
@@ -339,6 +414,14 @@ void HedgeSystemConnector::ProcessIncomingMessage(string message)
     if(StringFind(message, "\"type\":\"command\"") != -1)
     {
         ProcessCommand(message);
+    }
+    else if(StringFind(message, "\"type\":\"TRAIL_TRIGGERED\"") != -1)
+    {
+        ProcessTrailTriggered(message);
+    }
+    else if(StringFind(message, "\"type\":\"TRAIL_UPDATE\"") != -1)
+    {
+        ProcessTrailUpdate(message);
     }
 }
 
@@ -696,18 +779,24 @@ string HedgeSystemConnector::CreateHeartbeatJson()
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::SendOpenedEvent(string positionId, string actionId, int ticket, double price)
 {
-    // 設計書7.1準拠フォーマット（EA → Hedge System）
+    // position-execution.ts WSOpenedEvent準拠フォーマット
     string message = StringFormat(
-        "{\"event\":\"OPENED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
+        "{\"type\":\"OPENED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"orderId\":%d,\"price\":%.5f,\"time\":\"%s\",\"mtTicket\":\"%d\",\"timestamp\":\"%s\"}",
         m_accountId,
         positionId,
         ticket,
         price,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        ticket,
         TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
     );
     
     if(WSSendMessage(message))
     {
+        if(DEBUG_MODE)
+        {
+            LogMessage("OPENED event sent: " + message);
+        }
         LogMessage("OPENED event sent for position: " + positionId + " ticket: " + IntegerToString(ticket));
     }
     else
@@ -721,19 +810,24 @@ void HedgeSystemConnector::SendOpenedEvent(string positionId, string actionId, i
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::SendClosedEvent(string positionId, string actionId, int ticket, double price, double profit)
 {
-    // 設計書7.1準拠フォーマット（決済イベント）
+    // position-execution.ts WSClosedEvent準拠フォーマット
     string message = StringFormat(
-        "{\"event\":\"CLOSED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"profit\":%.2f,\"time\":\"%s\",\"status\":\"SUCCESS\"}",
+        "{\"type\":\"CLOSED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"price\":%.5f,\"profit\":%.2f,\"time\":\"%s\",\"mtTicket\":\"%d\",\"timestamp\":\"%s\"}",
         m_accountId,
         positionId,
-        ticket,
         price,
         profit,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        ticket,
         TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
     );
     
     if(WSSendMessage(message))
     {
+        if(DEBUG_MODE)
+        {
+            LogMessage("CLOSED event sent: " + message);
+        }
         LogMessage("CLOSED event sent for position: " + positionId + " profit: " + DoubleToString(profit, 2));
     }
     else
@@ -747,24 +841,28 @@ void HedgeSystemConnector::SendClosedEvent(string positionId, string actionId, i
 //+------------------------------------------------------------------+
 void HedgeSystemConnector::SendStoppedEvent(string positionId, int ticket, double price, string reason)
 {
+    // position-execution.ts WSStoppedEvent準拠フォーマット
     string message = StringFormat(
-        "{\"type\":\"STOPPED\",\"timestamp\":\"%s\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"mtTicket\":\"%d\",\"price\":%.5f,\"time\":\"%s\",\"reason\":\"%s\"}",
-        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
+        "{\"type\":\"STOPPED\",\"accountId\":\"%s\",\"positionId\":\"%s\",\"price\":%.5f,\"time\":\"%s\",\"reason\":\"%s\",\"timestamp\":\"%s\"}",
         m_accountId,
         positionId,
-        ticket,
         price,
         TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
-        reason
+        reason,
+        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS)
     );
     
     if(WSSendMessage(message))
     {
+        if(DEBUG_MODE)
+        {
+            LogMessage("STOPPED event sent: " + message);
+        }
         LogMessage("STOPPED event sent for position: " + positionId + " reason: " + reason);
     }
     else
     {
-        LogMessage("Failed to send STOPPED event");
+        LogMessage("ERROR: Failed to send STOPPED event for position: " + positionId);
     }
 }
 
@@ -895,4 +993,377 @@ void HedgeSystemConnector::HandleOrderError(int errorCode, string operation, str
     }
     
     SendErrorEvent(errorType, errorDetails, errorCode);
+}
+
+//+------------------------------------------------------------------+
+//| トレール発動イベント処理                                         |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::ProcessTrailTriggered(string message)
+{
+    LogMessage("Processing TRAIL_TRIGGERED event: " + message);
+    
+    string positionId = "";
+    double trailPrice = 0.0;
+    double newStopLoss = 0.0;
+    
+    // JSONパース
+    if(!ExtractJsonString(message, "positionId", positionId) ||
+       !ExtractJsonDouble(message, "trailPrice", trailPrice) ||
+       !ExtractJsonDouble(message, "stopLoss", newStopLoss))
+    {
+        LogMessage("ERROR: Invalid TRAIL_TRIGGERED format - " + message);
+        return;
+    }
+    
+    // ポジションのストップロス更新
+    if(UpdatePositionTrail(positionId, newStopLoss))
+    {
+        // 成功イベント送信
+        SendTrailEvent(positionId, "TRAIL_UPDATED", trailPrice, newStopLoss);
+        LogMessage("Trail updated successfully for position: " + positionId);
+    }
+    else
+    {
+        // エラーイベント送信
+        SendErrorEvent("TRAIL_UPDATE_FAILED", "Failed to update trail for position: " + positionId, 0);
+        LogMessage("ERROR: Failed to update trail for position: " + positionId);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| トレール更新イベント処理                                         |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::ProcessTrailUpdate(string message)
+{
+    LogMessage("Processing TRAIL_UPDATE event: " + message);
+    
+    string positionId = "";
+    double newTrailDistance = 0.0;
+    
+    // JSONパース
+    if(!ExtractJsonString(message, "positionId", positionId) ||
+       !ExtractJsonDouble(message, "trailDistance", newTrailDistance))
+    {
+        LogMessage("ERROR: Invalid TRAIL_UPDATE format - " + message);
+        return;
+    }
+    
+    // トレール設定の更新（実装は要件に応じて拡張）
+    LogMessage("Trail distance updated for position " + positionId + ": " + DoubleToString(newTrailDistance, 2));
+}
+
+//+------------------------------------------------------------------+
+//| トレールイベント送信                                             |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendTrailEvent(string positionId, string eventType, double trailPrice, double stopLoss)
+{
+    string json = "{";
+    json += "\"type\":\"" + eventType + "\",";
+    json += "\"positionId\":\"" + positionId + "\",";
+    json += "\"trailPrice\":" + DoubleToString(trailPrice, 5) + ",";
+    json += "\"stopLoss\":" + DoubleToString(stopLoss, 5) + ",";
+    json += "\"timestamp\":" + IntegerToString(TimeCurrent());
+    json += "}";
+    
+    if(!WSSendMessage(json))
+    {
+        LogMessage("Failed to send trail event: " + eventType);
+    }
+}
+
+//+------------------------------------------------------------------+
+//| ポジションのトレール更新                                         |
+//+------------------------------------------------------------------+
+bool HedgeSystemConnector::UpdatePositionTrail(string positionId, double newStopLoss)
+{
+    int totalPositions = PositionsTotal();
+    
+    for(int i = 0; i < totalPositions; i++)
+    {
+        ulong ticket = PositionGetTicket(i);
+        if(ticket != 0)
+        {
+            string comment = PositionGetString(POSITION_COMMENT);
+            
+            // ポジションIDがコメントに含まれているか確認
+            if(StringFind(comment, positionId) != -1)
+            {
+                // 現在のストップロスを取得
+                double currentSL = PositionGetDouble(POSITION_SL);
+                double currentTP = PositionGetDouble(POSITION_TP);
+                string symbol = PositionGetString(POSITION_SYMBOL);
+                
+                // ストップロスが改善される場合のみ更新
+                ENUM_POSITION_TYPE posType = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+                bool shouldUpdate = false;
+                
+                if(posType == POSITION_TYPE_BUY)
+                {
+                    // 買いポジション：新しいSLが現在のSLより高い場合に更新
+                    shouldUpdate = (newStopLoss > currentSL || currentSL == 0);
+                }
+                else if(posType == POSITION_TYPE_SELL)
+                {
+                    // 売りポジション：新しいSLが現在のSLより低い場合に更新
+                    shouldUpdate = (newStopLoss < currentSL || currentSL == 0);
+                }
+                
+                if(shouldUpdate)
+                {
+                    MqlTradeRequest request;
+                    MqlTradeResult result;
+                    
+                    ZeroMemory(request);
+                    ZeroMemory(result);
+                    
+                    request.action = TRADE_ACTION_SLTP;
+                    request.position = ticket;
+                    request.symbol = symbol;
+                    request.sl = newStopLoss;
+                    request.tp = currentTP;
+                    
+                    if(OrderSend(request, result))
+                    {
+                        if(result.retcode == TRADE_RETCODE_DONE)
+                        {
+                            LogMessage("Trail stop updated for position " + positionId + 
+                                     " (ticket: " + IntegerToString(ticket) + 
+                                     ") New SL: " + DoubleToString(newStopLoss, 5));
+                            return true;
+                        }
+                        else
+                        {
+                            LogMessage("ERROR: Failed to update trail stop. RetCode: " + 
+                                     IntegerToString(result.retcode));
+                        }
+                    }
+                    else
+                    {
+                        LogMessage("ERROR: OrderSend failed for trail update. Error: " + 
+                                 IntegerToString(GetLastError()));
+                    }
+                }
+                else
+                {
+                    LogMessage("Trail update skipped - new SL not better than current SL");
+                    return true; // 更新不要でも成功とみなす
+                }
+            }
+        }
+    }
+    
+    LogMessage("ERROR: Position not found for trail update: " + positionId);
+    return false;
+}
+
+//+------------------------------------------------------------------+
+//| 本番環境検証                                                     |
+//+------------------------------------------------------------------+
+bool HedgeSystemConnector::ValidateProductionEnvironment()
+{
+    // MT5バージョン確認
+    int buildNumber = TerminalInfoInteger(TERMINAL_BUILD);
+    if(buildNumber < 3200)
+    {
+        LogMessage("ERROR: MT5 Build " + IntegerToString(buildNumber) + " is not supported. Minimum: 3200");
+        return false;
+    }
+    
+    // DLL使用許可確認
+    if(!TerminalInfoInteger(TERMINAL_DLLS_ALLOWED))
+    {
+        LogMessage("ERROR: DLL usage not allowed. Please enable in Tools→Options→Expert Advisors");
+        return false;
+    }
+    
+    // WebRequest許可確認
+    if(!TerminalInfoInteger(TERMINAL_MQID))
+    {
+        LogMessage("WARNING: MQL ID not available. WebRequest may be limited");
+    }
+    
+    // 口座タイプ確認
+    ENUM_ACCOUNT_TRADE_MODE tradeMode = (ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE);
+    if(tradeMode == ACCOUNT_TRADE_MODE_DEMO)
+    {
+        LogMessage("INFO: Running in DEMO mode");
+    }
+    else
+    {
+        LogMessage("INFO: Running in REAL mode - Production environment detected");
+    }
+    
+    // 取引許可確認
+    if(!AccountInfoInteger(ACCOUNT_TRADE_ALLOWED))
+    {
+        LogMessage("ERROR: Trading not allowed for this account");
+        return false;
+    }
+    
+    LogMessage("Production environment validation: PASSED");
+    return true;
+}
+
+//+------------------------------------------------------------------+
+//| 接続検証メッセージ送信                                           |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendConnectionValidation()
+{
+    string message = "{";
+    message += "\"type\":\"INFO\",";
+    message += "\"accountId\":\"" + m_accountId + "\",";
+    message += "\"event\":\"CONNECTION_VALIDATION\",";
+    message += "\"mt5Build\":" + IntegerToString(TerminalInfoInteger(TERMINAL_BUILD)) + ",";
+    message += "\"tradeAllowed\":" + (AccountInfoInteger(ACCOUNT_TRADE_ALLOWED) ? "true" : "false") + ",";
+    message += "\"balance\":" + DoubleToString(AccountInfoDouble(ACCOUNT_BALANCE), 2) + ",";
+    message += "\"equity\":" + DoubleToString(AccountInfoDouble(ACCOUNT_EQUITY), 2) + ",";
+    message += "\"leverage\":" + IntegerToString(AccountInfoInteger(ACCOUNT_LEVERAGE)) + ",";
+    message += "\"server\":\"" + AccountInfoString(ACCOUNT_SERVER) + "\",";
+    message += "\"currency\":\"" + AccountInfoString(ACCOUNT_CURRENCY) + "\",";
+    message += "\"fastMode\":" + (FAST_MODE ? "true" : "false") + ",";
+    message += "\"debugMode\":" + (DEBUG_MODE ? "true" : "false") + ",";
+    message += "\"timestamp\":\"" + TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS) + "\"";
+    message += "}";
+    
+    if(WSSendMessage(message))
+    {
+        LogMessage("Connection validation sent");
+    }
+    else
+    {
+        LogMessage("ERROR: Failed to send connection validation");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| パフォーマンス メトリクス送信                                     |
+//+------------------------------------------------------------------+
+void HedgeSystemConnector::SendPerformanceMetrics()
+{
+    // CPU使用率計算（簡易版）
+    datetime start = GetMicrosecondCount();
+    for(int i = 0; i < 1000; i++)
+    {
+        // 軽い計算処理
+        double dummy = MathSin(i * 0.001);
+    }
+    double processingTime = (GetMicrosecondCount() - start) / 1000.0;
+    
+    // メモリ使用量取得
+    long memoryUsed = TerminalInfoInteger(TERMINAL_MEMORY_PHYSICAL);
+    long memoryTotal = TerminalInfoInteger(TERMINAL_MEMORY_TOTAL);
+    
+    string message = "{";
+    message += "\"type\":\"INFO\",";
+    message += "\"accountId\":\"" + m_accountId + "\",";
+    message += "\"event\":\"PERFORMANCE_METRICS\",";
+    message += "\"processingLatency\":" + DoubleToString(processingTime, 2) + ",";
+    message += "\"memoryUsed\":" + IntegerToString(memoryUsed) + ",";
+    message += "\"memoryTotal\":" + IntegerToString(memoryTotal) + ",";
+    message += "\"connectionStatus\":\"" + (m_isConnected ? "CONNECTED" : "DISCONNECTED") + "\",";
+    message += "\"reconnectAttempts\":" + IntegerToString(m_reconnectAttempts) + ",";
+    message += "\"lastHeartbeat\":" + IntegerToString(m_lastHeartbeat) + ",";
+    message += "\"positionsCount\":" + IntegerToString(PositionsTotal()) + ",";
+    message += "\"ordersCount\":" + IntegerToString(OrdersTotal()) + ",";
+    message += "\"timestamp\":\"" + TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS) + "\"";
+    message += "}";
+    
+    if(WSSendMessage(message))
+    {
+        if(DEBUG_MODE)
+        {
+            LogMessage("Performance metrics sent: " + DoubleToString(processingTime, 2) + "ms latency");
+        }
+    }
+    else
+    {
+        LogMessage("ERROR: Failed to send performance metrics");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| システムヘルスチェック                                           |
+//+------------------------------------------------------------------+
+bool HedgeSystemConnector::CheckSystemHealth()
+{
+    bool isHealthy = true;
+    string healthReport = "System Health Check:\n";
+    
+    // 接続状態確認
+    if(!m_isConnected)
+    {
+        healthReport += "❌ WebSocket: DISCONNECTED\n";
+        isHealthy = false;
+    }
+    else
+    {
+        healthReport += "✅ WebSocket: CONNECTED\n";
+    }
+    
+    // ハートビート確認
+    datetime timeSinceHeartbeat = TimeCurrent() - m_lastHeartbeat;
+    if(timeSinceHeartbeat > HEARTBEAT_INTERVAL / 1000 * 3) // 3倍の時間が経過
+    {
+        healthReport += "❌ Heartbeat: STALE (" + IntegerToString(timeSinceHeartbeat) + "s ago)\n";
+        isHealthy = false;
+    }
+    else
+    {
+        healthReport += "✅ Heartbeat: ACTIVE\n";
+    }
+    
+    // 再接続試行回数確認
+    if(m_reconnectAttempts > m_maxReconnectAttempts / 2)
+    {
+        healthReport += "⚠️ Reconnect attempts: HIGH (" + IntegerToString(m_reconnectAttempts) + ")\n";
+    }
+    else
+    {
+        healthReport += "✅ Reconnect attempts: NORMAL (" + IntegerToString(m_reconnectAttempts) + ")\n";
+    }
+    
+    // 口座状態確認
+    double equity = AccountInfoDouble(ACCOUNT_EQUITY);
+    double margin = AccountInfoDouble(ACCOUNT_MARGIN);
+    double marginLevel = equity > 0 && margin > 0 ? (equity / margin) * 100 : 0;
+    
+    if(marginLevel > 0 && marginLevel < 200)
+    {
+        healthReport += "⚠️ Margin Level: LOW (" + DoubleToString(marginLevel, 2) + "%)\n";
+    }
+    else
+    {
+        healthReport += "✅ Margin Level: SAFE (" + DoubleToString(marginLevel, 2) + "%)\n";
+    }
+    
+    // MT5ターミナル状態確認
+    if(!TerminalInfoInteger(TERMINAL_CONNECTED))
+    {
+        healthReport += "❌ MT5 Terminal: DISCONNECTED\n";
+        isHealthy = false;
+    }
+    else
+    {
+        healthReport += "✅ MT5 Terminal: CONNECTED\n";
+    }
+    
+    LogMessage(healthReport);
+    
+    // ヘルスチェック結果をWebSocketで送信
+    string message = "{";
+    message += "\"type\":\"INFO\",";
+    message += "\"accountId\":\"" + m_accountId + "\",";
+    message += "\"event\":\"HEALTH_CHECK\",";
+    message += "\"status\":\"" + (isHealthy ? "HEALTHY" : "UNHEALTHY") + "\",";
+    message += "\"wsConnected\":" + (m_isConnected ? "true" : "false") + ",";
+    message += "\"heartbeatAge\":" + IntegerToString(timeSinceHeartbeat) + ",";
+    message += "\"reconnectAttempts\":" + IntegerToString(m_reconnectAttempts) + ",";
+    message += "\"marginLevel\":" + DoubleToString(marginLevel, 2) + ",";
+    message += "\"terminalConnected\":" + (TerminalInfoInteger(TERMINAL_CONNECTED) ? "true" : "false") + ",";
+    message += "\"timestamp\":\"" + TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS) + "\"";
+    message += "}";
+    
+    WSSendMessage(message);
+    
+    return isHealthy;
 }

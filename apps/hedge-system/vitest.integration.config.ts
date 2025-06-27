@@ -7,12 +7,11 @@ export default defineConfig({
     include: ['tests/integration/**/*.test.ts'],
     exclude: ['node_modules', 'dist', '.next'],
     environment: 'node',
-    timeout: 30000, // 30秒タイムアウト（Integration テスト用）
-    testTimeout: 30000,
+    testTimeout: 30000, // 30秒タイムアウト（Integration テスト用）
     hookTimeout: 30000,
     teardownTimeout: 30000,
     globals: true,
-    reporter: ['verbose', 'json'],
+    reporters: ['verbose', 'json'],
     outputFile: 'test-results/integration-results.json'
   },
   resolve: {

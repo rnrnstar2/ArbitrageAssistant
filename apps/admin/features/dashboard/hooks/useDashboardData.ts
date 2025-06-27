@@ -39,6 +39,13 @@ export function useDashboardData() {
       totalAccounts: accounts.length,
       openPositions: openPositions.length,
       pendingActions: pendingActions.length,
+      totalVolume: openPositions.reduce((sum, pos) => sum + (pos.volume || 0), 0),
+      totalPnL: openPositions.reduce((sum, pos) => {
+        // 簡易的なPnL計算（実際の実装では現在価格との差額を計算）
+        const entryPrice = pos.entryPrice || 0;
+        const currentPrice = entryPrice * 1.001; // モック用の現在価格
+        return sum + ((currentPrice - entryPrice) * (pos.volume || 0));
+      }, 0),
       totalBalance: activeAccounts.reduce((sum, acc) => sum + (acc.balance || 0), 0),
       totalCredit: activeAccounts.reduce((sum, acc) => sum + (acc.credit || 0), 0),
       totalEquity: activeAccounts.reduce((sum, acc) => sum + (acc.equity || 0), 0),
@@ -80,17 +87,22 @@ export function useDashboardData() {
       const positionsData = positionsResult.data || [];
       const actionsData = actionsResult.data || [];
 
-      setAccounts(accountsData);
-      setPositions(positionsData);
-      setActions(actionsData);
-      setStats(calculateStats(accountsData, positionsData, actionsData));
+      const transformedAccounts = accountsData as unknown as Account[];
+      const transformedPositions = positionsData as unknown as Position[];
+      const transformedActions = actionsData as unknown as Action[];
+      
+      setAccounts(transformedAccounts);
+      setPositions(transformedPositions);
+      setActions(transformedActions);
+      setStats(calculateStats(transformedAccounts, transformedPositions, transformedActions));
       
       // クライアント監視データ (簡易実装)
-      setClients(accountsData.map(acc => ({
+      setClients(transformedAccounts.map(acc => ({
         id: acc.id,
         name: acc.displayName || acc.accountNumber,
         status: acc.isActive ? 'online' : 'offline',
         lastSeen: acc.lastUpdated || new Date().toISOString(),
+        accountCount: 1, // ClientStatus型に必要なプロパティ
         version: '1.0.0',
         accountId: acc.id
       })));
@@ -129,9 +141,10 @@ export function useDashboardData() {
       }).subscribe({
         next: ({ items }) => {
           console.log('📋 Account subscription update:', items.length);
-          setAccounts(items);
+          const transformedItems = items as unknown as Account[];
+          setAccounts(transformedItems);
           setStats(prev => {
-            const newStats = calculateStats(items, positions, actions);
+            const newStats = calculateStats(transformedItems, positions, actions);
             return { ...prev, ...newStats };
           });
         },

@@ -305,7 +305,7 @@ export class PositionManager {
     let realizedPnL = 0;
     let winCount = 0;
     let lossCount = 0;
-    let maxDrawdown = 0;
+    const maxDrawdown = 0;
     
     userPositions.forEach(position => {
       if (position.status === 'OPEN') {
@@ -396,10 +396,158 @@ export class PositionManager {
   }
 
   private calculateDailyPnL(userId: string): number {
-    // 今日の実現損益を計算
-    const today = new Date().toISOString().split('T')[0];
-    // TODO: 実装
-    return 0;
+    return this.calculatePeriodPnL(userId, 'day');
+  }
+  
+  /**
+   * 期間別PnL計算（日次・週次・月次対応）
+   */
+  calculatePeriodPnL(userId: string, period: 'day' | 'week' | 'month'): number {
+    const now = new Date();
+    let periodStart: Date;
+    
+    switch (period) {
+      case 'day':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        const firstDayOfWeek = now.getDate() - now.getDay();
+        periodStart = new Date(now.getFullYear(), now.getMonth(), firstDayOfWeek);
+        break;
+      case 'month':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+    }
+    
+    const periodStartISO = periodStart.toISOString();
+    const userPositions = Array.from(this.positions.values())
+      .filter(p => p.userId === userId);
+    
+    let periodPnL = 0;
+    
+    // 期間内に決済されたポジションの実現損益を計算
+    userPositions.forEach(position => {
+      if (position.status === 'CLOSED' && 
+          position.exitTime && 
+          position.exitTime >= periodStartISO &&
+          position.exitPrice && 
+          position.entryPrice) {
+        
+        const direction = position.executionType === 'ENTRY' ? 1 : -1;
+        const pnl = (position.exitPrice - position.entryPrice) * direction * position.volume * this.getSymbolMultiplier(position.symbol);
+        periodPnL += pnl;
+      }
+    });
+    
+    return this.roundToPrecision(periodPnL, 2);
+  }
+  
+  /**
+   * ポートフォリオ統計情報取得
+   */
+  getPortfolioStatistics(userId: string): {
+    totalPositions: number;
+    openPositions: number;
+    closedPositions: number;
+    winningTrades: number;
+    losingTrades: number;
+    averageWin: number;
+    averageLoss: number;
+    largestWin: number;
+    largestLoss: number;
+    consecutiveWins: number;
+    consecutiveLosses: number;
+    sharpeRatio: number;
+  } {
+    const userPositions = Array.from(this.positions.values())
+      .filter(p => p.userId === userId);
+    
+    const openPositions = userPositions.filter(p => p.status === 'OPEN');
+    const closedPositions = userPositions.filter(p => p.status === 'CLOSED');
+    
+    let winningTrades = 0;
+    let losingTrades = 0;
+    let totalWin = 0;
+    let totalLoss = 0;
+    let largestWin = 0;
+    let largestLoss = 0;
+    let currentStreak = 0;
+    let maxWinStreak = 0;
+    let maxLossStreak = 0;
+    let lastResult: 'WIN' | 'LOSS' | null = null;
+    
+    // 実現損益の統計を計算
+    closedPositions
+      .sort((a, b) => (a.exitTime || '').localeCompare(b.exitTime || ''))
+      .forEach(position => {
+        if (position.exitPrice && position.entryPrice) {
+          const direction = position.executionType === 'ENTRY' ? 1 : -1;
+          const pnl = (position.exitPrice - position.entryPrice) * direction * position.volume * this.getSymbolMultiplier(position.symbol);
+          
+          if (pnl > 0) {
+            winningTrades++;
+            totalWin += pnl;
+            largestWin = Math.max(largestWin, pnl);
+            
+            if (lastResult === 'WIN') {
+              currentStreak++;
+              maxWinStreak = Math.max(maxWinStreak, currentStreak);
+            } else {
+              currentStreak = 1;
+            }
+            lastResult = 'WIN';
+          } else if (pnl < 0) {
+            losingTrades++;
+            totalLoss += Math.abs(pnl);
+            largestLoss = Math.max(largestLoss, Math.abs(pnl));
+            
+            if (lastResult === 'LOSS') {
+              currentStreak++;
+              maxLossStreak = Math.max(maxLossStreak, currentStreak);
+            } else {
+              currentStreak = 1;
+            }
+            lastResult = 'LOSS';
+          }
+        }
+      });
+    
+    const averageWin = winningTrades > 0 ? totalWin / winningTrades : 0;
+    const averageLoss = losingTrades > 0 ? totalLoss / losingTrades : 0;
+    
+    // シャープ比率の簡易計算
+    const returns = closedPositions
+      .map(p => {
+        if (p.exitPrice && p.entryPrice) {
+          const direction = p.executionType === 'ENTRY' ? 1 : -1;
+          return ((p.exitPrice - p.entryPrice) / p.entryPrice) * direction * 100;
+        }
+        return 0;
+      })
+      .filter(r => r !== 0);
+    
+    const avgReturn = returns.length > 0 ? 
+      returns.reduce((sum, r) => sum + r, 0) / returns.length : 0;
+    
+    const stdDev = returns.length > 1 ?
+      Math.sqrt(returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1)) : 0;
+    
+    const sharpeRatio = stdDev > 0 ? (avgReturn / stdDev) * Math.sqrt(252) : 0; // 年率換算
+    
+    return {
+      totalPositions: userPositions.length,
+      openPositions: openPositions.length,
+      closedPositions: closedPositions.length,
+      winningTrades,
+      losingTrades,
+      averageWin: this.roundToPrecision(averageWin, 2),
+      averageLoss: this.roundToPrecision(averageLoss, 2),
+      largestWin: this.roundToPrecision(largestWin, 2),
+      largestLoss: this.roundToPrecision(largestLoss, 2),
+      consecutiveWins: maxWinStreak,
+      consecutiveLosses: maxLossStreak,
+      sharpeRatio: this.roundToPrecision(sharpeRatio, 2)
+    };
   }
 
   private roundToPrecision(value: number, precision: number): number {
@@ -434,6 +582,11 @@ export class RiskController {
   private readonly MAX_DRAWDOWN_PERCENTAGE = 10.0; // 最大ドローダウン10%
   private readonly MIN_MARGIN_LEVEL = 150.0; // 最小証拠金レベル150%
   private readonly MAX_CREDIT_UTILIZATION = 80.0; // 最大クレジット使用率80%
+  
+  // アラート閾値
+  private readonly ALERT_MARGIN_LEVEL = 200.0; // 証拠金レベル警告
+  private readonly ALERT_DRAWDOWN_PERCENTAGE = 7.0; // ドローダウン警告
+  private readonly ALERT_CREDIT_UTILIZATION = 70.0; // クレジット使用率警告
 
   /**
    * ロスカット判定
@@ -497,6 +650,102 @@ export class RiskController {
       equityRatio: this.roundToPrecision(equityRatio * 100, 1)
     };
   }
+  
+  /**
+   * リスクアラート生成
+   */
+  generateRiskAlerts(
+    account: Account,
+    positions: Position[],
+    currentPrices: { [symbol: string]: number }
+  ): {
+    level: 'INFO' | 'WARNING' | 'CRITICAL';
+    message: string;
+    metric: string;
+    value: number;
+    threshold: number;
+  }[] {
+    
+    const alerts: {
+      level: 'INFO' | 'WARNING' | 'CRITICAL';
+      message: string;
+      metric: string;
+      value: number;
+      threshold: number;
+    }[] = [];
+    
+    const metrics = this.calculateRiskMetrics(account, positions, currentPrices);
+    
+    // 証拠金レベルチェック
+    if (metrics.marginLevel < this.MIN_MARGIN_LEVEL) {
+      alerts.push({
+        level: 'CRITICAL',
+        message: `証拠金レベルが危険域に達しています`,
+        metric: 'marginLevel',
+        value: metrics.marginLevel,
+        threshold: this.MIN_MARGIN_LEVEL
+      });
+    } else if (metrics.marginLevel < this.ALERT_MARGIN_LEVEL) {
+      alerts.push({
+        level: 'WARNING',
+        message: `証拠金レベルが低下しています`,
+        metric: 'marginLevel',
+        value: metrics.marginLevel,
+        threshold: this.ALERT_MARGIN_LEVEL
+      });
+    }
+    
+    // ドローダウンチェック
+    if (metrics.maxDrawdown > this.MAX_DRAWDOWN_PERCENTAGE) {
+      alerts.push({
+        level: 'CRITICAL',
+        message: `最大ドローダウンを超過しています`,
+        metric: 'maxDrawdown',
+        value: metrics.maxDrawdown,
+        threshold: this.MAX_DRAWDOWN_PERCENTAGE
+      });
+    } else if (metrics.maxDrawdown > this.ALERT_DRAWDOWN_PERCENTAGE) {
+      alerts.push({
+        level: 'WARNING',
+        message: `ドローダウンが警告レベルに達しています`,
+        metric: 'maxDrawdown',
+        value: metrics.maxDrawdown,
+        threshold: this.ALERT_DRAWDOWN_PERCENTAGE
+      });
+    }
+    
+    // クレジット使用率チェック
+    if (metrics.creditUtilization > this.MAX_CREDIT_UTILIZATION) {
+      alerts.push({
+        level: 'CRITICAL',
+        message: `クレジット使用率が上限に達しています`,
+        metric: 'creditUtilization',
+        value: metrics.creditUtilization,
+        threshold: this.MAX_CREDIT_UTILIZATION
+      });
+    } else if (metrics.creditUtilization > this.ALERT_CREDIT_UTILIZATION) {
+      alerts.push({
+        level: 'WARNING',
+        message: `クレジット使用率が高くなっています`,
+        metric: 'creditUtilization',
+        value: metrics.creditUtilization,
+        threshold: this.ALERT_CREDIT_UTILIZATION
+      });
+    }
+    
+    // リスク率チェック
+    if (metrics.riskPercentage > this.MAX_RISK_PERCENTAGE) {
+      alerts.push({
+        level: 'WARNING',
+        message: `リスク率が推奨値を超えています`,
+        metric: 'riskPercentage',
+        value: metrics.riskPercentage,
+        threshold: this.MAX_RISK_PERCENTAGE
+      });
+    }
+    
+    return alerts;
+  }
 
   /**
    * エクスポージャー制御
@@ -514,7 +763,8 @@ export class RiskController {
       currentPrice
     );
     
-    const currentExposure = this.calculateCurrentExposure([], {}); // TODO: 現在のポジションを取得
+    const currentPositions = this.getUserPositions(account.userId || '');
+    const currentExposure = this.calculateCurrentExposure(currentPositions, { [newPositionSymbol]: currentPrice });
     const totalExposure = currentExposure + additionalExposure;
     const maxAllowedExposure = (account.balance || 0) * (this.MAX_RISK_PERCENTAGE / 100);
     
@@ -570,7 +820,34 @@ export class RiskController {
     positions: Position[],
     currentPrices: { [symbol: string]: number }
   ): number {
-    // TODO: 実装
+    // 最大資産からの現在の減少率を計算
+    const initialBalance = account.balance || 0;
+    const currentEquity = account.equity || 0;
+    
+    // ポジションの未実現損益を含めた総資産を計算
+    let totalUnrealizedPnL = 0;
+    positions
+      .filter(p => p.status === 'OPEN')
+      .forEach(position => {
+        const currentPrice = currentPrices[position.symbol];
+        if (currentPrice && position.entryPrice) {
+          const direction = position.executionType === 'ENTRY' ? 1 : -1;
+          const pnl = (currentPrice - position.entryPrice) * direction * position.volume * this.getSymbolMultiplier(position.symbol);
+          totalUnrealizedPnL += pnl;
+        }
+      });
+    
+    const currentTotalValue = currentEquity + totalUnrealizedPnL;
+    
+    // 最大資産を取得（簡易版：初期残高 + クレジット）
+    const maxValue = initialBalance + (account.credit || 0);
+    
+    // ドローダウン率を計算
+    if (maxValue > 0) {
+      const drawdown = ((maxValue - currentTotalValue) / maxValue) * 100;
+      return this.roundToPrecision(Math.max(0, drawdown), 2);
+    }
+    
     return 0;
   }
 
@@ -584,6 +861,17 @@ export class RiskController {
         const price = currentPrices[pos.symbol] || pos.entryPrice || 0;
         return total + (pos.volume * price);
       }, 0);
+  }
+  
+  
+  private getSymbolMultiplier(symbol: Symbol): number {
+    const multipliers: Record<Symbol, number> = {
+      'USDJPY': 100000,
+      'EURUSD': 100000,
+      'EURGBP': 100000,
+      'XAUUSD': 100
+    };
+    return multipliers[symbol] || 100000;
   }
 
   private calculatePositionExposure(
@@ -608,6 +896,15 @@ export class RiskController {
   private roundToPrecision(value: number, precision: number): number {
     const factor = Math.pow(10, precision);
     return Math.round(value * factor) / factor;
+  }
+
+  /**
+   * ユーザーのポジション一覧取得
+   * 注意：実際の実装では外部のPositionManagerから取得する
+   */
+  getUserPositions(userId: string): Position[] {
+    // この実装は一時的なもので、実際にはPositionManagerから取得すべき
+    return [];
   }
 }
 
@@ -725,14 +1022,15 @@ export class HedgeSystemCore {
     userId: string,
     accounts: { [accountId: string]: Account },
     currentPrices: { [symbol: string]: number }
-  ): Promise<{ alerts: string[]; actions: string[] }> {
+  ): Promise<{ alerts: string[]; actions: string[]; detailedAlerts: any[] }> {
     
     const alerts: string[] = [];
     const actions: string[] = [];
+    const detailedAlerts: any[] = [];
     
     for (const account of Object.values(accounts)) {
-      const userPositions = this.positionManager.getUserPositions(userId)
-        .filter(p => p.accountId === account.id);
+      const userPositions = this.positionManager.getAllPositions()
+        .filter((p: Position) => p.userId === userId && p.accountId === account.id);
       
       const stopOutCheck = this.riskController.shouldExecuteStopOut(
         account, userPositions, currentPrices
@@ -743,20 +1041,26 @@ export class HedgeSystemCore {
         actions.push(...stopOutCheck.positions.map(posId => `STOP_OUT:${posId}`));
       }
       
-      const riskMetrics = this.riskController.calculateRiskMetrics(
+      // 詳細なリスクアラートを生成
+      const riskAlerts = this.riskController.generateRiskAlerts(
         account, userPositions, currentPrices
       );
       
-      if (riskMetrics.marginLevel < 200) {
-        alerts.push(`⚠️ Low margin level: ${riskMetrics.marginLevel}%`);
-      }
-      
-      if (riskMetrics.creditUtilization > 70) {
-        alerts.push(`⚠️ High credit utilization: ${riskMetrics.creditUtilization}%`);
-      }
+      riskAlerts.forEach(alert => {
+        detailedAlerts.push({
+          accountId: account.id,
+          ...alert
+        });
+        
+        if (alert.level === 'CRITICAL') {
+          alerts.push(`❌ ${alert.message} (${alert.value.toFixed(2)}%)`);
+        } else if (alert.level === 'WARNING') {
+          alerts.push(`⚠️ ${alert.message} (${alert.value.toFixed(2)}%)`);
+        }
+      });
     }
     
-    return { alerts, actions };
+    return { alerts, actions, detailedAlerts };
   }
 
   /**
@@ -843,6 +1147,43 @@ export class HedgeSystemCore {
       },
       systemStatus: this.getStatus()
     };
+  }
+  
+  /**
+   * ユーザー統計情報取得
+   */
+  getUserStatistics(userId: string): any {
+    return this.positionManager.getPortfolioStatistics(userId);
+  }
+  
+  /**
+   * 期間別PnL取得
+   */
+  getPeriodPnL(userId: string, period: 'day' | 'week' | 'month'): number {
+    return this.positionManager.calculatePeriodPnL(userId, period);
+  }
+  
+  /**
+   * リスクアラート取得
+   */
+  getRiskAlerts(
+    account: Account,
+    positions: Position[],
+    currentPrices: { [symbol: string]: number }
+  ): any[] {
+    return this.riskController.generateRiskAlerts(account, positions, currentPrices);
+  }
+  
+  /**
+   * ドローダウン計算
+   */
+  getDrawdown(
+    account: Account,
+    positions: Position[],
+    currentPrices: { [symbol: string]: number }
+  ): number {
+    const metrics = this.riskController.calculateRiskMetrics(account, positions, currentPrices);
+    return metrics.maxDrawdown;
   }
 }
 
