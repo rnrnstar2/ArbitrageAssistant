@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { 
-  WSMessage, 
   WSEvent, 
   WSCommand, 
   WSMessageType,
@@ -9,15 +8,18 @@ import {
   WSClosedEvent,
   WSStoppedEvent,
   WSErrorEvent,
-  WSPriceEvent,
-  WSPongMessage,
   WSOpenCommand,
   WSCloseCommand,
-  WSModifyStopCommand,
   RealtimePosition, 
   RealtimeAccount,
   ExecutionType,
-  Symbol
+  Symbol,
+  WebSocketPerformanceMetrics,
+  SystemPerformance,
+  NetworkQuality,
+  WebSocketClientInfo,
+  WebSocketDetailedStats,
+  WebSocketEventPayload
 } from './types';
 import { amplifyClient } from './amplify-client';
 import { PriceMonitor, PriceUpdate } from './price-monitor';
@@ -145,17 +147,17 @@ export class WebSocketServer {
   private async startPerformanceMonitoring(): Promise<void> {
     try {
       // システムパフォーマンス取得
-      const systemPerf = await invoke('get_system_performance') as any;
+      const systemPerf = await invoke('get_system_performance') as SystemPerformance;
       console.log(`💻 System Performance:`, systemPerf);
       
       // ネットワーク品質測定
-      const networkQuality = await invoke('get_network_quality') as any;
+      const networkQuality = await invoke('get_network_quality') as NetworkQuality;
       console.log(`🌐 Network Quality:`, networkQuality);
       
       // 定期的なパフォーマンス監視（30秒間隔）
       setInterval(async () => {
         try {
-          const metrics = await invoke('get_websocket_performance_metrics') as any;
+          const metrics = await invoke('get_websocket_performance_metrics') as WebSocketPerformanceMetrics;
           
           // パフォーマンス警告
           if (metrics.avg_latency_ms > 100) {
@@ -279,7 +281,7 @@ export class WebSocketServer {
   /**
    * WebSocketイベント処理
    */
-  private handleWebSocketEvent(payload: any): void {
+  private handleWebSocketEvent(payload: WebSocketEventPayload): void {
     try {
       this.stats.totalMessagesReceived++;
       this.messageStats.received++;
@@ -345,7 +347,7 @@ export class WebSocketServer {
   /**
    * EAイベント処理（価格更新・ポジション状態等）
    */
-  private async handleEAEvent(event: any): Promise<void> {
+  private async handleEAEvent(event: WSEvent & { event: string; bid?: number; ask?: number; spread?: number }): Promise<void> {
     try {
       switch (event.event) {
         case 'PRICE_UPDATE':
@@ -379,7 +381,7 @@ export class WebSocketServer {
   /**
    * 価格更新処理
    */
-  private async handlePriceUpdate(event: any): Promise<void> {
+  private async handlePriceUpdate(event: WSEvent & { symbol: string; price: number; bid?: number; ask?: number; spread?: number }): Promise<void> {
     if (this.priceMonitor) {
       const priceUpdate: PriceUpdate = {
         symbol: event.symbol,
@@ -402,7 +404,7 @@ export class WebSocketServer {
     
     try {
       // Position状態を OPEN に更新
-      await (amplifyClient as any).models?.Position?.update({
+      await (amplifyClient as {models?: {Position?: {update: (data: any) => Promise<any>}}}).models?.Position?.update({
         id: event.positionId,
         status: 'OPEN',
         mtTicket: event.mtTicket || event.orderId?.toString(),
@@ -412,7 +414,7 @@ export class WebSocketServer {
 
       // Action完了（存在する場合）
       if (event.actionId) {
-        await (amplifyClient as any).models?.Action?.update({
+        await (amplifyClient as {models?: {Action?: {update: (data: any) => Promise<any>}}}).models?.Action?.update({
           id: event.actionId,
           status: 'EXECUTED'
         });
@@ -433,7 +435,7 @@ export class WebSocketServer {
     
     try {
       // Position状態を CLOSED に更新
-      await (amplifyClient as any).models?.Position?.update({
+      await (amplifyClient as {models?: {Position?: {update: (data: any) => Promise<any>}}}).models?.Position?.update({
         id: event.positionId,
         status: 'CLOSED',
         exitPrice: event.price,
@@ -443,7 +445,7 @@ export class WebSocketServer {
 
       // Action完了（存在する場合）
       if (event.actionId) {
-        await (amplifyClient as any).models?.Action?.update({
+        await (amplifyClient as {models?: {Action?: {update: (data: any) => Promise<any>}}}).models?.Action?.update({
           id: event.actionId,
           status: 'EXECUTED'
         });
@@ -464,7 +466,7 @@ export class WebSocketServer {
     
     try {
       // Position状態更新
-      await (amplifyClient as any).models?.Position?.update({
+      await (amplifyClient as {models?: {Position?: {update: (data: any) => Promise<any>}}}).models?.Position?.update({
         id: event.positionId,
         status: 'STOPPED',
         exitPrice: event.price,
@@ -486,7 +488,7 @@ export class WebSocketServer {
         const actionIds = JSON.parse(position.triggerActionIds);
         for (const actionId of actionIds) {
           // ActionSync経由でアクション実行
-          await (amplifyClient as any).models?.Action?.update({
+          await (amplifyClient as {models?: {Action?: {update: (data: any) => Promise<any>}}}).models?.Action?.update({
             id: actionId,
             status: 'EXECUTING'
           });
@@ -521,7 +523,7 @@ export class WebSocketServer {
   /**
    * 設計書準拠メッセージかどうかの判定
    */
-  private isDesignCompliantMessage(message: any): boolean {
+  private isDesignCompliantMessage(message: unknown): message is WSEvent {
     return (
       message.type && 
       message.timestamp &&
@@ -563,7 +565,7 @@ export class WebSocketServer {
   /**
    * レガシーメッセージ処理（最小限）
    */
-  private async handleLegacyMessage(message: any, clientId: string): Promise<void> {
+  private async handleLegacyMessage(message: Record<string, unknown>, clientId: string): Promise<void> {
     try {
       // EAイベント処理（価格更新等）
       if (message.event) {
@@ -732,7 +734,7 @@ export class WebSocketServer {
   async getActiveConnections(): Promise<EAConnection[]> {
     try {
       // Tauri WebSocketサーバーからクライアント一覧を取得
-      const tauriClients = await invoke('get_websocket_clients') as any[];
+      const tauriClients = await invoke('get_websocket_clients') as WebSocketClientInfo[];
       
       return tauriClients.map(client => ({
         connectionId: client.id,
@@ -771,7 +773,14 @@ export class WebSocketServer {
   async getStats(): Promise<WSServerStats> {
     try {
       // Tauri WebSocketサーバーから統計を取得
-      const tauriStats = await invoke('get_websocket_server_status') as any;
+      const tauriStats = await invoke('get_websocket_server_status') as {
+        is_running?: boolean;
+        connected_clients?: number;
+        total_messages_received?: number;
+        total_messages_sent?: number;
+        uptime_seconds?: number;
+        errors?: number;
+      };
       
       return {
         isRunning: tauriStats.is_running || this.isRunning,
@@ -808,9 +817,9 @@ export class WebSocketServer {
   /**
    * 詳細パフォーマンス統計取得
    */
-  async getDetailedStats(): Promise<any> {
+  async getDetailedStats(): Promise<WebSocketDetailedStats | null> {
     try {
-      return await invoke('get_websocket_detailed_stats');
+      return await invoke('get_websocket_detailed_stats') as WebSocketDetailedStats;
     } catch (error) {
       console.error('❌ Failed to get detailed stats:', error);
       return null;
@@ -828,8 +837,8 @@ export class WebSocketServer {
       // メモリ最適化
       const memoryOptimization = await invoke('optimize_memory_usage') as string;
       
-      console.log(`🔧 WebSocket optimization: ${wsOptimization}`);
-      console.log(`🧹 Memory optimization: ${memoryOptimization}`);
+      console.warn(`🔧 WebSocket optimization: ${wsOptimization}`);
+      console.warn(`🧹 Memory optimization: ${memoryOptimization}`);
       
       return `Optimizations completed: ${wsOptimization}; ${memoryOptimization}`;
       
@@ -862,9 +871,17 @@ export class WebSocketServer {
   /**
    * 接続品質監視
    */
-  async getConnectionQuality(clientId: string): Promise<any> {
+  async getConnectionQuality(clientId: string): Promise<{
+    latency_ms: number;
+    packet_loss_rate: number;
+    connection_stability: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+  } | null> {
     try {
-      return await invoke('get_client_connection_quality', { clientId });
+      return await invoke('get_client_connection_quality', { clientId }) as {
+        latency_ms: number;
+        packet_loss_rate: number;
+        connection_stability: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+      };
     } catch (error) {
       console.error(`❌ Failed to get connection quality for ${clientId}:`, error);
       return null;
@@ -874,9 +891,9 @@ export class WebSocketServer {
   /**
    * システムパフォーマンス取得
    */
-  async getSystemPerformance(): Promise<any> {
+  async getSystemPerformance(): Promise<SystemPerformance | null> {
     try {
-      return await invoke('get_system_performance');
+      return await invoke('get_system_performance') as SystemPerformance;
     } catch (error) {
       console.error('❌ Failed to get system performance:', error);
       return null;
@@ -886,9 +903,9 @@ export class WebSocketServer {
   /**
    * ネットワーク品質取得
    */
-  async getNetworkQuality(): Promise<any> {
+  async getNetworkQuality(): Promise<NetworkQuality | null> {
     try {
-      return await invoke('get_network_quality');
+      return await invoke('get_network_quality') as NetworkQuality;
     } catch (error) {
       console.error('❌ Failed to get network quality:', error);
       return null;
@@ -898,9 +915,9 @@ export class WebSocketServer {
   /**
    * WebSocket パフォーマンスメトリクス取得
    */
-  async getPerformanceMetrics(): Promise<any> {
+  async getPerformanceMetrics(): Promise<WebSocketPerformanceMetrics | null> {
     try {
-      return await invoke('get_websocket_performance_metrics');
+      return await invoke('get_websocket_performance_metrics') as WebSocketPerformanceMetrics;
     } catch (error) {
       console.error('❌ Failed to get performance metrics:', error);
       return null;
@@ -943,7 +960,7 @@ export class WebSocketServer {
   /**
    * 総合健康状態評価
    */
-  private assessOverallHealth(wsStats: any, systemPerf: any, networkQuality: any): string {
+  private assessOverallHealth(wsStats: WebSocketDetailedStats | null, systemPerf: SystemPerformance | null, networkQuality: NetworkQuality | null): string {
     let score = 100;
 
     // WebSocket統計評価
@@ -966,7 +983,7 @@ export class WebSocketServer {
   /**
    * パフォーマンス改善推奨事項生成
    */
-  private generateRecommendations(metrics: any): string[] {
+  private generateRecommendations(metrics: WebSocketPerformanceMetrics | null): string[] {
     const recommendations = [];
 
     if (metrics?.avg_latency_ms > 100) {
@@ -987,7 +1004,7 @@ export class WebSocketServer {
   /**
    * WebSocket統計取得（簡素化）
    */
-  getStatsSync(): typeof this.messageStats & { serverStats?: any } {
+  getStatsSync(): typeof this.messageStats & { serverStats?: { isRunning: boolean; connections: number; port: number } } {
     const stats = { ...this.messageStats };
     
     if (this.config) {
@@ -1088,10 +1105,13 @@ export class WebSocketServer {
   /**
    * ポジション取得
    */
-  private async getPosition(positionId: string): Promise<any> {
+  private async getPosition(positionId: string): Promise<{
+    id: string;
+    triggerActionIds?: string;
+  } | null> {
     try {
       // TODO: Fix schema mismatch - regenerate amplify_outputs.json
-      const position = await (amplifyClient as any).models?.Position?.get({
+      const position = await (amplifyClient as {models?: {Position?: {get: (data: {id: string}) => Promise<{data?: {id: string; triggerActionIds?: string}}>}}}).models?.Position?.get({
         id: positionId
       });
       return position?.data || null;
@@ -1135,7 +1155,7 @@ export class WebSocketServer {
   /**
    * 統一エラー処理
    */
-  private async handleMessageError(error: Error, clientId: string, message: any): Promise<void> {
+  private async handleMessageError(error: Error, clientId: string, message: string): Promise<void> {
     this.messageStats.errors++;
     console.error(`❌ Message processing error for ${clientId}:`, error);
     
@@ -1166,7 +1186,7 @@ export class WebSocketServer {
         errorCode: 'PROCESSING_ERROR'
       };
       
-      await this.sendCommand(clientId, errorEvent as any);
+      await this.sendCommand(clientId, errorEvent as unknown as WSCommand);
     } catch (sendError) {
       console.error('❌ Failed to send error response:', sendError);
     }

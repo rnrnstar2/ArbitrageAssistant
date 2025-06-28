@@ -3,7 +3,9 @@ import {
   ActionType, 
   ActionStatus, 
   CreateActionInput,
-  Position
+  Position,
+  ExecutionType,
+  Symbol
 } from '@repo/shared-types';
 import { 
   WSOpenCommand, 
@@ -58,8 +60,8 @@ class ActionConsistencyManager {
    */
   async acquireActionLock(actionId: string): Promise<boolean> {
     if (this.processingActions.has(actionId)) {
-      const info = this.processingActions.get(actionId)!;
-      console.log(`🔒 Action ${actionId} is already being processed since ${info.startTime.toISOString()}`);
+      const _info = this.processingActions.get(actionId)!;
+      // 🔒 Action is already being processed
       return false; // 既に処理中
     }
     
@@ -68,7 +70,7 @@ class ActionConsistencyManager {
       status: 'processing'
     });
     
-    console.log(`🔐 Acquired lock for action: ${actionId}`);
+    // 🔐 Acquired lock for action
     return true;
   }
   
@@ -80,7 +82,7 @@ class ActionConsistencyManager {
     if (info) {
       info.status = 'completed';
       this.processingActions.delete(actionId);
-      console.log(`🔓 Released lock for action: ${actionId}`);
+      // 🔓 Released lock for action
     }
   }
   
@@ -92,7 +94,7 @@ class ActionConsistencyManager {
     if (info) {
       info.status = 'failed';
       this.processingActions.delete(actionId);
-      console.log(`❌ Released lock with failure for action: ${actionId}`);
+      // ❌ Released lock with failure for action
     }
   }
   
@@ -119,7 +121,7 @@ class ActionConsistencyManager {
     }
     
     if (stalledActions.length > 0) {
-      console.log(`🧹 Cleaned up ${stalledActions.length} stale actions`);
+      // 🧹 Cleaned up stale actions
     }
   }
   
@@ -171,7 +173,7 @@ export class ActionSync {
   private consistencyManager: ActionConsistencyManager;
   private currentUserId?: string;
   private isRunning = false;
-  private actionSubscription?: any;
+  private actionSubscription?: { unsubscribe: () => void };
   private syncInterval: NodeJS.Timeout | null = null;
   private executingActions: Set<string> = new Set();
   
@@ -203,8 +205,8 @@ export class ActionSync {
   private async initializeUserId(): Promise<void> {
     try {
       this.currentUserId = await getCurrentUserId();
-      console.log('✅ ActionSync user ID initialized:', this.currentUserId);
-    } catch (error) {
+      // ✅ ActionSync user ID initialized
+    } catch (_error) {
       this.currentUserId = undefined;
     }
   }
@@ -214,7 +216,7 @@ export class ActionSync {
    */
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('🔄 Action sync engine is already running');
+      // 🔄 Action sync engine is already running
       return;
     }
 
@@ -231,7 +233,7 @@ export class ActionSync {
     // 定期同期開始（既存のEXECUTINGアクション検出用）
     this.startPeriodicSync();
     
-    console.log('🚀 Action sync engine started for userId:', this.currentUserId);
+    // 🚀 Action sync engine started
   }
 
   /**
@@ -255,7 +257,7 @@ export class ActionSync {
     // 実行中アクションのクリーンアップ
     await this.consistencyManager.cleanupStaleActions();
     
-    console.log('🛑 Action sync engine stopped');
+    // 🛑 Action sync engine stopped
   }
 
   // ========================================
@@ -266,13 +268,13 @@ export class ActionSync {
    * Action Subscription設定（Amplify Gen2標準）
    */
   private async setupActionSubscription(): Promise<void> {
-    console.log('🔔 Setting up Action subscription for userId:', this.currentUserId);
+    // 🔔 Setting up Action subscription
     
     try {
       // EXECUTING状態のアクションを監視（実行担当判定用）
       const subscriptionId = await subscriptionService.subscribeToExecutingActions(
         async (action: Action) => {
-          console.log(`📨 Action update received: ${action.id} -> ${action.status}`);
+          // 📨 Action update received
           await this.handleActionUpdate(action);
         }
       );
@@ -281,9 +283,9 @@ export class ActionSync {
         unsubscribe: () => subscriptionService.unsubscribe(subscriptionId)
       };
       
-      console.log('✅ Action subscription established');
-    } catch (error) {
-      console.error('❌ Failed to setup action subscription:', error);
+      // ✅ Action subscription established
+    } catch (_error) {
+      console.error('❌ Failed to setup action subscription:', _error);
       this.stats.subscriptionErrors++;
     }
   }
@@ -300,7 +302,7 @@ export class ActionSync {
     // 排他制御
     const lockAcquired = await this.consistencyManager.acquireActionLock(action.id);
     if (!lockAcquired) {
-      console.log(`🔒 Action already being processed: ${action.id}`);
+      // 🔒 Action already being processed
       return;
     }
     
@@ -329,7 +331,7 @@ export class ActionSync {
     if (this.actionSubscription && this.actionSubscription.unsubscribe) {
       this.actionSubscription.unsubscribe();
     }
-    console.log('📴 Action subscription stopped');
+    // 📴 Action subscription stopped
   }
 
   // ========================================
@@ -356,9 +358,9 @@ export class ActionSync {
     };
 
     const result = await this.createActionGraphQL(actionInput);
-    const action = result.data.createAction;
+    const action = result;
     
-    console.log(`Action created: ${action.id} (${action.type})`);
+    // Action created
     return action;
   }
 
@@ -368,10 +370,10 @@ export class ActionSync {
   async triggerAction(actionId: string): Promise<boolean> {
     try {
       await this.updateActionStatus(actionId, ActionStatus.EXECUTING);
-      console.log(`Action triggered: ${actionId}`);
+      // Action triggered
       return true;
-    } catch (error) {
-      console.error(`Action trigger failed for ${actionId}:`, error);
+    } catch (_error) {
+      console.error(`Action trigger failed for ${actionId}:`, _error);
       return false;
     }
   }
@@ -401,7 +403,7 @@ export class ActionSync {
     this.stats.executingActions.push(action);
     
     try {
-      console.log(`⚡ Executing action: ${action.id} (${action.type})`);
+      // ⚡ Executing action
       
       switch (action.type) {
         case ActionType.ENTRY:
@@ -418,10 +420,10 @@ export class ActionSync {
       await this.updateActionStatus(action.id, ActionStatus.EXECUTED);
       
       this.stats.totalExecuted++;
-      console.log(`✅ Action executed successfully: ${action.id}`);
+      // ✅ Action executed successfully
       
-    } catch (error) {
-      console.error(`❌ Action execution failed: ${action.id}`, error);
+    } catch (_error) {
+      console.error(`❌ Action execution failed: ${action.id}`, _error);
       
       // 失敗状態を記録
       await this.updateActionStatus(action.id, ActionStatus.FAILED);
@@ -445,7 +447,7 @@ export class ActionSync {
    * ENTRY アクション実行（設計書準拠）
    */
   private async executeEntryAction(action: Action): Promise<void> {
-    console.log(`🎯 Executing ENTRY action: ${action.id}`);
+    // 🎯 Executing ENTRY action
     
     // Position取得
     const position = await this.getPosition(action.positionId);
@@ -474,9 +476,9 @@ export class ActionSync {
       };
 
       await this.sendWSCommand(command);
-      console.log(`📤 OPEN command sent for action: ${action.id}`);
+      // 📤 OPEN command sent for action
       
-    } catch (error) {
+    } catch (_error) {
       console.error(`Entry action execution failed: ${error}`);
       throw error;
     }
@@ -486,7 +488,7 @@ export class ActionSync {
    * CLOSE アクション実行（設計書準拠）
    */
   private async executeCloseAction(action: Action): Promise<void> {
-    console.log(`🎯 Executing CLOSE action: ${action.id}`);
+    // 🎯 Executing CLOSE action
     
     // Position取得
     const position = await this.getPosition(action.positionId);
@@ -508,15 +510,15 @@ export class ActionSync {
         volume: position.volume,
         timestamp: new Date().toISOString(),
         metadata: {
-          executionType: 'EXIT' as any,
+          executionType: ExecutionType.EXIT,
           timestamp: new Date().toISOString()
         }
       };
 
       await this.sendWSCommand(command);
-      console.log(`📤 CLOSE command sent for action: ${action.id}`);
+      // 📤 CLOSE command sent for action
       
-    } catch (error) {
+    } catch (_error) {
       console.error(`Close action execution failed: ${error}`);
       throw error;
     }
@@ -535,7 +537,7 @@ export class ActionSync {
   ): Promise<TriggerResult[]> {
     
     if (!triggerActionIds || triggerActionIds.trim() === '') {
-      console.log(`No trigger actions for position ${positionId}`);
+      // No trigger actions for position
       return [];
     }
 
@@ -544,11 +546,11 @@ export class ActionSync {
       const actionIds: string[] = JSON.parse(triggerActionIds);
       
       if (!Array.isArray(actionIds) || actionIds.length === 0) {
-        console.log(`No valid action IDs found for position ${positionId}`);
+        // No valid action IDs found for position
         return [];
       }
 
-      console.log(`🚀 Executing ${actionIds.length} trigger actions for position ${positionId}:`, actionIds);
+      // 🚀 Executing trigger actions for position
 
       // 各Actionをsequentialに実行
       const results: TriggerResult[] = [];
@@ -563,12 +565,12 @@ export class ActionSync {
         }
       }
 
-      const successCount = results.filter(r => r.success).length;
-      console.log(`✅ Trigger actions completed: ${successCount}/${results.length} succeeded for position ${positionId}`);
+      const _successCount = results.filter(r => r.success).length;
+      // ✅ Trigger actions completed
 
       return results;
       
-    } catch (error) {
+    } catch (_error) {
       console.error(`❌ Failed to parse or execute trigger actions for position ${positionId}:`, error);
       return [{ 
         actionId: 'parse_error', 
@@ -586,15 +588,15 @@ export class ActionSync {
       // Action状態を PENDING → EXECUTING に変更
       await this.updateActionStatus(actionId, ActionStatus.EXECUTING);
       
-      console.log(`✅ Triggered action: ${actionId} for position: ${positionId}`);
+      // ✅ Triggered action
       
       return {
         actionId,
         success: true
       };
       
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (_error) {
+      const errorMessage = _error instanceof Error ? _error.message : 'Unknown error';
       console.error(`❌ Failed to trigger action ${actionId} for position ${positionId}:`, errorMessage);
       
       return {
@@ -611,10 +613,10 @@ export class ActionSync {
   async executeLossCutTriggers(
     positionId: string,
     triggerActionIds: string,
-    lossCutPrice?: number
+    _lossCutPrice?: number
   ): Promise<TriggerResult[]> {
     
-    console.log(`💥 Executing loss cut triggers for position ${positionId}${lossCutPrice ? ` at price ${lossCutPrice}` : ''}`);
+    // 💥 Executing loss cut triggers for position
     
     // ロスカット時は通常実行
     return await this.executeTriggerActions(positionId, triggerActionIds);
@@ -640,7 +642,7 @@ export class ActionSync {
     try {
       // 自分担当のEXECUTING状態のActionを取得
       const result = await this.listExecutingActions();
-      const executingActions = result.data.listActions.items || [];
+      const executingActions = result || [];
       
       for (const action of executingActions) {
         if (!this.executingActions.has(action.id)) {
@@ -649,13 +651,13 @@ export class ActionSync {
       }
       
       if (executingActions.length > 0) {
-        console.log(`🔄 Processed ${executingActions.length} executing actions`);
+        // 🔄 Processed executing actions
       }
       
       // stale action cleanup
       await this.consistencyManager.cleanupStaleActions();
       
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Periodic action check failed:', error);
     }
   }
@@ -664,10 +666,10 @@ export class ActionSync {
    * 手動同期実行
    */
   async manualSync(): Promise<void> {
-    console.log('🔄 Manual action sync started');
+    // 🔄 Manual action sync started
     await this.checkExecutingActions();
     this.stats.lastSyncTime = new Date();
-    console.log('✅ Manual action sync completed');
+    // ✅ Manual action sync completed
   }
 
   // ========================================
@@ -684,13 +686,13 @@ export class ActionSync {
     
     try {
       const result = await this.listExecutingActions();
-      const allActions = result.data.listActions.items;
+      const allActions = result || [];
       
       return allActions.filter((action: Action) => {
         return action.userId === this.currentUserId && 
                (!status || action.status === status);
       });
-    } catch (error) {
+    } catch (_error) {
       console.error('Failed to get my actions:', error);
       return [];
     }
@@ -730,7 +732,7 @@ export class ActionSync {
         throw new Error('WebSocket handler not connected');
       }
       
-      console.log('📡 Sending WebSocket command:', command.type, command);
+      // 📡 Sending WebSocket command
       
       // WebSocketHandlerを通じてコマンド送信
       let result;
@@ -753,9 +755,9 @@ export class ActionSync {
         throw new Error(result.error || 'Command execution failed');
       }
       
-      console.log(`✅ WebSocket command sent successfully: ${command.type}`);
+      // ✅ WebSocket command sent successfully
       
-    } catch (error) {
+    } catch (_error) {
       console.error('❌ Failed to send WebSocket command:', error);
       throw error;
     }
@@ -775,7 +777,7 @@ export class ActionSync {
   /**
    * Action作成（Amplify Gen2）
    */
-  private async createActionGraphQL(input: CreateActionInput): Promise<any> {
+  private async createActionGraphQL(input: CreateActionInput): Promise<Action> {
     const result = await actionService.createAction(input);
     return { data: { createAction: result } };
   }
@@ -783,7 +785,7 @@ export class ActionSync {
   /**
    * Action状態更新（Amplify Gen2）
    */
-  private async updateActionStatus(id: string, status: ActionStatus): Promise<any> {
+  private async updateActionStatus(id: string, status: ActionStatus): Promise<Action> {
     const result = await actionService.updateActionStatus(id, status);
     return { data: { updateAction: result } };
   }
@@ -791,15 +793,9 @@ export class ActionSync {
   /**
    * 実行中Action一覧取得（Amplify Gen2）
    */
-  private async listExecutingActions(): Promise<any> {
+  private async listExecutingActions(): Promise<Action[]> {
     const result = await actionService.listExecutingActions();
-    return { 
-      data: { 
-        listActions: { 
-          items: result 
-        } 
-      } 
-    };
+    return result;
   }
 
   /**
@@ -814,7 +810,7 @@ export class ActionSync {
         id: positionId
       });
       return position?.data || null;
-    } catch (error) {
+    } catch (_error) {
       console.error(`Failed to get position ${positionId}:`, error);
       return null;
     }
@@ -830,7 +826,7 @@ export class ActionSync {
         id: positionId,
         status
       });
-    } catch (error) {
+    } catch (_error) {
       console.error(`Failed to update position status ${positionId}:`, error);
     }
   }

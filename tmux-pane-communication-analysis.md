@@ -91,11 +91,11 @@ tmux run-shell "ls -la | tmux send-keys -t 'session:pane' -"
 
 ```bash
 # 各ペインに役割を設定
-tmux set-environment -t "arbitrage-assistant:0.0" HACONIWA_AGENT_ID "ceo-main"
+tmux set-environment -t "arbitrage-assistant:0.0" HACONIWA_AGENT_ID "ceo-supreme"
 tmux set-environment -t "arbitrage-assistant:1.0" HACONIWA_AGENT_ID "backend-director"
 
 # 環境変数ファイルの作成
-echo 'export HACONIWA_AGENT_ID="ceo-main"' > /tmp/haconiwa_env_0.0.sh
+echo 'export HACONIWA_AGENT_ID="ceo-supreme"' > /tmp/haconiwa_env_0.0.sh
 ```
 
 ### 2. 指示送信システム

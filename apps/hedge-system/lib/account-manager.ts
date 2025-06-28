@@ -1,4 +1,4 @@
-import { amplifyClient } from './amplify-client';
+// Removed unused import
 import { WebSocketHandler } from './websocket-server';
 
 interface ConnectionInfo {
@@ -22,7 +22,7 @@ interface AccountAssignment {
  * 分散アーキテクチャでの口座担当管理・接続状態管理
  */
 export class AccountManager {
-  private amplifyClient: any; // amplifyClientの型
+  private amplifyClient: unknown; // amplifyClientの型
   private websocketHandler: WebSocketHandler;
   private assignedAccounts: Set<string> = new Set();
   private accountConnections: Map<string, ConnectionInfo> = new Map();
@@ -43,7 +43,7 @@ export class AccountManager {
   };
 
   constructor(
-    client: any, // amplifyClientの型
+    client: unknown, // amplifyClientの型
     websocketHandler: WebSocketHandler,
     pcId?: string
   ) {
@@ -60,7 +60,7 @@ export class AccountManager {
    * 分散環境での口座担当割り当て
    */
   async assignAccounts(accountIds: string[]): Promise<void> {
-    console.log(`🔧 Assigning accounts to PC ${this.pcId}: ${accountIds.join(', ')}`);
+    // 🔧 Assigning accounts to PC
     
     try {
       // 既存の割り当てをクリア
@@ -81,7 +81,7 @@ export class AccountManager {
       // AppSyncに担当状況を報告
       await this.reportAssignmentStatus();
       
-      console.log(`✅ Successfully assigned ${accountIds.length} accounts`);
+      // ✅ Successfully assigned accounts
       
     } catch (error) {
       console.error('❌ Failed to assign accounts:', error);
@@ -105,7 +105,7 @@ export class AccountManager {
    * 口座接続確立
    */
   async establishAccountConnection(accountId: string): Promise<void> {
-    console.log(`🔌 Establishing connection for account: ${accountId}`);
+    // 🔌 Establishing connection for account
     
     try {
       // 接続情報初期化
@@ -125,7 +125,7 @@ export class AccountManager {
       // 接続成功
       await this.updateAccountConnection(accountId, 'connected');
       
-      console.log(`✅ Account connection established: ${accountId}`);
+      // ✅ Account connection established
       
     } catch (error) {
       console.error(`❌ Failed to establish connection for ${accountId}:`, error);
@@ -138,10 +138,10 @@ export class AccountManager {
   /**
    * 口座WebSocket接続（実装依存部分）
    */
-  private async connectToAccount(accountId: string): Promise<void> {
+  private async connectToAccount(_accountId: string): Promise<void> {
     // 実際の実装ではWebSocketHandlerやMT4接続ロジックを使用
     // ここではサンプル実装
-    console.log(`📡 Connecting to WebSocket for account: ${accountId}`);
+    // 📡 Connecting to WebSocket for account
     
     // WebSocketHandler経由での接続確立
     // 実装は既存のWebSocketHandlerのAPIに依存
@@ -202,16 +202,16 @@ export class AccountManager {
     // AppSyncに口座状態を報告
     await this.reportAccountStatus(accountId, status);
     
-    console.log(`📊 Account ${accountId} status updated: ${status}`);
+    // 📊 Account status updated
   }
 
   /**
    * AppSyncに口座状態報告
    */
-  async reportAccountStatus(accountId: string, status: string): Promise<void> {
+  async reportAccountStatus(accountId: string, _status: string): Promise<void> {
     try {
       // AmplifyClient経由でAccount状態更新
-      await this.amplifyClient.updateAccount(accountId, {
+      await (this.amplifyClient as unknown as { updateAccount: (id: string, data: { lastUpdated: string }) => Promise<void> }).updateAccount(accountId, {
         lastUpdated: new Date().toISOString()
       });
       
@@ -236,7 +236,7 @@ export class AccountManager {
    * 担当状況の報告
    */
   private async reportAssignmentStatus(): Promise<void> {
-    const assignments: AccountAssignment[] = Array.from(this.assignedAccounts).map(accountId => ({
+    const _assignments: AccountAssignment[] = Array.from(this.assignedAccounts).map(accountId => ({
       accountId,
       pcId: this.pcId,
       assignedAt: new Date(),
@@ -244,22 +244,22 @@ export class AccountManager {
     }));
 
     // 実際の実装では担当状況をAppSyncに報告
-    console.log(`📋 Assignment report: ${assignments.length} accounts assigned to PC ${this.pcId}`);
+    // 📋 Assignment report
   }
 
   /**
    * 自動再接続スケジュール
    */
   private scheduleReconnection(accountId: string): void {
-    console.log(`⏰ Scheduling reconnection for account: ${accountId} in ${this.reconnectInterval}ms`);
+    // ⏰ Scheduling reconnection for account
     
     setTimeout(async () => {
       if (this.assignedAccounts.has(accountId)) {
-        console.log(`🔄 Attempting reconnection for account: ${accountId}`);
+        // 🔄 Attempting reconnection for account
         try {
           await this.establishAccountConnection(accountId);
-        } catch (error) {
-          console.error(`Reconnection failed for ${accountId}:`, error);
+        } catch (_error) {
+          console.error(`Reconnection failed for ${accountId}:`, _error);
         }
       }
     }, this.reconnectInterval);
@@ -273,7 +273,7 @@ export class AccountManager {
       return;
     }
 
-    console.log(`🗑️ Removing account assignment: ${accountId}`);
+    // 🗑️ Removing account assignment
     
     // 接続を切断
     await this.disconnectAccountConnection(accountId);
@@ -285,7 +285,7 @@ export class AccountManager {
     // AppSyncに報告
     await this.reportAccountStatus(accountId, 'unassigned');
     
-    console.log(`✅ Account assignment removed: ${accountId}`);
+    // ✅ Account assignment removed
   }
 
   /**
@@ -295,7 +295,7 @@ export class AccountManager {
     const connection = this.accountConnections.get(accountId);
     if (connection && connection.status === 'connected') {
       // WebSocket接続切断処理
-      console.log(`🔌 Disconnecting account: ${accountId}`);
+      // 🔌 Disconnecting account
       
       // 実際の実装ではWebSocketHandlerの切断メソッドを呼び出し
       await this.updateAccountConnection(accountId, 'disconnected');
@@ -325,7 +325,7 @@ export class AccountManager {
         // 接続チェック・再接続
         try {
           await this.checkAccountConnection(accountId);
-        } catch (error) {
+        } catch (_error) {
           await this.updateAccountConnection(accountId, 'disconnected', 'Heartbeat timeout');
         }
       }
@@ -335,10 +335,10 @@ export class AccountManager {
   /**
    * 口座接続チェック
    */
-  private async checkAccountConnection(accountId: string): Promise<void> {
+  private async checkAccountConnection(_accountId: string): Promise<void> {
     // 実際の実装では接続状態をチェック
     // WebSocketのpingなど
-    console.log(`🏥 Checking connection health for account: ${accountId}`);
+    // 🏥 Checking connection health for account
   }
 
   /**
@@ -391,7 +391,7 @@ export class AccountManager {
    * シャットダウン処理
    */
   async shutdown(): Promise<void> {
-    console.log('🛑 Shutting down Account Manager...');
+    // 🛑 Shutting down Account Manager
     
     // 全接続を切断
     for (const accountId of this.assignedAccounts) {
@@ -401,6 +401,6 @@ export class AccountManager {
     this.assignedAccounts.clear();
     this.accountConnections.clear();
     
-    console.log('✅ Account Manager shutdown completed');
+    // ✅ Account Manager shutdown completed
   }
 }

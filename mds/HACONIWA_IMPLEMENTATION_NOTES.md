@@ -48,10 +48,10 @@ agentDefaults:
 ```yaml
 roles:
   - roleType: "management"
-    agentId: "ceo-main"
+    agentId: "ceo-supreme"
     environment:
       HACONIWA_ROLE: "CEO系エージェント"
-      HACONIWA_AGENT_ID: "ceo-main"
+      HACONIWA_AGENT_ID: "ceo-supreme"
       HACONIWA_ROOM: "room-ceo"
 ```
 

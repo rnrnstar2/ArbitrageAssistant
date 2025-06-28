@@ -1,6 +1,0 @@
-#!/bin/bash
-
-# Quick Role Checker - 短縮コマンド
-# 使用法: ./scripts/role または単に 'role' (PATH設定時)
-
-/Users/rnrnstar/github/ArbitrageAssistant/scripts/agent-role-checker.sh

@@ -15,13 +15,13 @@ spec:
   basePath: "/Users/rnrnstar/github/ArbitrageAssistant/arbitrage-assistant-org"
   hierarchy:
     departments:
-      # CEO Executive Department (v4.0 System)
+      # CEO Executive Department (v6.0 System)
       - id: "executive"
-        name: "Executive Team v4.0"
-        description: "CEO v4.0階層システム：Supreme戦略・Operations調整・Analytics監視"
+        name: "Executive Team v6.0"
+        description: "CEO v6.0完全自動化階層システム：Supreme戦略・Operations調整・Analytics監視"
         roles:
           - roleType: "supreme"
-            title: "CEO Supreme v4.0"
+            title: "CEO Supreme v6.0"
             agentId: "ceo-supreme"
             responsibilities:
               - "MVP戦略決定・最高権限・完璧分析システム"
@@ -81,11 +81,12 @@ spec:
               HACONIWA_AGENT_ID: "amplify-gen2-specialist"
               HACONIWA_ROOM: "room-backend"
           - roleType: "engineering"
-            title: "Cognito Authentication Expert"
-            agentId: "cognito-auth-expert"
+            title: "MVP Implementation Specialist"
+            agentId: "mvp-implementation-specialist"
             responsibilities:
-              - "Amazon Cognito技術統合"
-              - "認証フロー実装"
+              - "MVP最終実装・品質向上・統合テスト"
+              - "Backend-Trading-Integration統合最適化"
+              - "パフォーマンス向上・エラーハンドリング強化"
       
       # Trading Systems Department
       - id: "trading"
@@ -99,17 +100,19 @@ spec:
               - "金融計算ロジック技術統括"
               - "Position-Trail-Action実装方針"
           - roleType: "engineering"
-            title: "Entry Flow Specialist"
-            agentId: "entry-flow-specialist"
+            title: "Position Execution Specialist"
+            agentId: "position-execution-specialist"
             responsibilities:
-              - "apps/hedge-system/lib/位置実行エンジン実装"
-              - "Entry→Trail→Action技術実装"
+              - "Position実行全般（Entry/Settlement統合実装）"
+              - "position-execution.ts・hedge-system-core.ts統合管理"
+              - "ポジション状態遷移・実行フロー完全制御"
           - roleType: "engineering"
-            title: "Settlement Flow Specialist"
-            agentId: "settlement-flow-specialist"
+            title: "Trail Management Specialist"
+            agentId: "trail-management-specialist"
             responsibilities:
-              - "決済・ロスカット処理技術実装"
-              - "Trail判定アルゴリズム実装"
+              - "トレール機能特化（trail-engine.ts・price-monitor.ts）"
+              - "トレール条件判定・アクション実行管理"
+              - "リアルタイム価格監視・トリガー制御"
       
       # Integration Systems Department
       - id: "integration"
@@ -215,26 +218,26 @@ spec:
   
   # Room定義（実際のWindow構成に対応）
   rooms:
-    # Window 0: CEO Executive Office v4.0 (3 panes)
+    # Window 0: CEO Executive Office v6.0 (3 panes)
     - id: "room-ceo"
-      name: "🏛️ CEO Executive Office v4.0"
-      description: "CEO v4.0階層システム: Supreme戦略・Operations調整・Analytics監視"
+      name: "🏛️ CEO Executive Office v6.0"
+      description: "CEO v6.0完全自動化階層システム: Supreme戦略・Operations調整・Analytics監視"
       paneCount: 3
       agentIds: ["ceo-supreme", "ceo-operations", "ceo-analytics"]
     
     # Window 1: Backend Architecture (3 panes)
     - id: "room-backend"
       name: "🗄️ Backend Architecture"
-      description: "Backend Director, Amplify Gen2 Specialist, Cognito Authentication Expert"
+      description: "Backend Director, Amplify Gen2 Specialist, MVP Implementation Specialist"
       paneCount: 3
-      agentIds: ["backend-director", "amplify-gen2-specialist", "cognito-auth-expert"]
+      agentIds: ["backend-director", "amplify-gen2-specialist", "mvp-implementation-specialist"]
     
     # Window 2: Trading Systems (3 panes)
     - id: "room-trading"
       name: "⚡ Trading Systems"
-      description: "Trading Flow Director, Entry Flow Specialist, Settlement Flow Specialist"
+      description: "Trading Flow Director, Position Execution Specialist, Trail Management Specialist"
       paneCount: 3
-      agentIds: ["trading-flow-director", "entry-flow-specialist", "settlement-flow-specialist"]
+      agentIds: ["trading-flow-director", "position-execution-specialist", "trail-management-specialist"]
     
     # Window 3: Integration Systems (3 panes)
     - id: "room-integration"

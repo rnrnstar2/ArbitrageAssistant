@@ -2,6 +2,7 @@
  * Action Manager - shared-amplifyブリッジ
  */
 import { ActionService } from '@repo/shared-amplify/services';
+import { Action, ActionStatus } from '@repo/shared-types';
 
 const actionService = new ActionService();
 
@@ -14,9 +15,9 @@ export class ActionManager {
     // ActionServiceにgetActionStatsメソッドがない場合の代替実装
     const actions = await actionService.listUserActions();
     return {
-      totalExecuted: actions.filter((a: any) => a.status === 'EXECUTED').length,
-      totalFailed: actions.filter((a: any) => a.status === 'FAILED').length,
-      executingActions: actions.filter((a: any) => a.status === 'EXECUTING')
+      totalExecuted: actions.filter((a: Action) => a.status === ActionStatus.EXECUTED).length,
+      totalFailed: actions.filter((a: Action) => a.status === ActionStatus.FAILED).length,
+      executingActions: actions.filter((a: Action) => a.status === ActionStatus.EXECUTING)
     };
   }
 }

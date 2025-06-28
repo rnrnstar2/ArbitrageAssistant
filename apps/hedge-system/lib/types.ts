@@ -183,5 +183,57 @@ export interface RealtimeAccount {
   positions: RealtimePosition[];
 }
 
+// WebSocket Performance型定義
+export interface WebSocketPerformanceMetrics {
+  avg_latency_ms: number;
+  error_rate: number;
+  peak_connections: number;
+  messages_per_second: number;
+  connected_clients: number;
+  total_messages_received: number;
+  total_messages_sent: number;
+  uptime_seconds: number;
+}
+
+export interface SystemPerformance {
+  cpu_usage: number;
+  memory_usage: number;
+  disk_usage: number;
+  network_latency_ms: number;
+}
+
+export interface NetworkQuality {
+  connection_stability: 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+  packet_loss_rate: number;
+  bandwidth_mbps: number;
+}
+
+export interface WebSocketClientInfo {
+  id: string;
+  authenticated: boolean;
+  connected_at: string;
+  last_heartbeat: string;
+  ea_info?: {
+    version: string;
+    platform: string;
+    account: string;
+    server_name?: string;
+    company_name?: string;
+  };
+}
+
+export interface WebSocketDetailedStats {
+  performance: WebSocketPerformanceMetrics;
+  clients: WebSocketClientInfo[];
+  errors: Array<{ timestamp: string; message: string; count: number }>;
+}
+
+export interface WebSocketEventPayload {
+  type: 'connection' | 'disconnection' | 'message' | 'error';
+  clientId: string;
+  message?: string;
+  error?: string;
+}
+
 // isolatedModules対応のための空実装
 export const Types = {} as const;

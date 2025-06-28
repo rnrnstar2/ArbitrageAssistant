@@ -36,6 +36,11 @@ import {
 } from '@repo/shared-amplify';
 
 // 状態遷移関連の型定義
+export interface StateTransitionMetadata {
+  userId?: string;
+  systemLoad?: number;
+}
+
 export interface StateTransition {
   positionId: string;
   fromState: PositionStatus;
@@ -43,7 +48,7 @@ export interface StateTransition {
   trigger: 'MANUAL' | 'TRAIL_TRIGGERED' | 'STOP_OUT' | 'SYSTEM';
   timestamp: string;
   processingTime: number;
-  metadata?: any;
+  metadata?: StateTransitionMetadata;
 }
 
 export interface SystemCoordination {
@@ -126,7 +131,7 @@ export class StateTransitionController {
     // ポジション監視開始
     await this.startPositionMonitoring();
     
-    console.log('✅ State Transition System initialized');
+    // State Transition System initialized
   }
 
   /**
@@ -182,7 +187,7 @@ export class StateTransitionController {
       
       const processingTime = Date.now() - startTime;
       
-      console.log(`🚀 Full pipeline initiated: ${pipelineId} in ${processingTime}ms`);
+      // Full pipeline initiated successfully
       
       return {
         success: true,
@@ -224,7 +229,7 @@ export class StateTransitionController {
     // PositionExecutorのエントリー実行を呼び出し
     await this.positionExecutor.executePosition(position.id);
     
-    console.log(`📊 Entry stage completed: ${position.id}`);
+    // Entry stage completed
   }
 
   /**
@@ -250,7 +255,7 @@ export class StateTransitionController {
     this.coordinationState.responsiblePositions.push(position.id);
     this.coordinationState.monitoringPositions.push(position.id);
     
-    console.log(`👁️ Monitoring stage started: ${position.id}`);
+    // Monitoring stage started
   }
 
   /**
@@ -268,13 +273,13 @@ export class StateTransitionController {
       // TrailFlowEngineでの監視開始
       await this.positionExecutor.startTrailMonitoring(position);
       
-      console.log(`📈 Trail monitoring active: ${position.id}, width: ${position.trailWidth}`);
+      // Trail monitoring active
     } else {
       // トレール設定なしの場合は即座に完了段階へ
       pipeline.stage = 'COMPLETION';
       pipeline.currentStep = 5;
       
-      console.log(`✅ No trail monitoring: ${position.id}`);
+      // No trail monitoring
     }
   }
 
@@ -291,7 +296,7 @@ export class StateTransitionController {
       await this.updatePricesAndCheckTrails();
     }, 1000); // 1秒間隔
     
-    console.log('📡 Real-time price monitoring started');
+    // Real-time price monitoring started
   }
 
   /**
@@ -359,7 +364,7 @@ export class StateTransitionController {
       this.performanceMetrics.avgActionTriggerTime = 
         (this.performanceMetrics.avgActionTriggerTime + processingTime) / 2;
       
-      console.log(`🎯 Trail triggered and actions executed: ${positionId} in ${processingTime}ms`);
+      // Trail triggered and actions executed
       
     } catch (error) {
       console.error('Trail trigger handling failed:', error);
@@ -406,7 +411,7 @@ export class StateTransitionController {
       // TODO: 実際のアクション実行ロジック
       // この部分では他システムとの連携を行う
       
-      console.log(`⚡ Triggered action executed: ${actionId}`);
+      // Triggered action executed
       
     } catch (error) {
       console.error(`Failed to execute triggered action ${actionId}:`, error);
@@ -431,7 +436,7 @@ export class StateTransitionController {
     // 初期状態の責任ポジション取得
     await this.updateResponsiblePositions();
     
-    console.log('👥 Multi-system coordination started');
+    // Multi-system coordination started
   }
 
   /**
@@ -496,7 +501,7 @@ export class StateTransitionController {
       console.warn(`⚠️ State transition exceeded 10ms: ${processingTime}ms`);
     }
     
-    console.log(`🔄 State transition recorded: ${positionId} ${fromState}→${toState} (${processingTime}ms)`);
+    // State transition recorded
   }
 
   /**
@@ -598,7 +603,7 @@ export class StateTransitionController {
     this.coordinationState.coordinationStatus = 'IDLE';
     await this.hedgeCore.stop();
     
-    console.log('🛑 State Transition System shutdown');
+    // State Transition System shutdown
   }
 }
 

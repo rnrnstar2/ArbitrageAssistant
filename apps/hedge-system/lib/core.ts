@@ -6,6 +6,7 @@ import { TrailEngine, getTrailEngine } from './trail-engine';
 import { AccountManager } from './account-manager';
 import { HedgeManager } from './hedge-manager';
 import { PriceMonitor, getPriceMonitor } from './price-monitor';
+import { Position, Account } from '@repo/shared-types';
 // TODO: amplify_outputs.json参照はtask-1で修正予定
 // import amplifyOutputs from '@repo/shared-amplify/amplify_outputs.json';
 
@@ -105,15 +106,15 @@ export class HedgeSystemCore {
   private startTime?: Date;
   
   // インメモリデータストア（Admin Webアプリ用）
-  private positionsCache = new Map<string, any>();
-  private accountsCache = new Map<string, any>();
+  private positionsCache = new Map<string, Position>();
+  private accountsCache = new Map<string, Account>();
   private lastUpdate = new Date();
   
   // 定期処理
   private periodicIntervals: NodeJS.Timeout[] = [];
 
   constructor() {
-    console.log('🏗️ Initializing Hedge System Core...');
+    // Initializing Hedge System Core
     
     // WebSocketサーバー初期化
     this.wsServer = new WebSocketHandler();
@@ -145,7 +146,7 @@ export class HedgeSystemCore {
     // データ同期設定
     this.setupDataSync();
     
-    console.log('✅ Hedge System Core components initialized');
+    // Hedge System Core components initialized
   }
 
   // ========================================
@@ -162,7 +163,7 @@ export class HedgeSystemCore {
       return;
     }
 
-    console.log('🚀 Initializing Hedge System Core...');
+    // Initializing Hedge System Core
     this.systemConfig = config;
     this.startTime = new Date();
 
@@ -196,7 +197,7 @@ export class HedgeSystemCore {
       
       this.isInitialized = true;
       
-      console.log('✅ Hedge System Core initialized successfully');
+      // Hedge System Core initialized successfully
       
       if (config.autoStart) {
         await this.start();
@@ -222,12 +223,12 @@ export class HedgeSystemCore {
       return;
     }
 
-    console.log('▶️ Starting Hedge System Core...');
+    // Starting Hedge System Core
     
     this.isRunning = true;
     this.lastUpdate = new Date();
     
-    console.log('🟢 Hedge System Core started successfully');
+    // Hedge System Core started successfully
   }
 
   /**
@@ -239,7 +240,7 @@ export class HedgeSystemCore {
       return;
     }
 
-    console.log('⏹️ Stopping Hedge System Core...');
+    // Stopping Hedge System Core
     
     try {
       // 定期処理停止
@@ -253,7 +254,7 @@ export class HedgeSystemCore {
       await this.wsServer.shutdown();
       
       this.isRunning = false;
-      console.log('🔴 Hedge System Core stopped');
+      // Hedge System Core stopped
       
     } catch (error) {
       console.error('❌ Error during system stop:', error);
@@ -265,7 +266,7 @@ export class HedgeSystemCore {
    * システムシャットダウン
    */
   async shutdown(): Promise<void> {
-    console.log('🛑 Shutting down Hedge System Core...');
+    // Shutting down Hedge System Core
     
     if (this.isRunning) {
       await this.stop();
@@ -278,14 +279,14 @@ export class HedgeSystemCore {
     this.positionsCache.clear();
     this.accountsCache.clear();
     
-    console.log('✅ Hedge System Core shutdown completed');
+    // Hedge System Core shutdown completed
   }
 
   /**
    * システム再起動
    */
   async restart(): Promise<void> {
-    console.log('🔄 Restarting Hedge System Core...');
+    // Restarting Hedge System Core
     
     if (this.isRunning) {
       await this.stop();
@@ -306,11 +307,11 @@ export class HedgeSystemCore {
    * AWS Amplify初期化
    */
   private async initializeAmplify(): Promise<void> {
-    console.log('🔧 Initializing AWS Amplify connection...');
+    // Initializing AWS Amplify connection
     
     try {
       // Amplify client is auto-initialized via configuration
-      console.log('✅ AWS Amplify connected successfully');
+      // AWS Amplify connected successfully
     } catch (error) {
       console.error('❌ Failed to initialize AWS Amplify:', error);
       throw error;
@@ -322,7 +323,7 @@ export class HedgeSystemCore {
    */
   private async loadExistingTrailPositions(): Promise<void> {
     try {
-      console.log('🔄 Loading existing trail positions...');
+      // Loading existing trail positions
       
       const userId = await getCurrentUserId();
       
@@ -336,13 +337,13 @@ export class HedgeSystemCore {
       });
       
       const positionList = positions?.data || [];
-      console.log(`Found ${positionList.length} trail positions to monitor`);
+      // Found trail positions to monitor
       
       for (const position of positionList) {
         await this.trailEngine.addPositionMonitoring(position);
       }
       
-      console.log(`✅ Trail monitoring restored for ${positionList.length} positions`);
+      // Trail monitoring restored for positions
       
     } catch (error) {
       console.error('❌ Failed to load existing trail positions:', error);
@@ -378,7 +379,7 @@ export class HedgeSystemCore {
       });
       
       // アカウント情報をキャッシュに同期
-      const accountStats = this.accountManager.getStats();
+      const _accountStats = this.accountManager.getStats();
       // 簡素化のため基本情報のみ
       
       this.lastUpdate = new Date();
@@ -481,11 +482,11 @@ export class HedgeSystemCore {
       return;
     }
 
-    console.log(`💥 Processing loss cut: ${positionId} at ${lossCutPrice}`);
+    // Processing loss cut
     
     try {
       await this.trailEngine.handleLossCut(positionId, lossCutPrice);
-      console.log(`✅ Loss cut processed for position: ${positionId}`);
+      // Loss cut processed for position
     } catch (error) {
       console.error(`❌ Failed to process loss cut for ${positionId}:`, error);
       throw error;

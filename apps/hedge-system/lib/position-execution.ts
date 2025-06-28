@@ -29,8 +29,6 @@ import {
   createPosition,
   updatePosition,
   listUserPositions,
-  recordExecutionResult,
-  getPerformanceMetrics,
   subscribeToActions,
   listUserActions,
   updateAction
@@ -205,7 +203,7 @@ export class EntryFlowEngine {
         timestamp: new Date().toISOString()
       };
       
-      console.log(`⚡ Fast entry executed: ${JSON.stringify(detailedLog)}`);
+      // Entry execution completed
       
       // パフォーマンスDB保存（非ブロッキング）
       this.saveExecutionResult(position.id, executionTime, true, optimizedPrice).catch(error => {
@@ -251,7 +249,7 @@ export class EntryFlowEngine {
       
       // リトライ判定
       if (this.shouldRetryEntry(error)) {
-        console.log(`🔄 Entry will be retried for position: ${position.id}`);
+        // Entry will be retried
       }
       
       return {
@@ -282,7 +280,7 @@ export class EntryFlowEngine {
     // トレール設定がある場合、初期トレール状態を設定
     if (position.trailWidth && position.trailWidth > 0) {
       // トレール監視開始用のメタデータ追加
-      console.log(`📊 Trail monitoring setup for position: ${position.id}`);
+      // Trail monitoring setup for position
     }
     
     return updatedPosition;
@@ -336,7 +334,7 @@ export class EntryFlowEngine {
         const executionTime = Date.now() - startTime;
         
         if (result.success) {
-          console.log(`⚡ Optimized open command sent: ${command.positionId} in ${executionTime}ms (retry: ${retryCount})`);
+          // Optimized open command sent successfully
           return result.orderId || `optimized_order_${Date.now()}`;
         } else {
           throw new Error(result.error || 'Command execution failed');
@@ -473,7 +471,7 @@ export class TrailFlowEngine {
     
     this.trailConditions.set(position.id, trailCondition);
     
-    console.log(`🎯 Trail condition initialized: ${position.id}, direction: ${direction}`);
+    // Trail condition initialized successfully
     return trailCondition;
   }
 
@@ -564,7 +562,7 @@ export class TrailFlowEngine {
     
     condition.triggerPrice = roundedStopLoss;
     
-    console.log(`🔄 Stop loss updated: ${positionId}, new: ${roundedStopLoss}, reason: ${reason}`);
+    // Stop loss updated successfully
     return true;
   }
 
@@ -596,7 +594,7 @@ export class TrailFlowEngine {
     
     const roundedTarget = this.roundToPrecision(adjustedTarget, this.PRICE_PRECISION);
     
-    console.log(`🎢 Profit level adjusted: ${positionId}, target: ${roundedTarget}, volatility: ${marketVolatility}`);
+    // Profit level adjusted based on volatility
     return roundedTarget;
   }
 
@@ -673,7 +671,7 @@ export class ActionFlowEngine {
       
       const executionTime = Date.now() - startTime;
       
-      console.log(`⚡ Fast close executed: ${position.id} in ${executionTime}ms, reason: ${reason}`);
+      // Fast close executed successfully
       
       return {
         success: true,
@@ -753,7 +751,7 @@ export class ActionFlowEngine {
     this.settlementStats.successfulSettlements += closed.length;
     this.settlementStats.failedSettlements += failed.length;
     
-    console.log(`🚨 Force close completed: ${closed.length} closed, ${failed.length} failed in ${totalTime}ms (${openPositions.length} positions, ${Math.ceil(openPositions.length / this.BATCH_SIZE)} batches)`);
+    // Force close completed
     
     return {
       closed,
@@ -790,7 +788,7 @@ export class ActionFlowEngine {
       timestamp: new Date().toISOString()
     };
     
-    console.log(`📊 Execution result recorded: ${JSON.stringify(logData)}`);
+    // Execution result recorded
     
     // パフォーマンスDBへの保存
     try {
@@ -804,7 +802,7 @@ export class ActionFlowEngine {
         errorMessage,
         retryCount: execution?.retryCount || 0
       });
-      console.log(`✅ Performance data saved to DB for position: ${positionId}`);
+      // Performance data saved to DB
     } catch (error) {
       console.error('Failed to save performance data:', error);
     }
@@ -832,7 +830,7 @@ export class ActionFlowEngine {
     };
     
     this.executionQueue.set(actionId, execution);
-    console.log(`📋 Execution queued: ${actionId}, priority: ${priority}`);
+    // Execution queued
   }
 
   private getOppositePositionSide(position: Position): 'BUY' | 'SELL' {
@@ -855,7 +853,7 @@ export class ActionFlowEngine {
       const executionTime = Date.now() - startTime;
       
       if (result.success) {
-        console.log(`⚡ Optimized close command sent: ${command.positionId} in ${executionTime}ms`);
+        // Optimized close command sent successfully
         return result.orderId || `optimized_close_${Date.now()}`;
       } else {
         throw new Error(result.error || 'Command execution failed');
@@ -918,7 +916,7 @@ export class ActionFlowEngine {
       this.settlementStats.totalSettlements++;
       this.settlementStats.successfulSettlements++;
       
-      console.log(`⚡ Partial close executed: ${position.id}, closed: ${roundedVolume}, remaining: ${remainingVolume} in ${executionTime}ms`);
+      // Partial close executed successfully
       
       return {
         success: true,
@@ -1115,17 +1113,17 @@ export class PositionExecutor {
     try {
       // 1. userIdベースの実行担当判定（設計書準拠）
       if (!this.currentUserId || action.userId !== this.currentUserId) {
-        console.log(`⏭️ Action skipped: not my responsibility (action user: ${action.userId}, my user: ${this.currentUserId})`);
+        // Action skipped: not my responsibility
         return; // 他ユーザーの担当はスキップ
       }
       
       // 2. EXECUTING状態のアクションのみ処理（設計書準拠）
       if (action.status !== ActionStatus.EXECUTING) {
-        console.log(`⏭️ Action skipped: status not EXECUTING (${action.status})`);
+        // Action skipped: status not EXECUTING
         return;
       }
       
-      console.log(`🎯 Cross-PC action received: ${action.id}, type: ${action.type}, triggeredBy: ${action.triggerPositionId}`);
+      // Cross-PC action received
       
       // 3. アクションタイプ別実行（設計書準拠）
       switch (action.type) {
@@ -1144,7 +1142,7 @@ export class PositionExecutor {
       
       // 4. パフォーマンス記録
       const latency = Date.now() - subscriptionStartTime;
-      console.log(`⚡ Cross-PC action processed in ${latency}ms`);
+      // Cross-PC action processed
       
     } catch (error) {
       console.error('❌ Action subscription processing failed:', error);
@@ -1165,7 +1163,7 @@ export class PositionExecutor {
     const startTime = Date.now();
     
     try {
-      console.log(`🚀 Fast entry execution started: ${position.id}`);
+      // Fast entry execution started
       
       // 1. 市場条件取得（実価格フィード統合）
       const priceMonitor = this.wsHandler.priceMonitor;
@@ -1224,7 +1222,7 @@ export class PositionExecutor {
         const totalTime = Date.now() - startTime;
         this.updatePerformanceMetrics('entry', totalTime, true);
         
-        console.log(`✅ Entry completed: ${position.id} in ${totalTime}ms`);
+        // Entry completed successfully
         
       } else {
         throw new Error('Order execution failed');
@@ -1246,7 +1244,7 @@ export class PositionExecutor {
     const startTime = Date.now();
     
     try {
-      console.log(`🔄 Fast exit execution started: ${position.id}`);
+      // Fast exit execution started
       
       // 現在価格取得（実価格フィード統合）
       const priceMonitor = this.wsHandler.priceMonitor;
@@ -1283,7 +1281,7 @@ export class PositionExecutor {
         const totalTime = Date.now() - startTime;
         this.updatePerformanceMetrics('close', totalTime, true);
         
-        console.log(`✅ Exit completed: ${position.id} in ${totalTime}ms`);
+        // Exit completed successfully
         
       } else {
         throw new Error('Close execution failed');
@@ -1311,7 +1309,7 @@ export class PositionExecutor {
         position.trailWidth && 
         position.trailWidth > 0) {
       
-      console.log(`📊 Starting advanced trail monitoring: ${position.id}`);
+      // Starting advanced trail monitoring
       
       // 現在価格でトレール条件初期化（実価格フィード統合）
       const priceMonitor = this.wsHandler.priceMonitor;
@@ -1344,7 +1342,7 @@ export class PositionExecutor {
       entryTime: event.time
     });
     
-    console.log(`✅ Position opened: ${event.positionId} at ${event.price}`);
+    // Position opened successfully
   }
 
   /**
@@ -1357,7 +1355,7 @@ export class PositionExecutor {
       exitReason: 'MANUAL_CLOSE'
     });
     
-    console.log(`✅ Position closed: ${event.positionId} at ${event.price}, profit: ${event.profit}`);
+    // Position closed successfully
   }
 
   /**
@@ -1393,7 +1391,7 @@ export class PositionExecutor {
       );
       
       const totalTime = Date.now() - startTime;
-      console.log(`💥 Stop-out processed: ${event.positionId} at ${event.price} in ${totalTime}ms`);
+      // Stop-out processed successfully
       
     } catch (error) {
       console.error('Stop-out processing failed:', error);
@@ -1423,7 +1421,7 @@ export class PositionExecutor {
         }
       );
       
-      console.log('📡 Position subscription started for user:', this.currentUserId);
+      // Position subscription started
       
       // subscriptionの管理（必要に応じて）
       // this.positionSubscription = subscription;
@@ -1450,7 +1448,7 @@ export class PositionExecutor {
         }
       );
       
-      console.log('🎯 Action subscription started for cross-PC coordination, user:', this.currentUserId);
+      // Action subscription started for cross-PC coordination
       
       // actionSubscriptionの管理（必要に応じて）
       // this.actionSubscription = subscription;
@@ -1466,7 +1464,7 @@ export class PositionExecutor {
    * 設計書：完全なリアルタイム協調実行システム
    */
   async startRealtimeCoordination(): Promise<void> {
-    console.log('🚀 Starting enhanced realtime coordination system...');
+    // Starting enhanced realtime coordination system
     
     // Position + Action の両方を監視
     await Promise.all([
@@ -1474,7 +1472,7 @@ export class PositionExecutor {
       this.subscribeToMyActions()
     ]);
     
-    console.log('✅ Enhanced realtime coordination system started');
+    // Enhanced realtime coordination system started
   }
 
   // ========================================
@@ -1521,13 +1519,13 @@ export class PositionExecutor {
         // 5. アクション完了
         await this.updateActionStatus(action.id, ActionStatus.EXECUTED);
         
-        console.log(`✅ Cross-PC entry completed: position ${targetPosition.id}, action ${action.id}`);
+        // Cross-PC entry completed successfully
       } else {
         throw new Error('Entry execution failed');
       }
       
       const executionTime = Date.now() - startTime;
-      console.log(`⚡ Cross-PC entry executed in ${executionTime}ms`);
+      // Cross-PC entry executed
       
     } catch (error) {
       console.error('❌ Cross-PC entry failed:', error);
@@ -1584,13 +1582,13 @@ export class PositionExecutor {
         // 7. トレール条件削除
         this.trailFlowEngineInstance.removeTrailCondition(targetPosition.id);
         
-        console.log(`✅ Cross-PC close completed: position ${targetPosition.id}, action ${action.id}`);
+        // Cross-PC close completed successfully
       } else {
         throw new Error('Close execution failed');
       }
       
       const executionTime = Date.now() - startTime;
-      console.log(`⚡ Cross-PC close executed in ${executionTime}ms`);
+      // Cross-PC close executed
       
     } catch (error) {
       console.error('❌ Cross-PC close failed:', error);
@@ -1846,8 +1844,8 @@ export class PositionExecutor {
   /**
    * ポジション状態更新（Amplify Gen2）
    */
-  private async updatePositionStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<{ data: Position }> {
-    const updateInput: any = { ...additionalFields };
+  private async updatePositionStatus(id: string, status?: PositionStatus, additionalFields?: Partial<UpdatePositionInput>): Promise<{ data: Position }> {
+    const updateInput: Partial<UpdatePositionInput> = { ...additionalFields };
     if (status) updateInput.status = status;
     
     const result = await updatePosition(id, updateInput);
@@ -1940,11 +1938,11 @@ export class PositionExecutor {
     let retryCount = 0;
     let lastError = error;
 
-    console.log(`🔄 Settlement retry initiated for position: ${position.id}, max retries: ${maxRetries}`);
+    // Settlement retry initiated
     
     for (retryCount = 1; retryCount <= maxRetries; retryCount++) {
       try {
-        console.log(`🔁 Settlement retry attempt ${retryCount}/${maxRetries} for position: ${position.id}`);
+        // Settlement retry attempt
         
         // 短時間待機（指数関数的バックオフ）
         const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
@@ -1968,7 +1966,7 @@ export class PositionExecutor {
         );
         
         if (executionResult.success) {
-          console.log(`✅ Settlement retry successful on attempt ${retryCount}: ${position.id}`);
+          // Settlement retry successful
           
           // トレール条件削除
           this.trailFlowEngineInstance.removeTrailCondition(position.id);
@@ -2042,8 +2040,8 @@ export class PositionService {
   /**
    * ポジション状態更新
    */
-  static async updateStatus(id: string, status?: PositionStatus, additionalFields?: any): Promise<{ data: Position }> {
-    const updateInput: any = { ...additionalFields };
+  static async updateStatus(id: string, status?: PositionStatus, additionalFields?: Partial<UpdatePositionInput>): Promise<{ data: Position }> {
+    const updateInput: Partial<UpdatePositionInput> = { ...additionalFields };
     if (status) updateInput.status = status;
     
     const result = await updatePosition(id, updateInput);

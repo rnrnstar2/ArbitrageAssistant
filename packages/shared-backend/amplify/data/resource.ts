@@ -93,6 +93,7 @@ const schema = a
         index("userId").sortKeys(["status"]),
         index("userId").name("userIdTrailIndex").sortKeys(["trailWidth"]),
         index("accountId").sortKeys(["status"]),
+        index("status").name("statusByTimeIndex").sortKeys(["updatedAt"]),
       ])
       .authorization((allow) => [
         allow.authenticated().to(["create", "read", "update", "delete"]),
@@ -119,6 +120,7 @@ const schema = a
         index("userId").sortKeys(["status"]),
         index("accountId").sortKeys(["status"]),
         index("positionId").sortKeys(["type"]),
+        index("status").name("statusByTimeActionIndex").sortKeys(["createdAt"]),
       ])
       .authorization((allow) => [
         allow.authenticated().to(["create", "read", "update", "delete"]),

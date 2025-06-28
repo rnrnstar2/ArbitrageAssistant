@@ -60,7 +60,7 @@ export class TrailEngine {
   setExecutionComponents(actionFlowEngine: ActionFlowEngine, wsHandler: WebSocketHandler): void {
     this.actionFlowEngine = actionFlowEngine;
     this.wsHandler = wsHandler;
-    console.log('✅ TrailEngine: ActionFlowEngine and WebSocketHandler components set for automatic execution');
+    // TrailEngine: ActionFlowEngine and WebSocketHandler components set for automatic execution
   }
 
   /**
@@ -69,7 +69,7 @@ export class TrailEngine {
    */
   async addPositionMonitoring(position: Position): Promise<void> {
     if (!position.trailWidth || position.trailWidth <= 0) {
-      console.log(`Position ${position.id} has no trail width, skipping monitoring`);
+      // Position has no trail width, skipping monitoring
       return;
     }
 
@@ -92,7 +92,7 @@ export class TrailEngine {
         });
       }
 
-      console.log(`✅ Trail monitoring added for position ${position.id} (symbol: ${position.symbol}, trailWidth: ${position.trailWidth})`);
+      // Trail monitoring added successfully
       
     } catch (error) {
       console.error(`❌ Failed to add trail monitoring for position ${position.id}:`, error);
@@ -108,9 +108,9 @@ export class TrailEngine {
     const monitored = this.monitoredPositions.get(positionId);
     if (monitored) {
       this.monitoredPositions.delete(positionId);
-      console.log(`✅ Trail monitoring removed for position ${positionId}`);
+      // Trail monitoring removed successfully
     } else {
-      console.log(`Position ${positionId} was not being monitored`);
+      // Position was not being monitored
     }
   }
 
@@ -154,7 +154,7 @@ export class TrailEngine {
    */
   private async executeTriggerActions(positionId: string, actionIds: string[]): Promise<void> {
     if (!actionIds || actionIds.length === 0) {
-      console.log(`No trigger actions for position ${positionId}`);
+      // No trigger actions for position
       return;
     }
 
@@ -194,7 +194,7 @@ export class TrailEngine {
               status: ActionStatus.EXECUTED
             });
             executed++;
-            console.log(`✅ Action ${actionId} executed successfully in ${executionResult.executionTime}ms`);
+            // Action executed successfully
           } else {
             // 5. 実行失敗時の状態復旧
             await updateAction(actionId, {
@@ -217,7 +217,7 @@ export class TrailEngine {
         }
       }
       
-      console.log(`🎯 Trail trigger completed for position ${positionId}: ${succeeded}/${actionIds.length} actions triggered, ${executed}/${actionIds.length} actions executed`);
+      // Trail trigger completed successfully
       
     } catch (error) {
       console.error(`❌ Failed to execute trigger actions for position ${positionId}:`, error);
@@ -274,7 +274,7 @@ export class TrailEngine {
       // Note: エントリーアクションの場合、新規ポジション作成が必要
       // 実際の実装ではActionFlowEngineにエントリー用メソッドを追加するか、
       // PositionExecutorのエントリー機能を利用する
-      console.log(`🚀 Entry action triggered for position ${position.id}`);
+      // Entry action triggered
       
       // 暫定的にsuccessを返す（実際のエントリー実行は別途実装が必要）
       const result = {
@@ -356,7 +356,7 @@ export class TrailEngine {
       }
     }
     
-    console.log(`🎯 Trail trigger (status only) for position ${positionId}: ${succeeded}/${actionIds.length} actions succeeded`);
+    // Trail trigger (status only) completed
   }
 
   /**
@@ -410,13 +410,13 @@ export class TrailEngine {
   async startAllTrailMonitoring(): Promise<void> {
     try {
       const trailPositions = await this.getTrailPositions();
-      console.log(`🚀 Starting trail monitoring for ${trailPositions.length} positions`);
+      // Starting trail monitoring for multiple positions
       
       for (const position of trailPositions) {
         await this.addPositionMonitoring(position);
       }
       
-      console.log(`✅ Trail monitoring started for ${this.monitoredPositions.size} positions`);
+      // Trail monitoring started successfully
     } catch (error) {
       console.error('❌ Failed to start all trail monitoring:', error);
     }
@@ -433,7 +433,7 @@ export class TrailEngine {
     if (position.trailWidth === 0 && position.triggerActionIds) {
       const actionIds = JSON.parse(position.triggerActionIds);
       await this.executeTriggerActions(position.id, actionIds);
-      console.log(`Immediate execution triggered for position ${position.id}`);
+      // Immediate execution triggered
     }
   }
 
@@ -445,7 +445,7 @@ export class TrailEngine {
       // ポジション取得
       const position = await this.getPosition(positionId);
       if (!position) {
-        console.log(`Position ${positionId} not found for stop out`);
+        // Position not found for stop out
         return;
       }
 
@@ -490,7 +490,7 @@ export class TrailEngine {
    * TrailEngineエンジン開始
    */
   async start(): Promise<void> {
-    console.log('🚀 Trail Engine started');
+    // Trail Engine started
   }
 
   /**
@@ -513,7 +513,7 @@ export class TrailEngine {
   updatePrice(symbol: string, price: number): void {
     // PriceMonitor経由で価格更新を処理
     // 実際の処理はcheckTrailConditionで行われる
-    console.log(`Price updated for ${symbol}: ${price}`);
+    // Price updated for symbol
   }
 
   /**
@@ -536,7 +536,7 @@ export class TrailEngine {
     for (const positionId of positionIds) {
       await this.removePositionMonitoring(positionId);
     }
-    console.log('All trail monitoring stopped');
+    // All trail monitoring stopped
   }
 
   /**

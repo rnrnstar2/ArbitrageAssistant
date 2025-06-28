@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const initializeSystem = async () => {
       try {
         await systemManager.start();
-        console.log('✅ Hedge System initialized successfully');
+        // ✅ Hedge System initialized successfully
       } catch (error) {
         console.error('❌ Failed to initialize Hedge System:', error);
       }

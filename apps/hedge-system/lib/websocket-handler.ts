@@ -6,7 +6,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
-  WSMessage,
   WSEvent,
   WSCommand,
   WSMessageType,
@@ -16,7 +15,9 @@ import {
   WSErrorEvent,
   WSPriceEvent,
   WSOpenCommand,
-  WSCloseCommand
+  WSCloseCommand,
+  WebSocketPerformanceMetrics,
+  WebSocketEventPayload
 } from './types';
 import { Symbol, ExecutionType } from '@repo/shared-types';
 import { PriceMonitor } from './price-monitor';
@@ -98,7 +99,7 @@ export class WebSocketHandler {
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000; // ミリ秒
   
-  private actionSync?: any; // ActionSyncとの統合用
+  private actionSync?: unknown; // ActionSyncとの統合用
   
   constructor() {
     this.setupEventListeners();
@@ -107,9 +108,9 @@ export class WebSocketHandler {
   /**
    * ActionSyncとの統合設定
    */
-  setActionSync(actionSync: any): void {
+  setActionSync(actionSync: unknown): void {
     this.actionSync = actionSync;
-    console.log('🔧 ActionSync integration enabled');
+    // ActionSync integration enabled
   }
   
   // ========================================
@@ -147,7 +148,7 @@ export class WebSocketHandler {
       this.startTime = new Date();
       this.reconnectAttempts = 0;
       
-      console.log(`✅ WebSocket connected on ${this.config.host}:${this.config.port}`);
+      console.warn(`✅ WebSocket connected on ${this.config.host}:${this.config.port}`);
       
       // パフォーマンス監視開始
       this.startPerformanceMonitoring();
@@ -177,7 +178,7 @@ export class WebSocketHandler {
       }
       
       this.connected = false;
-      console.log('🔌 WebSocket disconnected');
+      console.warn('🔌 WebSocket disconnected');
       
     } catch (error) {
       console.error('❌ Error disconnecting WebSocket:', error);
@@ -204,7 +205,7 @@ export class WebSocketHandler {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
     
-    console.log(`🔄 Reconnecting attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
+    console.warn(`🔄 Reconnecting attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`);
     
     await new Promise(resolve => setTimeout(resolve, delay));
     
@@ -230,7 +231,7 @@ export class WebSocketHandler {
         this.handleWebSocketEvent(event.payload);
       });
       
-      console.log('🔧 WebSocket event listeners setup');
+      // WebSocket event listeners setup
       
     } catch (error) {
       console.error('❌ Failed to setup event listeners:', error);
@@ -240,17 +241,17 @@ export class WebSocketHandler {
   /**
    * WebSocketイベント処理
    */
-  private async handleWebSocketEvent(payload: any): Promise<void> {
+  private async handleWebSocketEvent(payload: WebSocketEventPayload): Promise<void> {
     try {
       this.stats.totalMessagesReceived++;
       
       switch (payload.type) {
         case 'connection':
-          console.log(`🔗 EA connected: ${payload.clientId}`);
+          console.warn(`🔗 EA connected: ${payload.clientId}`);
           break;
           
         case 'disconnection':
-          console.log(`🔌 EA disconnected: ${payload.clientId}`);
+          console.warn(`🔌 EA disconnected: ${payload.clientId}`);
           break;
           
         case 'message':
@@ -299,7 +300,7 @@ export class WebSocketHandler {
   /**
    * 設計書準拠メッセージ判定
    */
-  private isDesignCompliantMessage(message: any): boolean {
+  private isDesignCompliantMessage(message: unknown): message is WSEvent {
     return (
       message.type && 
       message.timestamp &&
@@ -349,7 +350,7 @@ export class WebSocketHandler {
   /**
    * EAイベント処理
    */
-  private async handleEAEvent(event: any): Promise<void> {
+  private async handleEAEvent(event: WSEvent & { event: string; symbol?: string; price?: number; bid?: number; ask?: number; spread?: number }): Promise<void> {
     switch (event.event) {
       case 'PRICE_UPDATE':
         await this.handlePriceUpdate(event);
@@ -381,7 +382,7 @@ export class WebSocketHandler {
   /**
    * 価格更新処理
    */
-  private async handlePriceUpdate(event: any): Promise<void> {
+  private async handlePriceUpdate(event: WSEvent & { symbol: string; price: number; timestamp?: string; bid?: number; ask?: number; spread?: number }): Promise<void> {
     if (this.priceMonitor) {
       await this.priceMonitor.handlePriceFromEA({
         symbol: event.symbol,
@@ -452,7 +453,7 @@ export class WebSocketHandler {
       
       const orderId = `order_${Date.now()}_${params.positionId}`;
       
-      console.log(`⚡ OPEN command sent: ${params.positionId} in ${Date.now() - startTime}ms`);
+      console.warn(`⚡ OPEN command sent: ${params.positionId} in ${Date.now() - startTime}ms`);
       
       return {
         success: true,
@@ -505,7 +506,7 @@ export class WebSocketHandler {
       
       const orderId = `close_${Date.now()}_${params.positionId}`;
       
-      console.log(`⚡ CLOSE command sent: ${params.positionId} in ${Date.now() - startTime}ms`);
+      console.warn(`⚡ CLOSE command sent: ${params.positionId} in ${Date.now() - startTime}ms`);
       
       return {
         success: true,
@@ -573,7 +574,7 @@ export class WebSocketHandler {
     // 定期的なパフォーマンスチェック（30秒間隔）
     setInterval(async () => {
       try {
-        const metrics = await invoke('get_websocket_performance_metrics') as any;
+        const metrics = await invoke('get_websocket_performance_metrics') as WebSocketPerformanceMetrics;
         
         if (metrics.avg_latency_ms > 100) {
           console.warn(`⚠️ High latency detected: ${metrics.avg_latency_ms}ms`);
@@ -607,7 +608,14 @@ export class WebSocketHandler {
    */
   async getStats(): Promise<WSServerStats> {
     try {
-      const serverStats = await invoke('get_websocket_server_status') as any;
+      const serverStats = await invoke('get_websocket_server_status') as {
+        is_running?: boolean;
+        connected_clients?: number;
+        total_messages_received?: number;
+        total_messages_sent?: number;
+        uptime_seconds?: number;
+        errors?: number;
+      };
       
       return {
         isRunning: serverStats.is_running || this.connected,
@@ -658,13 +666,13 @@ export class WebSocketHandler {
    */
   setPriceMonitor(priceMonitor: PriceMonitor): void {
     this.priceMonitor = priceMonitor;
-    console.log('🔧 PriceMonitor set');
+    // PriceMonitor set
   }
   
   /**
    * EAイベントを標準フォーマットに変換
    */
-  private convertToOpenedEvent(event: any): WSOpenedEvent {
+  private convertToOpenedEvent(event: Record<string, unknown>): WSOpenedEvent {
     return {
       type: WSMessageType.OPENED,
       timestamp: event.timestamp || new Date().toISOString(),
@@ -677,7 +685,7 @@ export class WebSocketHandler {
     };
   }
   
-  private convertToClosedEvent(event: any): WSClosedEvent {
+  private convertToClosedEvent(event: Record<string, unknown>): WSClosedEvent {
     return {
       type: WSMessageType.CLOSED,
       timestamp: event.timestamp || new Date().toISOString(),
@@ -690,7 +698,7 @@ export class WebSocketHandler {
     };
   }
   
-  private convertToStoppedEvent(event: any): WSStoppedEvent {
+  private convertToStoppedEvent(event: Record<string, unknown>): WSStoppedEvent {
     return {
       type: WSMessageType.STOPPED,
       timestamp: event.timestamp || new Date().toISOString(),

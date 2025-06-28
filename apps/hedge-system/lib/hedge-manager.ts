@@ -106,7 +106,7 @@ export class HedgeManager {
   private async initializeUserId(): Promise<void> {
     try {
       this.currentUserId = await getCurrentUserId();
-      console.log('✅ HedgeManager user ID initialized:', this.currentUserId);
+      // ✅ HedgeManager user ID initialized
     } catch (error) {
       console.error('Failed to get current user ID:', error);
     }
@@ -117,7 +117,7 @@ export class HedgeManager {
    */
   async startMonitoring(accountIds: string[]): Promise<void> {
     if (this.isMonitoring) {
-      console.log('🔄 Hedge monitoring is already running');
+      // 🔄 Hedge monitoring is already running
       return;
     }
 
@@ -131,7 +131,7 @@ export class HedgeManager {
     // 定期分析開始
     this.startPeriodicAnalysis();
     
-    console.log(`🛡️ Hedge monitoring started for ${accountIds.length} accounts:`, accountIds);
+    // 🛡️ Hedge monitoring started
   }
 
   /**
@@ -151,7 +151,7 @@ export class HedgeManager {
     this.monitoredAccounts.clear();
     this.lastAnalysis.clear();
     
-    console.log('🛑 Hedge monitoring stopped');
+    // 🛑 Hedge monitoring stopped
   }
 
   // ========================================
@@ -174,7 +174,7 @@ export class HedgeManager {
       this.updateStats(analyses);
       this.stats.lastAnalysisTime = new Date();
       
-      console.log(`📊 Hedge analysis completed for ${analyses.length} accounts`);
+      // 📊 Hedge analysis completed
       
     } catch (error) {
       console.error('❌ Hedge analysis failed:', error);
@@ -188,7 +188,7 @@ export class HedgeManager {
    * 特定口座の両建て分析
    */
   async analyzeAccountHedge(accountId: string): Promise<HedgeAnalysis> {
-    console.log(`🔍 Analyzing hedge for account: ${accountId}`);
+    // 🔍 Analyzing hedge for account
     
     // 口座のオープンポジション取得
     const positions = await this.getAccountOpenPositions(accountId);
@@ -646,9 +646,9 @@ export class HedgeManager {
    * 手動分析実行
    */
   async runManualAnalysis(): Promise<HedgeAnalysis[]> {
-    console.log('🔄 Manual hedge analysis started');
+    // 🔄 Manual hedge analysis started
     const results = await this.performHedgeAnalysis();
-    console.log('✅ Manual hedge analysis completed');
+    // ✅ Manual hedge analysis completed
     return results;
   }
 
