@@ -14,13 +14,13 @@ interface PositionCardProps {
 export function PositionCard({ position }: PositionCardProps) {
   const getStatusColor = (status: PositionStatus) => {
     switch (status) {
-      case 'OPEN': return 'bg-green-100 text-green-800';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'CLOSING': return 'bg-blue-100 text-blue-800';
-      case 'CLOSED': return 'bg-gray-100 text-gray-800';
-      case 'STOPPED': return 'bg-red-100 text-red-800';
-      case 'CANCELED': return 'bg-gray-100 text-gray-600';
-      default: return 'bg-gray-100 text-gray-600';
+      case 'OPEN': return 'bg-status-success status-success';
+      case 'PENDING': return 'bg-status-warning status-warning';
+      case 'CLOSING': return 'bg-status-info status-info';
+      case 'CLOSED': return 'bg-muted text-muted-foreground';
+      case 'STOPPED': return 'bg-status-error status-error';
+      case 'CANCELED': return 'bg-muted text-text-subtle';
+      default: return 'bg-muted text-text-subtle';
     }
   };
 

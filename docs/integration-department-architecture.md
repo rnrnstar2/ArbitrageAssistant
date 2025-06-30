@@ -19,11 +19,6 @@ graph TB
     Director --> MT5Spec
     Director --> WebSocketSpec
     Director --> SystemSpec
-    
-    style Director fill:#e3f2fd
-    style MT5Spec fill:#f3e5f5
-    style WebSocketSpec fill:#fff3e0
-    style SystemSpec fill:#e8f5e8
 ```
 
 ### 1.2 技術責任分担
@@ -39,7 +34,6 @@ graph TB
 
 ```typescript
 interface IntegrationTechStack {
-  // MT5 Platform Integration
   mt5Platform: {
     language: 'MQL5';
     dllFramework: 'C++17 + websocketpp';
@@ -48,7 +42,6 @@ interface IntegrationTechStack {
     communication: 'WebSocket DLL';
   };
   
-  // Communication Layer
   communication: {
     protocol: 'WebSocket + JSON';
     security: 'TLS/SSL + JWT';
@@ -57,7 +50,6 @@ interface IntegrationTechStack {
     compression: 'Optional Message Compression';
   };
   
-  // System Bridge
   systemBridge: {
     language: 'TypeScript';
     framework: 'Tauri v2';
@@ -65,7 +57,6 @@ interface IntegrationTechStack {
     stateSync: 'Real-time Synchronization';
   };
   
-  // Performance & Monitoring
   monitoring: {
     latencyTracking: 'Performance Monitor';
     errorHandling: 'Multi-layer Error Recovery';
@@ -120,11 +111,6 @@ graph TB
     Subscriptions --> User1
     Subscriptions --> User2
     Subscriptions --> UserN
-    
-    style EA fill:#e1f5fe
-    style WSServer fill:#f3e5f5
-    style SystemBridge fill:#fff3e0
-    style GraphQL fill:#e8f5e8
 ```
 
 ### 2.2 Technology Components
@@ -142,54 +128,37 @@ graph TB
 
 ### 3.1 HedgeSystemConnector.mq5 Architecture
 
-```mermaid
-graph TB
-    subgraph "MT5 EA Architecture"
-        OnInit[OnInit()]
-        OnDeinit[OnDeinit()]
-        OnTick[OnTick()]
-        OnTimer[OnTimer()]
-        
-        subgraph "Core Functions"
-            WSManager[WebSocket Manager]
-            OrderManager[Order Manager]
-            PositionMonitor[Position Monitor]
-            AccountMonitor[Account Monitor]
-            EventHandler[Event Handler]
-        end
-        
-        subgraph "MT5 APIs"
-            OrderSend[OrderSend()]
-            OrderClose[OrderClose()]
-            AccountInfo[AccountInfo()]
-            PositionsTotal[PositionsTotal()]
-        end
-    end
+```mql5
+// Core EA Functions
+class CHedgeSystemConnector {
+private:
+    CWebSocketManager m_wsManager;
+    COrderManager m_orderManager;
+    CPositionMonitor m_positionMonitor;
+    CAccountMonitor m_accountMonitor;
     
-    OnInit --> WSManager
-    OnTick --> PositionMonitor
-    OnTimer --> AccountMonitor
-    WSManager --> EventHandler
-    OrderManager --> OrderSend
-    OrderManager --> OrderClose
-    PositionMonitor --> PositionsTotal
-    AccountMonitor --> AccountInfo
+public:
+    // EA Lifecycle
+    bool Initialize();
+    void Deinitialize();
+    void OnTick();
+    void OnTimer();
     
-    style WSManager fill:#e1f5fe
-    style OrderManager fill:#f3e5f5
-    style PositionMonitor fill:#fff3e0
+    // Core Operations
+    bool ConnectToSystem();
+    bool ExecuteOrder(const COrderRequest& request);
+    void MonitorPositions();
+    void SendAccountUpdate();
+};
 ```
 
-### 3.2 EA Core Functions Implementation
+### 3.2 WebSocket Connection Management
 
-#### 3.2.1 WebSocket Connection Management
 ```mql5
-// WebSocket接続管理クラス
 class CWebSocketManager {
 private:
     string m_url;
     string m_token;
-    string m_accountId;
     bool m_connected;
     datetime m_lastHeartbeat;
     
@@ -198,619 +167,54 @@ public:
     void Disconnect();
     bool SendMessage(string message);
     string ReceiveMessage();
-    bool IsConnected();
-    void HandleReconnection();
+    bool IsConnected() { return m_connected; }
+    void SendHeartbeat();
+    bool HandleReconnection();
 };
-
-// 初期化処理
-int OnInit() {
-    // アカウントID生成
-    string accountId = AccountInfoString(ACCOUNT_NAME) + "_" + 
-                      IntegerToString(AccountInfoInteger(ACCOUNT_LOGIN));
-    
-    // WebSocket接続
-    if (!wsManager.Connect("ws://localhost:8080", "auth-token")) {
-        Print("WebSocket connection failed");
-        return INIT_FAILED;
-    }
-    
-    // タイマー設定（5秒間隔）
-    EventSetTimer(5);
-    return INIT_SUCCEEDED;
-}
-```
-
-#### 3.2.2 Order Execution System
-```mql5
-// Position実行システム
-class CPositionExecutor {
-private:
-    struct PositionRequest {
-        string positionId;
-        string actionId;
-        string symbol;
-        ENUM_ORDER_TYPE orderType;
-        double volume;
-        double price;
-        double sl;
-        double tp;
-    };
-    
-public:
-    bool ExecutePosition(PositionRequest& request);
-    bool ClosePosition(string positionId, string actionId);
-    void UpdatePositionStatus(string positionId, string status);
-};
-
-// 注文実行
-bool CPositionExecutor::ExecutePosition(PositionRequest& request) {
-    MqlTradeRequest tradeRequest = {};
-    MqlTradeResult result = {};
-    
-    // 注文パラメータ設定
-    tradeRequest.action = TRADE_ACTION_DEAL;
-    tradeRequest.symbol = request.symbol;
-    tradeRequest.volume = request.volume;
-    tradeRequest.type = request.orderType;
-    tradeRequest.price = SymbolInfoDouble(request.symbol, SYMBOL_ASK);
-    tradeRequest.deviation = 10;
-    tradeRequest.magic = 12345;
-    tradeRequest.comment = "HedgeSystem_" + request.positionId;
-    
-    // 注文送信
-    if (OrderSend(tradeRequest, result)) {
-        // 成功通知
-        SendPositionUpdate(request.positionId, "OPENED", result.order, result.price);
-        return true;
-    } else {
-        // 失敗通知
-        SendPositionUpdate(request.positionId, "FAILED", 0, 0);
-        return false;
-    }
-}
-```
-
-#### 3.2.3 Real-time Monitoring System
-```mql5
-// ポジション監視システム
-class CPositionMonitor {
-private:
-    struct PositionInfo {
-        ulong ticket;
-        string positionId;
-        string symbol;
-        double volume;
-        double openPrice;
-        double currentPrice;
-        double profit;
-        datetime openTime;
-    };
-    
-    PositionInfo m_positions[];
-    
-public:
-    void UpdatePositions();
-    void CheckTrailConditions();
-    void SendPositionUpdates();
-};
-
-// OnTimer()での定期実行
-void OnTimer() {
-    // ポジション更新（5秒間隔）
-    positionMonitor.UpdatePositions();
-    
-    // アカウント情報更新（10秒間隔）
-    static int accountUpdateCounter = 0;
-    if (++accountUpdateCounter >= 2) {
-        accountMonitor.SendAccountUpdate();
-        accountUpdateCounter = 0;
-    }
-    
-    // WebSocket接続確認
-    if (!wsManager.IsConnected()) {
-        wsManager.HandleReconnection();
-    }
-}
-```
-
-### 3.3 EA Message Processing
-
-#### 3.3.1 Command Reception Processing
-```mql5
-// コマンド処理システム
-void ProcessReceivedMessage(string message) {
-    // JSON解析（簡易実装）
-    if (StringFind(message, "\"type\":\"OPEN\"") != -1) {
-        ProcessOpenCommand(message);
-    }
-    else if (StringFind(message, "\"type\":\"CLOSE\"") != -1) {
-        ProcessCloseCommand(message);
-    }
-    else if (StringFind(message, "\"type\":\"HEARTBEAT\"") != -1) {
-        ProcessHeartbeat(message);
-    }
-}
-
-// OPEN コマンド処理
-void ProcessOpenCommand(string message) {
-    // メッセージから情報抽出
-    string positionId = ExtractJsonValue(message, "positionId");
-    string symbol = ExtractJsonValue(message, "symbol");
-    string side = ExtractJsonValue(message, "side");
-    double volume = StringToDouble(ExtractJsonValue(message, "volume"));
-    
-    // 注文タイプ決定
-    ENUM_ORDER_TYPE orderType = (side == "BUY") ? ORDER_TYPE_BUY : ORDER_TYPE_SELL;
-    
-    // 注文実行
-    PositionRequest request;
-    request.positionId = positionId;
-    request.symbol = symbol;
-    request.orderType = orderType;
-    request.volume = volume;
-    
-    positionExecutor.ExecutePosition(request);
-}
-```
-
-#### 3.3.2 Event Transmission Processing
-```mql5
-// イベント送信システム
-void SendPositionUpdate(string positionId, string status, ulong mtTicket, double price) {
-    string message = StringFormat(
-        "{"
-        "\"type\":\"POSITION_UPDATE\","
-        "\"timestamp\":\"%s\","
-        "\"accountId\":\"%s\","
-        "\"positionId\":\"%s\","
-        "\"status\":\"%s\","
-        "\"mtTicket\":\"%I64u\","
-        "\"price\":%.5f"
-        "}",
-        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
-        accountId,
-        positionId,
-        status,
-        mtTicket,
-        price
-    );
-    
-    wsManager.SendMessage(message);
-}
-
-// アカウント情報送信
-void SendAccountUpdate() {
-    string message = StringFormat(
-        "{"
-        "\"type\":\"ACCOUNT_UPDATE\","
-        "\"timestamp\":\"%s\","
-        "\"accountId\":\"%s\","
-        "\"balance\":%.2f,"
-        "\"credit\":%.2f,"
-        "\"equity\":%.2f,"
-        "\"margin\":%.2f"
-        "}",
-        TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS),
-        accountId,
-        AccountInfoDouble(ACCOUNT_BALANCE),
-        AccountInfoDouble(ACCOUNT_CREDIT),
-        AccountInfoDouble(ACCOUNT_EQUITY),
-        AccountInfoDouble(ACCOUNT_MARGIN)
-    );
-    
-    wsManager.SendMessage(message);
-}
 ```
 
 ## 4. WebSocket DLL Design
 
-### 4.1 C++ DLL Architecture
+### 4.1 C++ DLL Public API
 
-```mermaid
-graph TB
-    subgraph "WebSocket DLL Architecture"
-        subgraph "Public Interface"
-            ConnectAPI[WSConnect()]
-            SendAPI[WSSendMessage()]
-            ReceiveAPI[WSReceiveMessage()]
-            StatusAPI[WSIsConnected()]
-        end
-        
-        subgraph "Core Implementation"
-            Client[WebSocket Client]
-            MessageQueue[Message Queue]
-            ThreadPool[Thread Pool]
-            ErrorHandler[Error Handler]
-        end
-        
-        subgraph "Dependencies"
-            WebSocketPP[websocketpp]
-            OpenSSL[OpenSSL]
-            BoostAsio[Boost.Asio]
-        end
-    end
-    
-    ConnectAPI --> Client
-    SendAPI --> MessageQueue
-    ReceiveAPI --> MessageQueue
-    StatusAPI --> Client
-    Client --> WebSocketPP
-    Client --> OpenSSL
-    ThreadPool --> BoostAsio
-    
-    style Client fill:#e1f5fe
-    style MessageQueue fill:#f3e5f5
-    style ThreadPool fill:#fff3e0
-```
-
-### 4.2 DLL Implementation Details
-
-#### 4.2.1 Public API Design
 ```cpp
-// HedgeSystemWebSocket.h
-#pragma once
-
-#ifdef HEDGESYSTEMWEBSOCKET_EXPORTS
-#define HEDGESYSTEMWEBSOCKET_API __declspec(dllexport)
-#else
-#define HEDGESYSTEMWEBSOCKET_API __declspec(dllimport)
-#endif
-
+// DLL Export Functions
 extern "C" {
-    // 接続管理
-    HEDGESYSTEMWEBSOCKET_API bool WSConnect(const char* url, const char* token);
-    HEDGESYSTEMWEBSOCKET_API void WSDisconnect();
-    HEDGESYSTEMWEBSOCKET_API bool WSIsConnected();
-    
-    // メッセージ送受信
-    HEDGESYSTEMWEBSOCKET_API bool WSSendMessage(const char* message);
-    HEDGESYSTEMWEBSOCKET_API const char* WSReceiveMessage();
-    
-    // エラーハンドリング
-    HEDGESYSTEMWEBSOCKET_API const char* WSGetLastError();
-    
-    // 統計情報
-    HEDGESYSTEMWEBSOCKET_API int WSGetConnectionCount();
-    HEDGESYSTEMWEBSOCKET_API double WSGetLatency();
+    __declspec(dllexport) int ConnectWebSocket(const char* url, const char* token);
+    __declspec(dllexport) int SendMessage(const char* message);
+    __declspec(dllexport) int ReceiveMessage(char* buffer, int bufferSize);
+    __declspec(dllexport) int IsConnected();
+    __declspec(dllexport) void DisconnectWebSocket();
+    __declspec(dllexport) int GetLastError();
 }
 ```
 
-#### 4.2.2 WebSocket Client Implementation
-```cpp
-// HedgeSystemWebSocket.cpp
-#include <websocketpp/config/asio_client.hpp>
-#include <websocketpp/client.hpp>
-#include <queue>
-#include <mutex>
-#include <thread>
+### 4.2 WebSocket Client Implementation
 
+```cpp
 class WebSocketClient {
 private:
-    typedef websocketpp::client<websocketpp::config::asio_tls_client> client;
-    typedef websocketpp::lib::shared_ptr<websocketpp::lib::asio::ssl::context> context_ptr;
-    
-    client m_client;
-    websocketpp::connection_hdl m_hdl;
-    std::queue<std::string> m_message_queue;
-    std::mutex m_queue_mutex;
-    std::thread m_thread;
-    bool m_connected;
-    std::string m_last_error;
+    websocketpp::client<websocketpp::config::asio_client> client;
+    websocketpp::connection_hdl hdl;
+    std::thread networkThread;
+    std::queue<std::string> messageQueue;
+    std::mutex queueMutex;
     
 public:
-    WebSocketClient();
-    ~WebSocketClient();
-    
     bool connect(const std::string& uri, const std::string& token);
     void disconnect();
-    bool send_message(const std::string& message);
-    std::string receive_message();
-    bool is_connected() const;
-    std::string get_last_error() const;
-    
-private:
-    void on_message(websocketpp::connection_hdl hdl, client::message_ptr msg);
-    void on_open(websocketpp::connection_hdl hdl);
-    void on_close(websocketpp::connection_hdl hdl);
-    void on_fail(websocketpp::connection_hdl hdl);
-    context_ptr on_tls_init();
+    bool sendMessage(const std::string& message);
+    std::string receiveMessage();
+    bool isConnected() const;
 };
-
-// 接続実装
-bool WebSocketClient::connect(const std::string& uri, const std::string& token) {
-    try {
-        m_client.clear_access_channels(websocketpp::log::alevel::all);
-        m_client.clear_error_channels(websocketpp::log::elevel::all);
-        
-        m_client.init_asio();
-        m_client.set_tls_init_handler([this](websocketpp::connection_hdl) {
-            return on_tls_init();
-        });
-        
-        // イベントハンドラー設定
-        m_client.set_message_handler([this](websocketpp::connection_hdl hdl, client::message_ptr msg) {
-            on_message(hdl, msg);
-        });
-        
-        m_client.set_open_handler([this](websocketpp::connection_hdl hdl) {
-            on_open(hdl);
-        });
-        
-        m_client.set_close_handler([this](websocketpp::connection_hdl hdl) {
-            on_close(hdl);
-        });
-        
-        m_client.set_fail_handler([this](websocketpp::connection_hdl hdl) {
-            on_fail(hdl);
-        });
-        
-        // 接続作成
-        websocketpp::lib::error_code ec;
-        auto con = m_client.get_connection(uri, ec);
-        if (ec) {
-            m_last_error = ec.message();
-            return false;
-        }
-        
-        // 認証ヘッダー追加
-        con->append_header("Authorization", "Bearer " + token);
-        
-        m_hdl = con->get_handle();
-        m_client.connect(con);
-        
-        // 非同期実行開始
-        m_thread = std::thread([this]() {
-            m_client.run();
-        });
-        
-        // 接続完了待機（最大5秒）
-        auto start = std::chrono::steady_clock::now();
-        while (!m_connected && 
-               std::chrono::steady_clock::now() - start < std::chrono::seconds(5)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        
-        return m_connected;
-    }
-    catch (const std::exception& e) {
-        m_last_error = e.what();
-        return false;
-    }
-}
 ```
 
-#### 4.2.3 Message Queue Implementation
-```cpp
-// メッセージ受信処理
-void WebSocketClient::on_message(websocketpp::connection_hdl hdl, client::message_ptr msg) {
-    std::lock_guard<std::mutex> lock(m_queue_mutex);
-    m_message_queue.push(msg->get_payload());
-}
+## 5. Communication Protocol Design
 
-// メッセージ取得（ノンブロッキング）
-std::string WebSocketClient::receive_message() {
-    std::lock_guard<std::mutex> lock(m_queue_mutex);
-    if (m_message_queue.empty()) {
-        return "";
-    }
-    
-    std::string message = m_message_queue.front();
-    m_message_queue.pop();
-    return message;
-}
+### 5.1 Message Format Specifications
 
-// メッセージ送信
-bool WebSocketClient::send_message(const std::string& message) {
-    if (!m_connected) {
-        m_last_error = "Not connected";
-        return false;
-    }
-    
-    try {
-        websocketpp::lib::error_code ec;
-        m_client.send(m_hdl, message, websocketpp::frame::opcode::text, ec);
-        if (ec) {
-            m_last_error = ec.message();
-            return false;
-        }
-        return true;
-    }
-    catch (const std::exception& e) {
-        m_last_error = e.what();
-        return false;
-    }
-}
-```
-
-## 5. System Bridge Design
-
-### 5.1 TypeScript Integration System
-
+#### Commands (Hedge System → MT5)
 ```typescript
-// apps/hedge-system/lib/websocket-server.ts
-interface WebSocketServerConfig {
-  port: number;
-  host: string;
-  authToken: string;
-  maxConnections: number;
-  heartbeatInterval: number;
-  messageTimeout: number;
-}
-
-class HedgeSystemWebSocketServer {
-  private server: WebSocket.Server;
-  private connections: Map<string, WebSocketConnection>;
-  private messageHandlers: Map<string, MessageHandler>;
-  private config: WebSocketServerConfig;
-  
-  constructor(config: WebSocketServerConfig) {
-    this.config = config;
-    this.connections = new Map();
-    this.messageHandlers = new Map();
-    this.setupMessageHandlers();
-  }
-  
-  // メッセージハンドラー設定
-  private setupMessageHandlers(): void {
-    this.messageHandlers.set('POSITION_UPDATE', this.handlePositionUpdate.bind(this));
-    this.messageHandlers.set('ACCOUNT_UPDATE', this.handleAccountUpdate.bind(this));
-    this.messageHandlers.set('HEARTBEAT', this.handleHeartbeat.bind(this));
-    this.messageHandlers.set('ERROR', this.handleError.bind(this));
-  }
-  
-  // Position更新処理
-  private async handlePositionUpdate(message: PositionUpdateMessage): Promise<void> {
-    try {
-      // DynamoDB更新
-      await amplifyClient.models?.Position?.update({
-        id: message.positionId,
-        status: message.status as PositionStatus,
-        mtTicket: message.mtTicket?.toString(),
-        entryPrice: message.price,
-        entryTime: message.timestamp,
-        updatedAt: new Date().toISOString()
-      });
-      
-      // Action更新（該当する場合）
-      if (message.actionId) {
-        await amplifyClient.models?.Action?.update({
-          id: message.actionId,
-          status: message.status === 'OPENED' ? 'EXECUTED' : 'FAILED',
-          updatedAt: new Date().toISOString()
-        });
-      }
-      
-      console.log(`Position ${message.positionId} updated to ${message.status}`);
-    } catch (error) {
-      console.error('Failed to update position:', error);
-    }
-  }
-  
-  // Account情報更新処理
-  private async handleAccountUpdate(message: AccountUpdateMessage): Promise<void> {
-    try {
-      await amplifyClient.models?.Account?.update({
-        id: message.accountId,
-        balance: message.balance,
-        credit: message.credit,
-        equity: message.equity,
-        lastUpdated: message.timestamp,
-        updatedAt: new Date().toISOString()
-      });
-      
-      console.log(`Account ${message.accountId} updated`);
-    } catch (error) {
-      console.error('Failed to update account:', error);
-    }
-  }
-}
-```
-
-### 5.2 Multi-System Coordination
-
-```typescript
-// 複数システム間連携
-class SystemBridge {
-  private subscriptions: Map<string, GraphQLSubscription>;
-  private userValidation: UserValidationService;
-  
-  constructor() {
-    this.subscriptions = new Map();
-    this.userValidation = new UserValidationService();
-    this.setupSubscriptions();
-  }
-  
-  // GraphQL Subscription設定
-  private setupSubscriptions(): void {
-    // Action実行監視
-    const actionSubscription = amplifyClient.graphql({
-      query: subscriptions.onUpdateAction,
-      variables: { 
-        filter: { 
-          userId: { eq: this.getCurrentUserId() },
-          status: { eq: 'EXECUTING' }
-        }
-      }
-    }).subscribe({
-      next: (event) => this.handleActionUpdate(event.data.onUpdateAction),
-      error: (error) => console.error('Action subscription error:', error)
-    });
-    
-    this.subscriptions.set('actions', actionSubscription);
-    
-    // Position監視
-    const positionSubscription = amplifyClient.graphql({
-      query: subscriptions.onUpdatePosition,
-      variables: {
-        filter: {
-          userId: { eq: this.getCurrentUserId() }
-        }
-      }
-    }).subscribe({
-      next: (event) => this.handlePositionUpdate(event.data.onUpdatePosition),
-      error: (error) => console.error('Position subscription error:', error)
-    });
-    
-    this.subscriptions.set('positions', positionSubscription);
-  }
-  
-  // Action更新処理（userIdベース担当判定）
-  private async handleActionUpdate(action: Action): Promise<void> {
-    // 担当判定
-    if (!this.userValidation.isMyResponsibility(action.userId)) {
-      console.log(`Action ${action.id} is not my responsibility (userId: ${action.userId})`);
-      return;
-    }
-    
-    // 実行状態確認
-    if (action.status !== 'EXECUTING') {
-      return;
-    }
-    
-    console.log(`Executing action ${action.id} for user ${action.userId}`);
-    
-    try {
-      // MT5に実行コマンド送信
-      const command = this.buildExecutionCommand(action);
-      await this.sendToMT5(action.accountId, command);
-      
-      console.log(`Action ${action.id} sent to MT5`);
-    } catch (error) {
-      console.error(`Failed to execute action ${action.id}:`, error);
-      
-      // エラー時はFAILED状態に更新
-      await amplifyClient.models?.Action?.update({
-        id: action.id,
-        status: 'FAILED',
-        updatedAt: new Date().toISOString()
-      });
-    }
-  }
-  
-  // 実行コマンド構築
-  private buildExecutionCommand(action: Action): MT5Command {
-    return {
-      type: action.type, // 'ENTRY' or 'CLOSE'
-      timestamp: new Date().toISOString(),
-      accountId: action.accountId,
-      positionId: action.positionId,
-      actionId: action.id,
-      // 追加パラメータ（Positionから取得）
-      symbol: action.position?.symbol,
-      volume: action.position?.volume,
-      side: action.type === 'ENTRY' ? 'BUY' : 'CLOSE' // 簡略化
-    };
-  }
-}
-```
-
-## 6. Communication Protocol Design
-
-### 6.1 Message Format Specifications
-
-#### 6.1.1 Hedge System → MT5 (Commands)
-```typescript
-// 基本コマンド構造
 interface BaseCommand {
   type: string;
   timestamp: string;
@@ -819,7 +223,6 @@ interface BaseCommand {
   actionId?: string;
 }
 
-// OPEN コマンド
 interface OpenCommand extends BaseCommand {
   type: 'OPEN';
   symbol: string;
@@ -831,7 +234,6 @@ interface OpenCommand extends BaseCommand {
   };
 }
 
-// CLOSE コマンド
 interface CloseCommand extends BaseCommand {
   type: 'CLOSE';
   mtTicket?: string;
@@ -840,18 +242,10 @@ interface CloseCommand extends BaseCommand {
     userId: string;
   };
 }
-
-// HEARTBEAT コマンド
-interface HeartbeatCommand {
-  type: 'HEARTBEAT';
-  timestamp: string;
-  accountId: string;
-}
 ```
 
-#### 6.1.2 MT5 → Hedge System (Events)
+#### Events (MT5 → Hedge System)
 ```typescript
-// 基本イベント構造
 interface BaseEvent {
   type: string;
   timestamp: string;
@@ -860,7 +254,6 @@ interface BaseEvent {
   actionId?: string;
 }
 
-// OPENED イベント
 interface OpenedEvent extends BaseEvent {
   type: 'OPENED';
   positionId: string;
@@ -870,7 +263,6 @@ interface OpenedEvent extends BaseEvent {
   errorMessage?: string;
 }
 
-// CLOSED イベント
 interface ClosedEvent extends BaseEvent {
   type: 'CLOSED';
   positionId: string;
@@ -879,240 +271,98 @@ interface ClosedEvent extends BaseEvent {
   profit: number;
   status: 'SUCCESS' | 'FAILED';
 }
+```
 
-// ACCOUNT_UPDATE イベント
-interface AccountUpdateEvent extends BaseEvent {
-  type: 'ACCOUNT_UPDATE';
-  balance: number;
-  credit: number;
-  equity: number;
-  margin: number;
-  freeMargin: number;
-}
+## 6. System Bridge Design
 
-// POSITION_UPDATE イベント
-interface PositionUpdateEvent extends BaseEvent {
-  type: 'POSITION_UPDATE';
-  positions: {
-    mtTicket: string;
-    symbol: string;
-    volume: number;
-    openPrice: number;
-    currentPrice: number;
-    profit: number;
-    openTime: string;
-  }[];
+### 6.1 TypeScript Integration System
+
+```typescript
+export class IntegrationBridge {
+  private wsServer: WebSocketServer;
+  private systemCoordinator: SystemCoordinator;
+  private messageHandler: MessageHandler;
+  
+  constructor(config: IntegrationConfig) {
+    this.wsServer = new WebSocketServer(config.websocket);
+    this.systemCoordinator = new SystemCoordinator(config.coordination);
+    this.messageHandler = new MessageHandler();
+  }
+  
+  async initialize(): Promise<void> {
+    await this.wsServer.start();
+    await this.systemCoordinator.initialize();
+    this.setupMessageHandlers();
+  }
+  
+  private setupMessageHandlers(): void {
+    this.wsServer.on('message', this.handleIncomingMessage.bind(this));
+    this.systemCoordinator.on('action', this.handleSystemAction.bind(this));
+  }
 }
 ```
 
-### 6.2 Protocol Implementation
+### 6.2 Multi-System Coordination
 
-#### 6.2.1 Message Serialization
 ```typescript
-class MessageSerializer {
-  // コマンドシリアライゼーション
-  static serializeCommand(command: BaseCommand): string {
-    return JSON.stringify({
-      ...command,
-      version: '1.0',
-      checksum: this.calculateChecksum(command)
-    });
-  }
+export class SystemCoordinator {
+  private systems: Map<string, SystemConnection> = new Map();
+  private actionQueue: ActionQueue;
+  private stateSync: StateSync;
   
-  // イベントデシリアライゼーション
-  static deserializeEvent(message: string): BaseEvent {
-    try {
-      const parsed = JSON.parse(message);
-      
-      // バージョンチェック
-      if (parsed.version !== '1.0') {
-        throw new Error(`Unsupported protocol version: ${parsed.version}`);
-      }
-      
-      // チェックサム検証
-      if (!this.verifyChecksum(parsed)) {
-        throw new Error('Checksum verification failed');
-      }
-      
-      return parsed as BaseEvent;
-    } catch (error) {
-      throw new Error(`Failed to deserialize message: ${error.message}`);
+  async coordinateAction(action: SystemAction): Promise<CoordinationResult> {
+    // 1. Validate action
+    const validation = await this.validateAction(action);
+    if (!validation.valid) {
+      throw new Error(`Invalid action: ${validation.reason}`);
     }
-  }
-  
-  // チェックサム計算
-  private static calculateChecksum(data: any): string {
-    const content = JSON.stringify(data);
-    return btoa(content).substring(0, 8); // 簡易チェックサム
-  }
-  
-  // チェックサム検証
-  private static verifyChecksum(data: any): boolean {
-    const { checksum, ...content } = data;
-    return checksum === this.calculateChecksum(content);
+    
+    // 2. Determine target systems
+    const targetSystems = this.determineTargetSystems(action);
+    
+    // 3. Execute coordinated action
+    const results = await Promise.allSettled(
+      targetSystems.map(system => this.executeOnSystem(system, action))
+    );
+    
+    // 4. Handle results and sync state
+    return this.processResults(results, action);
   }
 }
 ```
 
-## 7. Department Integration Interface
+## 7. Enhanced Integration Responsibilities
 
-### 7.1 Integration Department Data Flow Responsibilities
+### 7.1 High-Performance Integration Interface
 
 ```typescript
-// Integration部門: 外部システム連携・通信管理
-interface IntegrationResponsibilities {
+interface EnhancedIntegrationResponsibilities {
+  // MT5統合（実行遅延<500ms保証）
   mt5Integration: {
-    connectToMT5: (accountId: string) => Promise<boolean>;
-    executeOrder: (order: OrderRequest) => Promise<OrderResult>;
-    getPriceUpdates: () => Observable<PriceUpdate>;
-    closePosition: (ticket: string) => Promise<boolean>;
+    connectToMT5: (accountId: string, priority?: 'HIGH' | 'NORMAL') => Promise<ConnectionResult>;
+    executeOrderFast: (order: OptimizedOrderRequest) => Promise<OrderExecutionResult>;
+    getPriceUpdatesHighFreq: () => Observable<HighFreqPriceUpdate>;
+    closePositionBatch: (tickets: string[]) => Promise<BatchCloseResult>;
+    monitorConnectionHealth: () => Observable<ConnectionHealthStatus>;
+    enableAutoRecovery: (config: RecoveryConfig) => void;
   };
   
+  // WebSocketサーバー（通信遅延<20ms保証）
   websocketServer: {
-    startServer: (port: number) => Promise<void>;
-    broadcastMessage: (message: WebSocketMessage) => void;
-    handleClientConnection: (clientId: string) => void;
+    startServerOptimized: (config: OptimizedServerConfig) => Promise<ServerStartResult>;
+    broadcastMessageFast: (message: PriorityWebSocketMessage) => Promise<BroadcastResult>;
+    handleClientConnectionPooled: (clientId: string, connectionMeta: ConnectionMetadata) => Promise<ConnectionHandleResult>;
+    monitorConnections: () => Observable<ConnectionMonitoringData>;
+    optimizeMessageQueue: (queueConfig: MessageQueueConfig) => Promise<QueueOptimizationResult>;
   };
   
-  protocolManagement: {
-    validateMessage: (message: WebSocketMessage) => boolean;
-    transformData: (data: any, format: string) => any;
-    handleError: (error: StandardError) => void;
+  // システム間連携（同期遅延<200ms保証）
+  systemCoordination: {
+    syncDataAcrossSystems: (syncRequest: SystemSyncRequest) => Promise<SyncResult>;
+    handleCrossSystemConflicts: (conflicts: SystemConflict[]) => Promise<ConflictResolutionResult>;
+    maintainSystemConsistency: () => Observable<ConsistencyStatus>;
+    orchestrateMultiSystemActions: (action: MultiSystemAction) => Promise<OrchestrationResult>;
   };
-}
-```
-
-### 7.2 Multi-System Coordination Design
-
-```mermaid
-sequenceDiagram
-    participant User1 as User1 System
-    participant GraphQL as GraphQL API
-    participant User2 as User2 System
-    participant MT5_2 as User2 MT5
-
-    Note over User1,MT5_2: Trail条件成立による連携例
-    
-    User1->>GraphQL: updateAction(actionId, PENDING→EXECUTING)
-    Note right of User1: User1のトレール条件成立
-    
-    GraphQL-->>User2: Action Subscription
-    Note left of GraphQL: userId=user2のActionがEXECUTING状態に
-    
-    User2->>User2: userId確認（自分の担当？）
-    Note right of User2: action.userId === currentUserId
-    
-    User2->>MT5_2: WebSocket Command (OPEN/CLOSE)
-    MT5_2->>User2: WebSocket Event (OPENED/CLOSED)
-    User2->>GraphQL: updateAction(EXECUTING→EXECUTED)
-    User2->>GraphQL: updatePosition(status更新)
-```
-
-### 7.3 Responsibility Determination Logic
-
-```typescript
-// ユーザー検証サービス
-class UserValidationService {
-  private currentUserId: string;
-  
-  constructor() {
-    this.currentUserId = this.getCurrentUserId();
-  }
-  
-  // 担当判定
-  isMyResponsibility(resourceUserId: string): boolean {
-    return resourceUserId === this.currentUserId;
-  }
-  
-  // 現在のユーザーID取得
-  private getCurrentUserId(): string {
-    // JWT トークンからuserId取得
-    const session = Auth.currentSession();
-    const token = session.getIdToken();
-    const payload = token.getPayload();
-    return payload.sub;
-  }
-  
-  // Action担当判定
-  async validateActionExecution(actionId: string): Promise<boolean> {
-    try {
-      const action = await amplifyClient.models?.Action?.get({ id: actionId });
-      if (!action) {
-        console.error(`Action ${actionId} not found`);
-        return false;
-      }
-      
-      // userIdベース担当判定
-      if (!this.isMyResponsibility(action.userId)) {
-        console.log(`Action ${actionId} belongs to user ${action.userId}, not current user ${this.currentUserId}`);
-        return false;
-      }
-      
-      // 状態確認
-      if (action.status !== 'EXECUTING') {
-        console.log(`Action ${actionId} is not in EXECUTING state: ${action.status}`);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Failed to validate action ${actionId}:`, error);
-      return false;
-    }
-  }
-}
-```
-
-### 7.4 Unified WebSocket Protocol
-
-```typescript
-// Integration部門: MT5 Command Protocol
-interface IntegrationMessage extends WebSocketMessage {
-  data: {
-    command: MT5Command;
-    accountId: string;
-    parameters: MT5Parameters;
-  };
-}
-
-// 統一メッセージフォーマット
-interface WebSocketMessage {
-  id: string;
-  type: MessageType;
-  source: DepartmentType;
-  target?: DepartmentType;
-  timestamp: string;
-  data: any;
-  metadata?: MessageMetadata;
-}
-
-enum MessageType {
-  // Position関連
-  POSITION_CREATE = 'POSITION_CREATE',
-  POSITION_UPDATE = 'POSITION_UPDATE',
-  POSITION_DELETE = 'POSITION_DELETE',
-  
-  // Action関連
-  ACTION_EXECUTE = 'ACTION_EXECUTE',
-  ACTION_STATUS = 'ACTION_STATUS',
-  ACTION_COMPLETE = 'ACTION_COMPLETE',
-  
-  // Account関連
-  ACCOUNT_UPDATE = 'ACCOUNT_UPDATE',
-  PRICE_UPDATE = 'PRICE_UPDATE',
-  
-  // System関連
-  SYSTEM_STATUS = 'SYSTEM_STATUS',
-  ERROR = 'ERROR',
-  HEARTBEAT = 'HEARTBEAT'
-}
-
-enum DepartmentType {
-  BACKEND = 'backend',
-  FRONTEND = 'frontend',
-  INTEGRATION = 'integration',
-  PTA = 'pta',
-  QUALITY = 'quality'
 }
 ```
 
@@ -1121,177 +371,36 @@ enum DepartmentType {
 ### 8.1 Multi-layer Error Handling
 
 ```typescript
-// エラー分類
-enum ErrorType {
-  CONNECTION_ERROR = 'CONNECTION_ERROR',
-  AUTHENTICATION_ERROR = 'AUTHENTICATION_ERROR',
-  MESSAGE_FORMAT_ERROR = 'MESSAGE_FORMAT_ERROR',
-  EXECUTION_ERROR = 'EXECUTION_ERROR',
-  TIMEOUT_ERROR = 'TIMEOUT_ERROR',
-  SYSTEM_ERROR = 'SYSTEM_ERROR'
-}
-
-// エラーハンドラー
-class IntegrationErrorHandler {
-  private retryPolicy: RetryPolicy;
-  private fallbackManager: FallbackManager;
+export class ErrorHandler {
+  private readonly recoveryStrategies: Map<ErrorType, RecoveryStrategy>;
   
-  constructor() {
-    this.retryPolicy = new RetryPolicy({
-      maxRetries: 3,
-      baseDelay: 1000,
-      maxDelay: 10000,
-      backoffMultiplier: 2
-    });
-    this.fallbackManager = new FallbackManager();
-  }
-  
-  // エラー処理
   async handleError(error: IntegrationError): Promise<ErrorHandlingResult> {
-    console.error(`Integration error: ${error.type} - ${error.message}`);
+    // 1. Error classification
+    const errorType = this.classifyError(error);
     
-    switch (error.type) {
-      case ErrorType.CONNECTION_ERROR:
-        return await this.handleConnectionError(error);
-        
-      case ErrorType.EXECUTION_ERROR:
-        return await this.handleExecutionError(error);
-        
-      case ErrorType.TIMEOUT_ERROR:
-        return await this.handleTimeoutError(error);
-        
-      default:
-        return await this.handleGenericError(error);
+    // 2. Determine recovery strategy
+    const strategy = this.recoveryStrategies.get(errorType);
+    if (!strategy) {
+      return { success: false, reason: 'No recovery strategy available' };
     }
+    
+    // 3. Execute recovery
+    const recoveryResult = await strategy.execute(error);
+    
+    // 4. Log and monitor
+    this.logErrorAndRecovery(error, recoveryResult);
+    
+    return recoveryResult;
   }
   
-  // 接続エラー処理
-  private async handleConnectionError(error: IntegrationError): Promise<ErrorHandlingResult> {
-    // 自動再接続試行
-    const retryResult = await this.retryPolicy.execute(async () => {
-      return await this.reconnectToMT5(error.accountId);
-    });
-    
-    if (retryResult.success) {
-      return { success: true, action: 'RECONNECTED' };
+  private classifyError(error: IntegrationError): ErrorType {
+    if (error.source === 'websocket' && error.code === 'CONNECTION_LOST') {
+      return ErrorType.CONNECTION_ERROR;
     }
-    
-    // フォールバック：手動操作モード
-    await this.fallbackManager.enableManualMode(error.accountId);
-    return { success: false, action: 'FALLBACK_TO_MANUAL' };
-  }
-  
-  // 実行エラー処理
-  private async handleExecutionError(error: IntegrationError): Promise<ErrorHandlingResult> {
-    // Action状態をFAILEDに更新
-    if (error.actionId) {
-      await amplifyClient.models?.Action?.update({
-        id: error.actionId,
-        status: 'FAILED',
-        updatedAt: new Date().toISOString()
-      });
+    if (error.source === 'mt5' && error.code === 'ORDER_FAILED') {
+      return ErrorType.EXECUTION_ERROR;
     }
-    
-    // Position状態をCANCELEDに更新
-    if (error.positionId) {
-      await amplifyClient.models?.Position?.update({
-        id: error.positionId,
-        status: 'CANCELED',
-        exitReason: `Execution failed: ${error.message}`,
-        updatedAt: new Date().toISOString()
-      });
-    }
-    
-    return { success: false, action: 'STATUS_UPDATED' };
-  }
-}
-```
-
-### 8.2 Recovery Mechanisms
-
-```typescript
-// 自動回復システム
-class RecoveryManager {
-  private healthChecker: HealthChecker;
-  private stateRecovery: StateRecoveryService;
-  
-  constructor() {
-    this.healthChecker = new HealthChecker();
-    this.stateRecovery = new StateRecoveryService();
-    this.startHealthMonitoring();
-  }
-  
-  // ヘルスモニタリング開始
-  private startHealthMonitoring(): void {
-    setInterval(async () => {
-      const health = await this.healthChecker.checkSystemHealth();
-      
-      if (!health.overall) {
-        console.warn('System health degraded, initiating recovery');
-        await this.initiateRecovery(health);
-      }
-    }, 30000); // 30秒間隔
-  }
-  
-  // 回復処理
-  private async initiateRecovery(health: HealthStatus): Promise<void> {
-    // WebSocket接続回復
-    if (!health.websocketConnection) {
-      await this.recoverWebSocketConnection();
-    }
-    
-    // GraphQL接続回復
-    if (!health.graphqlConnection) {
-      await this.recoverGraphQLConnection();
-    }
-    
-    // 状態同期回復
-    if (!health.stateSync) {
-      await this.stateRecovery.resyncState();
-    }
-    
-    // タイムアウトしたPosition/Action回復
-    if (!health.timeoutHandling) {
-      await this.stateRecovery.cleanupTimeouts();
-    }
-  }
-  
-  // 状態同期回復
-  async resyncState(): Promise<void> {
-    console.log('Starting state resynchronization');
-    
-    try {
-      // 現在のuserId取得
-      const userId = await this.getCurrentUserId();
-      
-      // 未完了のPosition取得
-      const incompletePositions = await amplifyClient.models?.Position?.list({
-        filter: {
-          userId: { eq: userId },
-          status: { 
-            in: ['PENDING', 'OPENING', 'CLOSING'] 
-          }
-        }
-      });
-      
-      // 未完了のAction取得
-      const incompleteActions = await amplifyClient.models?.Action?.list({
-        filter: {
-          userId: { eq: userId },
-          status: { 
-            in: ['PENDING', 'EXECUTING'] 
-          }
-        }
-      });
-      
-      // タイムアウト検知・クリーンアップ
-      await this.cleanupTimedOutOperations(incompletePositions?.data || []);
-      await this.cleanupTimedOutOperations(incompleteActions?.data || []);
-      
-      console.log('State resynchronization completed');
-    } catch (error) {
-      console.error('Failed to resync state:', error);
-    }
+    return ErrorType.SYSTEM_ERROR;
   }
 }
 ```
@@ -1301,231 +410,71 @@ class RecoveryManager {
 ### 9.1 Communication Optimization
 
 ```typescript
-// パフォーマンス監視
-class PerformanceMonitor {
-  private metrics: Map<string, PerformanceMetric>;
-  private alertThresholds: AlertThresholds;
+export class CommunicationOptimizer {
+  private connectionPool: ConnectionPool;
+  private messageCompressor: MessageCompressor;
+  private latencyTracker: LatencyTracker;
   
-  constructor() {
-    this.metrics = new Map();
-    this.alertThresholds = {
-      websocketLatency: 10, // ms
-      mt5ResponseTime: 50, // ms
-      messageQueueSize: 100,
-      connectionDropRate: 0.01 // 1%
+  optimizeForLatency(): OptimizationConfig {
+    return {
+      compression: false,           // 低遅延優先
+      batchSize: 1,                // 即座送信
+      heartbeatInterval: 1000,     // 1秒間隔
+      reconnectStrategy: 'IMMEDIATE',
+      priorityQueue: true,         // 優先度付きキュー
     };
-    this.startMonitoring();
   }
   
-  // レイテンシー測定
-  async measureLatency(operation: string, fn: () => Promise<void>): Promise<number> {
-    const start = performance.now();
-    await fn();
-    const end = performance.now();
-    const latency = end - start;
-    
-    this.recordMetric(operation, latency);
-    
-    // アラート確認
-    if (this.shouldAlert(operation, latency)) {
-      await this.sendAlert(operation, latency);
-    }
-    
-    return latency;
-  }
-  
-  // メトリクス記録
-  private recordMetric(operation: string, value: number): void {
-    const metric = this.metrics.get(operation) || {
-      name: operation,
-      values: [],
-      average: 0,
-      min: Infinity,
-      max: 0,
-      count: 0
+  optimizeForThroughput(): OptimizationConfig {
+    return {
+      compression: true,           // 帯域幅節約
+      batchSize: 50,              // バッチ処理
+      heartbeatInterval: 5000,    // 5秒間隔
+      reconnectStrategy: 'BACKOFF',
+      priorityQueue: false,       // 単純FIFO
     };
-    
-    metric.values.push(value);
-    metric.count++;
-    metric.min = Math.min(metric.min, value);
-    metric.max = Math.max(metric.max, value);
-    metric.average = metric.values.reduce((a, b) => a + b, 0) / metric.count;
-    
-    // 古いデータ削除（最新1000件まで）
-    if (metric.values.length > 1000) {
-      metric.values.shift();
-    }
-    
-    this.metrics.set(operation, metric);
   }
 }
 ```
 
-### 9.2 Connection Pool Optimization
+### 9.2 Performance Standards
 
-```typescript
-// 接続プール管理
-class ConnectionPoolManager {
-  private pools: Map<string, ConnectionPool>;
-  private config: PoolConfig;
-  
-  constructor(config: PoolConfig) {
-    this.pools = new Map();
-    this.config = config;
-  }
-  
-  // 接続プール取得・作成
-  getPool(accountId: string): ConnectionPool {
-    if (!this.pools.has(accountId)) {
-      const pool = new ConnectionPool({
-        accountId,
-        maxConnections: this.config.maxConnectionsPerAccount,
-        keepAliveInterval: this.config.keepAliveInterval,
-        reconnectDelay: this.config.reconnectDelay
-      });
-      this.pools.set(accountId, pool);
-    }
-    return this.pools.get(accountId)!;
-  }
-  
-  // プール統計情報
-  getPoolStats(): PoolStats[] {
-    return Array.from(this.pools.entries()).map(([accountId, pool]) => ({
-      accountId,
-      activeConnections: pool.getActiveConnectionCount(),
-      totalConnections: pool.getTotalConnectionCount(),
-      averageLatency: pool.getAverageLatency(),
-      errorRate: pool.getErrorRate(),
-      lastActivity: pool.getLastActivity()
-    }));
-  }
-}
-```
-
-### 9.3 Performance Standards
-
-```typescript
-interface IntegrationPerformanceStandards {
-  communication: {
-    websocketLatency: '< 20ms';
-    mt5ExecutionTime: '< 500ms';
-    priceUpdateFrequency: '> 10Hz';
-    connectionRecoveryTime: '< 3s';
-  };
-  
-  coordination: {
-    actionSyncLatency: '< 200ms';
-    systemResponseTime: '< 1s';
-    crossSystemLatency: '< 100ms';
-    stateConsistencyDelay: '< 500ms';
-  };
-  
-  reliability: {
-    connectionUptime: '> 99.9%';
-    messageDeliveryRate: '> 99.95%';
-    executionSuccessRate: '> 99%';
-    errorRecoveryTime: '< 30s';
-  };
-}
-```
+| 項目 | 目標値 | 監視方法 |
+|------|--------|----------|
+| **MT5注文実行** | <500ms | 注文実行時間計測 |
+| **WebSocket通信** | <20ms | ラウンドトリップ時間 |
+| **システム同期** | <200ms | データ同期完了時間 |
+| **接続復旧** | <3秒 | 接続断から復旧まで |
+| **メッセージ処理** | <10ms | メッセージ処理時間 |
 
 ## 10. Security Design
 
 ### 10.1 Authentication & Encryption
 
 ```typescript
-// セキュリティマネージャー
-class SecurityManager {
-  private tokenManager: TokenManager;
-  private encryptionService: EncryptionService;
+export class SecurityManager {
+  private jwtValidator: JWTValidator;
+  private tlsConfig: TLSConfig;
+  private accessControl: AccessControl;
   
-  constructor() {
-    this.tokenManager = new TokenManager();
-    this.encryptionService = new EncryptionService();
-  }
-  
-  // WebSocket認証
-  async authenticateWebSocketConnection(token: string): Promise<AuthResult> {
-    try {
-      // JWT検証
-      const payload = await this.tokenManager.verifyToken(token);
-      
-      // userIdベース権限確認
-      const userId = payload.sub;
-      const hasPermission = await this.checkIntegrationPermission(userId);
-      
-      if (!hasPermission) {
-        return { success: false, error: 'Insufficient permissions' };
-      }
-      
-      return { 
-        success: true, 
-        userId,
-        accountAccess: await this.getUserAccountAccess(userId)
-      };
-      
-    } catch (error) {
-      return { success: false, error: error.message };
+  async authenticateConnection(token: string, clientInfo: ClientInfo): Promise<AuthResult> {
+    // 1. Token validation
+    const tokenValid = await this.jwtValidator.validate(token);
+    if (!tokenValid.valid) {
+      return { success: false, reason: 'Invalid token' };
     }
-  }
-  
-  // メッセージ暗号化
-  async encryptMessage(message: string, accountId: string): Promise<string> {
-    const key = await this.getAccountEncryptionKey(accountId);
-    return await this.encryptionService.encrypt(message, key);
-  }
-  
-  // メッセージ復号化
-  async decryptMessage(encryptedMessage: string, accountId: string): Promise<string> {
-    const key = await this.getAccountEncryptionKey(accountId);
-    return await this.encryptionService.decrypt(encryptedMessage, key);
-  }
-}
-```
-
-### 10.2 Access Control
-
-```typescript
-// アクセス制御
-class AccessController {
-  private permissions: Map<string, UserPermissions>;
-  
-  // アカウントアクセス権限確認
-  async canAccessAccount(userId: string, accountId: string): Promise<boolean> {
-    try {
-      // アカウント所有者確認
-      const account = await amplifyClient.models?.Account?.get({ id: accountId });
-      if (!account) {
-        return false;
-      }
-      
-      // userIdベース所有権確認
-      if (account.userId !== userId) {
-        console.warn(`User ${userId} attempted to access account ${accountId} owned by ${account.userId}`);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error(`Access control error for user ${userId}, account ${accountId}:`, error);
-      return false;
+    
+    // 2. Access control check
+    const accessGranted = await this.accessControl.checkAccess(
+      tokenValid.payload.userId,
+      clientInfo.requestedPermissions
+    );
+    
+    if (!accessGranted) {
+      return { success: false, reason: 'Access denied' };
     }
-  }
-  
-  // Position操作権限確認
-  async canExecutePosition(userId: string, positionId: string): Promise<boolean> {
-    try {
-      const position = await amplifyClient.models?.Position?.get({ id: positionId });
-      if (!position) {
-        return false;
-      }
-      
-      // userIdベース所有権確認
-      return position.userId === userId;
-    } catch (error) {
-      console.error(`Position execution access control error:`, error);
-      return false;
-    }
+    
+    return { success: true, sessionId: this.generateSessionId() };
   }
 }
 ```
@@ -1535,208 +484,113 @@ class AccessController {
 ### 11.1 Integrated Monitoring System
 
 ```typescript
-// 統合監視
-class IntegrationMonitor {
-  private metrics: MetricsCollector;
+export class IntegrationMonitor {
+  private metricsCollector: MetricsCollector;
   private alertManager: AlertManager;
-  private dashboard: MonitoringDashboard;
+  private healthChecker: HealthChecker;
   
-  constructor() {
-    this.metrics = new MetricsCollector();
-    this.alertManager = new AlertManager();
-    this.dashboard = new MonitoringDashboard();
-    this.setupMonitoring();
-  }
-  
-  // 監視設定
-  private setupMonitoring(): void {
-    // WebSocket監視
-    this.monitorWebSocketHealth();
+  startMonitoring(): void {
+    // Performance metrics
+    this.metricsCollector.collectMetrics([
+      'mt5_execution_latency',
+      'websocket_round_trip_time',
+      'system_sync_duration',
+      'connection_pool_utilization',
+      'message_queue_depth'
+    ]);
     
-    // MT5連携監視
-    this.monitorMT5Integration();
+    // Health checks
+    this.healthChecker.scheduleChecks([
+      { name: 'mt5_connectivity', interval: 30000 },
+      { name: 'websocket_server', interval: 10000 },
+      { name: 'system_coordinator', interval: 60000 }
+    ]);
     
-    // システム間連携監視
-    this.monitorSystemCoordination();
-    
-    // パフォーマンス監視
-    this.monitorPerformanceMetrics();
-  }
-  
-  // リアルタイムダッシュボード
-  generateDashboardData(): DashboardData {
-    return {
-      connectionStatus: this.getConnectionStatus(),
-      performanceMetrics: this.getPerformanceMetrics(),
-      errorRates: this.getErrorRates(),
-      activeUsers: this.getActiveUsers(),
-      systemHealth: this.getSystemHealth(),
-      recentAlerts: this.getRecentAlerts()
-    };
-  }
-}
-```
-
-### 11.2 Logging & Analytics
-
-```typescript
-// ログ管理
-class LogManager {
-  private loggers: Map<string, Logger>;
-  private analyticsService: AnalyticsService;
-  
-  constructor() {
-    this.loggers = new Map();
-    this.analyticsService = new AnalyticsService();
-    this.setupLoggers();
-  }
-  
-  // 構造化ログ
-  logIntegrationEvent(event: IntegrationEvent): void {
-    const logger = this.getLogger(event.category);
-    
-    const logEntry = {
-      timestamp: new Date().toISOString(),
-      category: event.category,
-      type: event.type,
-      userId: event.userId,
-      accountId: event.accountId,
-      positionId: event.positionId,
-      actionId: event.actionId,
-      data: event.data,
-      performanceMetrics: event.metrics
-    };
-    
-    logger.info(logEntry);
-    
-    // 分析用データ送信
-    this.analyticsService.track(logEntry);
-  }
-  
-  // パフォーマンス分析
-  analyzePerformance(timeRange: TimeRange): PerformanceAnalysis {
-    const logs = this.getLogsInRange(timeRange);
-    
-    return {
-      averageLatency: this.calculateAverageLatency(logs),
-      throughput: this.calculateThroughput(logs),
-      errorRate: this.calculateErrorRate(logs),
-      bottlenecks: this.identifyBottlenecks(logs),
-      recommendations: this.generateRecommendations(logs)
-    };
+    // Alert thresholds
+    this.alertManager.setThresholds({
+      mt5_execution_latency: 500,      // ms
+      websocket_round_trip_time: 20,   // ms
+      system_sync_duration: 200,       // ms
+      connection_failures: 3,          // count/5min
+    });
   }
 }
 ```
 
 ## 12. Testing Strategy
 
-### 12.1 Integration Department Testing Responsibilities
+### 12.1 Integration Testing Responsibilities
 
 ```typescript
-interface IntegrationTestingResponsibilities {
-  unitTests: {
-    scope: 'WebSocket Server, Protocol Handlers';
-    coverage: '80%';
-    tools: 'Jest + Mock WebSocket';
-  };
+export class IntegrationTestSuite {
+  // MT5連携テスト
+  async testMT5Integration(): Promise<TestResult> {
+    const tests = [
+      this.testMT5Connection(),
+      this.testOrderExecution(),
+      this.testPositionMonitoring(),
+      this.testReconnectionRecovery()
+    ];
+    
+    return this.executeTestSuite('MT5Integration', tests);
+  }
   
-  integrationTests: {
-    scope: 'MT5 Connection, DLL Integration';
-    coverage: '75%';
-    tools: 'Jest + MT5 Test Environment';
-  };
+  // WebSocket通信テスト
+  async testWebSocketCommunication(): Promise<TestResult> {
+    const tests = [
+      this.testWebSocketConnection(),
+      this.testMessageSerialization(),
+      this.testLatencyRequirements(),
+      this.testConnectionPooling()
+    ];
+    
+    return this.executeTestSuite('WebSocketCommunication', tests);
+  }
   
-  systemTests: {
-    scope: 'End-to-End Trading Flow';
-    coverage: '70%';
-    tools: 'Custom Integration Test Framework';
-  };
+  // システム間連携テスト
+  async testSystemCoordination(): Promise<TestResult> {
+    const tests = [
+      this.testMultiSystemSync(),
+      this.testConflictResolution(),
+      this.testDataConsistency(),
+      this.testFailoverScenarios()
+    ];
+    
+    return this.executeTestSuite('SystemCoordination', tests);
+  }
 }
 ```
 
-### 12.2 Test Implementation Examples
+### 12.2 Performance Testing
 
 ```typescript
-// WebSocket通信テスト
-describe('WebSocket Communication', () => {
-  let server: HedgeSystemWebSocketServer;
-  let mockMT5Client: MockMT5Client;
-  
-  beforeEach(() => {
-    server = new HedgeSystemWebSocketServer(testConfig);
-    mockMT5Client = new MockMT5Client();
-  });
-  
-  it('should handle position execution command', async () => {
-    const command: OpenCommand = {
-      type: 'OPEN',
-      timestamp: new Date().toISOString(),
-      accountId: 'test-account',
-      positionId: 'test-position',
-      symbol: 'USDJPY',
-      side: 'BUY',
-      volume: 1.0,
-      metadata: {
-        executionType: 'ENTRY',
-        userId: 'test-user'
-      }
+export class PerformanceTestSuite {
+  async runLatencyTests(): Promise<LatencyTestResult> {
+    const results = {
+      mt5ExecutionLatency: await this.measureMT5ExecutionLatency(),
+      websocketRoundTrip: await this.measureWebSocketLatency(),
+      systemSyncLatency: await this.measureSystemSyncLatency()
     };
     
-    await server.sendCommand(command);
-    
-    const receivedCommand = await mockMT5Client.getLastCommand();
-    expect(receivedCommand.type).toBe('OPEN');
-    expect(receivedCommand.symbol).toBe('USDJPY');
-  });
+    return this.validateLatencyRequirements(results);
+  }
   
-  it('should handle execution result event', async () => {
-    const event: OpenedEvent = {
-      type: 'OPENED',
-      timestamp: new Date().toISOString(),
-      accountId: 'test-account',
-      positionId: 'test-position',
-      mtTicket: '12345',
-      price: 110.50,
-      status: 'SUCCESS'
+  async runThroughputTests(): Promise<ThroughputTestResult> {
+    return {
+      messagesPerSecond: await this.measureMessageThroughput(),
+      ordersPerMinute: await this.measureOrderThroughput(),
+      concurrentConnections: await this.measureConnectionCapacity()
     };
-    
-    await mockMT5Client.sendEvent(event);
-    
-    // DynamoDB更新確認
-    const position = await amplifyClient.models?.Position?.get({
-      id: 'test-position'
-    });
-    expect(position?.status).toBe('OPEN');
-    expect(position?.mtTicket).toBe('12345');
-  });
-});
-
-// システム連携テスト
-describe('Multi-System Coordination', () => {
-  it('should coordinate action execution between users', async () => {
-    // User1がトレール条件を満たしてActionを作成
-    const action = await createTestAction({
-      userId: 'user2',
-      type: 'ENTRY',
-      status: 'PENDING'
-    });
-    
-    // User2システムがAction実行を監視
-    const user2System = new SystemBridge();
-    await user2System.start();
-    
-    // ActionをEXECUTING状態に更新
-    await amplifyClient.models?.Action?.update({
-      id: action.id,
-      status: 'EXECUTING'
-    });
-    
-    // User2システムが反応してMT5にコマンド送信することを確認
-    await waitFor(() => {
-      expect(mockMT5Server.getLastCommand()).toBeDefined();
-    });
-  });
-});
+  }
+}
 ```
 
-この Integration Department Complete Architecture Documentation により、MT4/MT5プラットフォームとHedge System間の高性能・高信頼性な統合が実現でき、複数ユーザー間でのPosition-Trail-Action協調動作が可能になります。特にuserIdベースの担当システム分離により、スケーラブルで安全な多システム連携が実現されます。
+---
+
+**Integration Department Architecture Summary:**
+- **4人体制**: Director + 3 Specialists (MT5, WebSocket, System Integration)
+- **Core Technologies**: MQL5 EA, C++ WebSocket DLL, TypeScript System Bridge
+- **Performance Targets**: MT5 <500ms, WebSocket <20ms, System Sync <200ms
+- **Security**: TLS/SSL + JWT authentication, multi-layer access control
+- **Monitoring**: Real-time performance tracking, automated health checks, alert management
+- **Testing**: Comprehensive integration, performance, and reliability testing

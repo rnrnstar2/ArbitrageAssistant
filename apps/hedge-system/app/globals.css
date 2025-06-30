@@ -1,19 +1,187 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-@import "@repo/tailwind-config";
+@import "tailwindcss";
 
-/* A8ネット風カスタムカラーテーマ */
+/* デザイン変数定義（ライトモード） */
 :root {
-  --a8-primary: #E60012;
-  --a8-primary-hover: #CC0010;
-  --a8-primary-light: #FF3332;
-  --a8-secondary: #FF6B35;
-  --a8-accent: #FFE6E6;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.147 0.004 49.25);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.147 0.004 49.25);
+  --primary: oklch(0.216 0.006 56.043);
+  --primary-foreground: oklch(0.985 0.001 106.423);
+  --secondary: oklch(0.97 0.001 106.424);
+  --secondary-foreground: oklch(0.216 0.006 56.043);
+  --muted: oklch(0.97 0.001 106.424);
+  --muted-foreground: oklch(0.75 0.008 58.071);
+  --accent: oklch(0.97 0.001 106.424);
+  --accent-foreground: oklch(0.216 0.006 56.043);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0.001 106.423);
+  --border: oklch(0.923 0.003 48.717);
+  --input: oklch(0.923 0.003 48.717);
+  --ring: oklch(0.709 0.01 56.259);
+  --chart-1: oklch(0.216 0.006 56.043);
+  --chart-2: oklch(0.553 0.013 58.071);
+  --chart-3: oklch(0.709 0.01 56.259);
+  --chart-4: oklch(0.923 0.003 48.717);
+  --chart-5: oklch(0.97 0.001 106.424);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.147 0.004 49.25);
+  
+  /* Sidebar Variables（OKLCH変換） */
+  --sidebar-background: oklch(0.98 0 0);                    /* HSL 0 0% 98% → OKLCH */
+  --sidebar-foreground: oklch(0.261 0.014 264.052);         /* HSL 240 5.3% 26.1% → OKLCH */
+  --sidebar-primary: oklch(0.1 0.012 264.052);              /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-primary-foreground: oklch(0.98 0 0);            /* HSL 0 0% 98% → OKLCH */
+  --sidebar-accent: oklch(0.959 0.012 264.052);             /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-accent-foreground: oklch(0.1 0.012 264.052);    /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-border: oklch(0.91 0.025 249.722);              /* HSL 220 13% 91% → OKLCH */
+  --sidebar-ring: oklch(0.598 0.176 252.471);               /* HSL 217.2 91.2% 59.8% → OKLCH */
+  --sidebar-width: 16rem;
+  --sidebar-width-mobile: 18rem;
+  --sidebar-width-icon: 3rem;
+
+  /* A8ネット風カスタムカラーテーマ（OKLCH変換） */
+  --a8-primary: oklch(0.556 0.234 27.049);         /* #E60012 → OKLCH */
+  --a8-primary-hover: oklch(0.486 0.205 27.049);   /* #CC0010 → OKLCH */
+  --a8-primary-light: oklch(0.646 0.228 27.049);   /* #FF3332 → OKLCH */
+  --a8-secondary: oklch(0.706 0.157 49.657);       /* #FF6B35 → OKLCH */
+  --a8-accent: oklch(0.946 0.028 27.049);          /* #FFE6E6 → OKLCH */
 }
 
-/* A8ネットテーマをTailwind CSS v3のテーマに統合 */
-/* @theme は v4 記法のため、v3 では tailwind.config.js で定義 */
+/* ダークモードの上書き */
+.dark {
+  --background: oklch(0.147 0.004 49.25);
+  --foreground: oklch(0.985 0.001 106.423);
+  --card: oklch(0.216 0.006 56.043);
+  --card-foreground: oklch(0.985 0.001 106.423);
+  --primary: oklch(0.923 0.003 48.717);
+  --primary-foreground: oklch(0.216 0.006 56.043);
+  --secondary: oklch(0.268 0.007 34.298);
+  --secondary-foreground: oklch(0.985 0.001 106.423);
+  --muted: oklch(0.268 0.007 34.298);
+  --muted-foreground: oklch(0.65 0.008 56.259);
+  --accent: oklch(0.268 0.007 34.298);
+  --accent-foreground: oklch(0.985 0.001 106.423);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0.001 106.423);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.553 0.013 58.071);
+  --chart-1: oklch(0.923 0.003 48.717);
+  --chart-2: oklch(0.709 0.01 56.259);
+  --chart-3: oklch(0.553 0.013 58.071);
+  --chart-4: oklch(0.268 0.007 34.298);
+  --chart-5: oklch(0.985 0.001 106.423);
+  --popover: oklch(0.216 0.006 56.043);
+  --popover-foreground: oklch(0.985 0.001 106.423);
+  
+  /* Sidebar Variables - Dark Mode（OKLCH変換） */
+  --sidebar-background: oklch(0.1 0.012 264.052);            /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-foreground: oklch(0.959 0.012 264.052);          /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-primary: oklch(0.941 0.145 264.052);             /* HSL 224.3 76.3% 94.1% → OKLCH */
+  --sidebar-primary-foreground: oklch(0.1 0.012 264.052);    /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-accent: oklch(0.159 0.009 264.052);              /* HSL 240 3.7% 15.9% → OKLCH */
+  --sidebar-accent-foreground: oklch(0.959 0.012 264.052);   /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-border: oklch(0.159 0.009 264.052);              /* HSL 240 3.7% 15.9% → OKLCH */
+  --sidebar-ring: oklch(0.598 0.176 252.471);                /* HSL 217.2 91.2% 59.8% → OKLCH */
+}
+
+/* ==========================================================================
+   Dynamic Color System with color-mix() Functions
+   ========================================================================== */
+
+/* Base color mixing utilities for dynamic color generation */
+:root {
+  /* Dynamic color mixing functions using OKLCH */
+  --color-mix-lighter: color-mix(in oklch, var(--primary) 85%, white);
+  --color-mix-darker: color-mix(in oklch, var(--primary) 85%, black);
+  --color-mix-softer: color-mix(in oklch, var(--primary) 60%, var(--muted));
+  --color-mix-vibrant: color-mix(in oklch, var(--primary) 95%, var(--destructive) 5%);
+  
+  /* Dynamic A8 color variations */
+  --a8-primary-soft: color-mix(in oklch, var(--a8-primary) 60%, var(--background));
+  --a8-primary-intense: color-mix(in oklch, var(--a8-primary) 90%, var(--destructive) 10%);
+  --a8-secondary-soft: color-mix(in oklch, var(--a8-secondary) 50%, var(--background));
+  --a8-accent-subtle: color-mix(in oklch, var(--a8-accent) 80%, var(--background));
+  
+  /* Dynamic theme-aware mixing */
+  --adaptive-contrast: color-mix(in oklch, var(--foreground) 90%, var(--background) 10%);
+  --adaptive-border: color-mix(in oklch, var(--border) 70%, var(--muted) 30%);
+  --adaptive-hover: color-mix(in oklch, var(--primary) 80%, var(--accent) 20%);
+}
+
+.dark {
+  /* Dark mode specific color mixing adjustments */
+  --color-mix-lighter: color-mix(in oklch, var(--primary) 75%, white 25%);
+  --color-mix-darker: color-mix(in oklch, var(--primary) 90%, black 10%);
+  --adaptive-contrast: color-mix(in oklch, var(--foreground) 85%, var(--background) 15%);
+}
+
+/* Dynamic Color Utility Classes */
+.bg-dynamic-lighter {
+  background-color: var(--color-mix-lighter);
+}
+
+.bg-dynamic-darker {
+  background-color: var(--color-mix-darker);
+}
+
+.bg-dynamic-softer {
+  background-color: var(--color-mix-softer);
+}
+
+.bg-dynamic-vibrant {
+  background-color: var(--color-mix-vibrant);
+}
+
+.bg-a8-soft {
+  background-color: var(--a8-primary-soft);
+}
+
+.bg-a8-intense {
+  background-color: var(--a8-primary-intense);
+}
+
+.text-adaptive-contrast {
+  color: var(--adaptive-contrast);
+}
+
+.border-adaptive {
+  border-color: var(--adaptive-border);
+}
+
+/* Interactive States with color-mix() */
+.btn-dynamic {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  transition: all 0.2s ease;
+}
+
+.btn-dynamic:hover {
+  background-color: var(--adaptive-hover);
+  transform: translateY(-1px);
+}
+
+.btn-dynamic:active {
+  background-color: color-mix(in oklch, var(--primary) 95%, black 5%);
+  transform: translateY(0);
+}
+
+/* Card variants with dynamic colors */
+.card-dynamic {
+  background-color: color-mix(in oklch, var(--card) 95%, var(--primary) 5%);
+  border: 1px solid var(--adaptive-border);
+}
+
+.card-dynamic:hover {
+  background-color: color-mix(in oklch, var(--card) 90%, var(--primary) 10%);
+  border-color: color-mix(in oklch, var(--border) 50%, var(--primary) 50%);
+}
+
+/* ==========================================================================
+   Legacy A8 Network Theme Integration
+   ========================================================================== */
 
 /* A8ネットテーマのユーティリティクラス（後方互換性のため保持） */
 .bg-a8-primary {

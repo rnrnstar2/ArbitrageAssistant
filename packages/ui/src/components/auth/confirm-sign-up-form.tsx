@@ -68,8 +68,8 @@ export function ConfirmSignUpForm({ email, onSignIn, className, cardClassName }:
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 ${className || ''}`}>
-      <Card className={`w-full max-w-md mx-auto ${cardClassName || ''}`}>
+    <div className={`min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 ${className || ''}`}>
+      <Card className={`w-full max-w-md ${cardClassName || ''}`}>
           <CardHeader className="text-center pb-8">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-blue-100 rounded-full">

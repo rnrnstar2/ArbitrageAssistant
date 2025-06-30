@@ -16,6 +16,7 @@
     "president:connect": "tmux attach -t president",
     "team:connect": "tmux attach -t team",
     "dev": "turbo dev --parallel",
+    "dev:admin": "turbo dev --filter=admin",
     "build": "turbo build --filter=!@repo/shared-backend",
     "lint": "turbo lint --continue",
     "test": "turbo test --continue",

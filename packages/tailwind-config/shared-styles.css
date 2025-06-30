@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* デザイン変数定義（ライトモード） */
 :root {
@@ -30,18 +28,55 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.147 0.004 49.25);
   
-  /* Sidebar Variables */
-  --sidebar-background: 0 0% 98%;
-  --sidebar-foreground: 240 5.3% 26.1%;
-  --sidebar-primary: 240 5.9% 10%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 240 4.8% 95.9%;
-  --sidebar-accent-foreground: 240 5.9% 10%;
-  --sidebar-border: 220 13% 91%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Sidebar Variables（OKLCH変換） */
+  --sidebar-background: oklch(0.98 0 0);                    /* HSL 0 0% 98% → OKLCH */
+  --sidebar-foreground: oklch(0.261 0.014 264.052);         /* HSL 240 5.3% 26.1% → OKLCH */
+  --sidebar-primary: oklch(0.1 0.012 264.052);              /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-primary-foreground: oklch(0.98 0 0);            /* HSL 0 0% 98% → OKLCH */
+  --sidebar-accent: oklch(0.959 0.012 264.052);             /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-accent-foreground: oklch(0.1 0.012 264.052);    /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-border: oklch(0.91 0.025 249.722);              /* HSL 220 13% 91% → OKLCH */
+  --sidebar-ring: oklch(0.598 0.176 252.471);               /* HSL 217.2 91.2% 59.8% → OKLCH */
   --sidebar-width: 16rem;
   --sidebar-width-mobile: 18rem;
   --sidebar-width-icon: 3rem;
+
+  /* ==========================================================================
+     Enhanced Accessibility Design Tokens
+     ========================================================================== */
+  
+  /* High Contrast Colors for Accessibility */
+  --high-contrast-foreground: oklch(0.05 0 0);              /* Nearly black for maximum contrast */
+  --high-contrast-background: oklch(0.99 0 0);              /* Nearly white for maximum contrast */
+  --high-contrast-border: oklch(0.3 0 0);                   /* Dark gray for strong borders */
+  
+  /* Focus Management */
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 2px;
+  --focus-ring-color: oklch(0.6 0.2 240);                   /* Accessible blue focus ring */
+  --focus-ring-danger: oklch(0.6 0.2 0);                    /* Red focus ring for destructive actions */
+  
+  /* Semantic Status Colors with High Contrast */
+  --status-success: oklch(0.45 0.15 142);                   /* Green with good contrast */
+  --status-success-foreground: oklch(0.95 0.01 142);        /* Light green background */
+  --status-warning: oklch(0.6 0.15 85);                     /* Orange with good contrast */
+  --status-warning-foreground: oklch(0.95 0.02 85);         /* Light orange background */
+  --status-error: oklch(0.55 0.22 27);                      /* Red with good contrast */
+  --status-error-foreground: oklch(0.95 0.02 27);           /* Light red background */
+  --status-info: oklch(0.5 0.12 240);                       /* Blue with good contrast */
+  --status-info-foreground: oklch(0.95 0.01 240);           /* Light blue background */
+  
+  /* Interactive States */
+  --interactive-hover: oklch(0.4 0.05 240);                 /* Subtle hover state */
+  --interactive-pressed: oklch(0.35 0.06 240);              /* Pressed state */
+  --interactive-disabled: oklch(0.7 0.01 0);                /* Disabled state */
+  --interactive-disabled-foreground: oklch(0.5 0.01 0);     /* Disabled text */
+  
+  /* Text Hierarchy with Optimal Contrast */
+  --text-heading: oklch(0.1 0.005 264);                     /* High contrast headings */
+  --text-body: oklch(0.2 0.005 264);                        /* Body text */
+  --text-subtle: oklch(0.45 0.01 264);                      /* Subtle text */
+  --text-placeholder: oklch(0.6 0.01 264);                  /* Placeholder text */
 }
 
 /* ダークモードの上書き */
@@ -71,15 +106,42 @@
   --popover: oklch(0.216 0.006 56.043);
   --popover-foreground: oklch(0.985 0.001 106.423);
   
-  /* Sidebar Variables - Dark Mode */
-  --sidebar-background: 240 5.9% 10%;
-  --sidebar-foreground: 240 4.8% 95.9%;
-  --sidebar-primary: 224.3 76.3% 94.1%;
-  --sidebar-primary-foreground: 240 5.9% 10%;
-  --sidebar-accent: 240 3.7% 15.9%;
-  --sidebar-accent-foreground: 240 4.8% 95.9%;
-  --sidebar-border: 240 3.7% 15.9%;
-  --sidebar-ring: 217.2 91.2% 59.8%;
+  /* Sidebar Variables - Dark Mode（OKLCH変換） */
+  --sidebar-background: oklch(0.1 0.012 264.052);            /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-foreground: oklch(0.959 0.012 264.052);          /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-primary: oklch(0.941 0.145 264.052);             /* HSL 224.3 76.3% 94.1% → OKLCH */
+  --sidebar-primary-foreground: oklch(0.1 0.012 264.052);    /* HSL 240 5.9% 10% → OKLCH */
+  --sidebar-accent: oklch(0.159 0.009 264.052);              /* HSL 240 3.7% 15.9% → OKLCH */
+  --sidebar-accent-foreground: oklch(0.959 0.012 264.052);   /* HSL 240 4.8% 95.9% → OKLCH */
+  --sidebar-border: oklch(0.159 0.009 264.052);              /* HSL 240 3.7% 15.9% → OKLCH */
+  --sidebar-ring: oklch(0.598 0.176 252.471);                /* HSL 217.2 91.2% 59.8% → OKLCH */
+  
+  /* Enhanced Accessibility - Dark Mode Adjustments */
+  --high-contrast-foreground: oklch(0.95 0 0);               /* Nearly white for dark mode */
+  --high-contrast-background: oklch(0.05 0 0);               /* Nearly black for dark mode */
+  --high-contrast-border: oklch(0.7 0 0);                    /* Light gray for strong borders */
+  
+  /* Dark Mode Status Colors */
+  --status-success: oklch(0.6 0.15 142);                     /* Brighter green for dark mode */
+  --status-success-foreground: oklch(0.15 0.05 142);         /* Dark green background */
+  --status-warning: oklch(0.7 0.15 85);                      /* Brighter orange for dark mode */
+  --status-warning-foreground: oklch(0.15 0.05 85);          /* Dark orange background */
+  --status-error: oklch(0.65 0.22 27);                       /* Brighter red for dark mode */
+  --status-error-foreground: oklch(0.15 0.05 27);            /* Dark red background */
+  --status-info: oklch(0.65 0.12 240);                       /* Brighter blue for dark mode */
+  --status-info-foreground: oklch(0.15 0.05 240);            /* Dark blue background */
+  
+  /* Dark Mode Interactive States */
+  --interactive-hover: oklch(0.6 0.05 240);                  /* Brighter hover for dark mode */
+  --interactive-pressed: oklch(0.65 0.06 240);               /* Brighter pressed state */
+  --interactive-disabled: oklch(0.3 0.01 0);                 /* Darker disabled state */
+  --interactive-disabled-foreground: oklch(0.5 0.01 0);      /* Medium gray for disabled text */
+  
+  /* Dark Mode Text Hierarchy */
+  --text-heading: oklch(0.9 0.005 264);                      /* Light headings for dark mode */
+  --text-body: oklch(0.8 0.005 264);                         /* Body text for dark mode */
+  --text-subtle: oklch(0.55 0.01 264);                       /* Subtle text for dark mode */
+  --text-placeholder: oklch(0.4 0.01 264);                   /* Placeholder text for dark mode */
 }
 
 /* Tailwind CSS v4 テーマ設定 */
@@ -118,6 +180,33 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  
+  /* Enhanced Accessibility Colors */
+  --color-high-contrast-foreground: var(--high-contrast-foreground);
+  --color-high-contrast-background: var(--high-contrast-background);
+  --color-high-contrast-border: var(--high-contrast-border);
+  
+  /* Semantic Status Colors */
+  --color-status-success: var(--status-success);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-foreground: var(--status-warning-foreground);
+  --color-status-error: var(--status-error);
+  --color-status-error-foreground: var(--status-error-foreground);
+  --color-status-info: var(--status-info);
+  --color-status-info-foreground: var(--status-info-foreground);
+  
+  /* Interactive State Colors */
+  --color-interactive-hover: var(--interactive-hover);
+  --color-interactive-pressed: var(--interactive-pressed);
+  --color-interactive-disabled: var(--interactive-disabled);
+  --color-interactive-disabled-foreground: var(--interactive-disabled-foreground);
+  
+  /* Text Hierarchy Colors */
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-text-subtle: var(--text-subtle);
+  --color-text-placeholder: var(--text-placeholder);
 
   /* ボーダー半径 */
   --radius: var(--radius);
@@ -164,10 +253,36 @@
     line-height: 1.25;
   }
 
-  /* フォーカススタイル */
+  /* Enhanced Focus Styles for Accessibility */
   *:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: var(--focus-ring-offset);
+    border-radius: 2px;
+  }
+  
+  /* Destructive action focus styles */
+  .focus-destructive:focus-visible,
+  button[data-destructive]:focus-visible {
+    outline-color: var(--focus-ring-danger);
+  }
+  
+  /* High contrast focus for accessibility */
+  @media (prefers-contrast: high) {
+    *:focus-visible {
+      outline-width: 4px;
+      outline-color: var(--high-contrast-border);
+    }
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   /* スクロールバーのスタイル */
@@ -263,6 +378,131 @@
   .card-footer {
     padding-top: 1rem;
     border-top: 1px solid var(--border);
+  }
+  
+  /* ==========================================================================
+     Enhanced Accessibility Utility Classes
+     ========================================================================== */
+  
+  /* High Contrast Utilities */
+  .text-high-contrast {
+    color: var(--high-contrast-foreground);
+  }
+  
+  .bg-high-contrast {
+    background-color: var(--high-contrast-background);
+  }
+  
+  .border-high-contrast {
+    border-color: var(--high-contrast-border);
+  }
+  
+  /* Semantic Status Utilities */
+  .status-success {
+    color: var(--status-success);
+  }
+  
+  .bg-status-success {
+    background-color: var(--status-success-foreground);
+    color: var(--status-success);
+  }
+  
+  .status-warning {
+    color: var(--status-warning);
+  }
+  
+  .bg-status-warning {
+    background-color: var(--status-warning-foreground);
+    color: var(--status-warning);
+  }
+  
+  .status-error {
+    color: var(--status-error);
+  }
+  
+  .bg-status-error {
+    background-color: var(--status-error-foreground);
+    color: var(--status-error);
+  }
+  
+  .status-info {
+    color: var(--status-info);
+  }
+  
+  .bg-status-info {
+    background-color: var(--status-info-foreground);
+    color: var(--status-info);
+  }
+  
+  /* Text Hierarchy Utilities */
+  .text-heading {
+    color: var(--text-heading);
+    font-weight: 600;
+  }
+  
+  .text-body {
+    color: var(--text-body);
+  }
+  
+  .text-subtle {
+    color: var(--text-subtle);
+  }
+  
+  .text-placeholder {
+    color: var(--text-placeholder);
+  }
+  
+  /* Interactive State Utilities */
+  .interactive-element {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  
+  .interactive-element:hover {
+    background-color: var(--interactive-hover);
+  }
+  
+  .interactive-element:active {
+    background-color: var(--interactive-pressed);
+  }
+  
+  .interactive-element:disabled,
+  .interactive-element[aria-disabled="true"] {
+    background-color: var(--interactive-disabled);
+    color: var(--interactive-disabled-foreground);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  
+  /* Screen Reader Only Utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  
+  /* Skip Link for Accessibility */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--background);
+    color: var(--foreground);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: 4px;
+    border: 2px solid var(--ring);
+    z-index: 100;
+  }
+  
+  .skip-link:focus {
+    top: 6px;
   }
 }
 

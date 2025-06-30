@@ -189,6 +189,26 @@
       "import": "./dist/components/ui/tooltip.js",
       "require": "./dist/components/ui/tooltip.js",
       "types": "./dist/components/ui/tooltip.d.ts"
+    },
+    "./components/ui/stack": {
+      "import": "./dist/components/ui/stack.js",
+      "require": "./dist/components/ui/stack.js",
+      "types": "./dist/components/ui/stack.d.ts"
+    },
+    "./components/ui/cluster": {
+      "import": "./dist/components/ui/cluster.js",
+      "require": "./dist/components/ui/cluster.js",
+      "types": "./dist/components/ui/cluster.d.ts"
+    },
+    "./components/ui/auto-grid": {
+      "import": "./dist/components/ui/auto-grid.js",
+      "require": "./dist/components/ui/auto-grid.js",
+      "types": "./dist/components/ui/auto-grid.d.ts"
+    },
+    "./components/ui/dashboard": {
+      "import": "./dist/components/ui/dashboard.js",
+      "require": "./dist/components/ui/dashboard.js",
+      "types": "./dist/components/ui/dashboard.d.ts"
     }
   },
   "license": "MIT",

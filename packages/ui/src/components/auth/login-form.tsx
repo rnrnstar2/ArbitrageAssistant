@@ -63,8 +63,8 @@ export function LoginForm({
   );
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 ${className || ''}`}>
-      <Card className={`w-full max-w-md mx-auto ${cardClassName || ''}`}>
+    <div className={`min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 ${className || ''}`}>
+      <Card className={`w-full max-w-md ${cardClassName || ''}`}>
           <CardHeader className="text-center pb-8">
             <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
               <LogIn className="w-6 h-6 text-blue-600" />

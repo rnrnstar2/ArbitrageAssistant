@@ -85,11 +85,11 @@ export function WorkflowStatusTracker({
   const getStepStatusBadge = (status: StepStatus) => {
     switch (status) {
       case 'completed':
-        return <Badge variant="default" className="bg-green-500">完了</Badge>;
+        return <Badge variant="default" className="bg-status-success status-success">完了</Badge>;
       case 'current':
-        return <Badge variant="default" className="bg-blue-500">実行中</Badge>;
+        return <Badge variant="default" className="bg-status-info status-info">実行中</Badge>;
       case 'error':
-        return <Badge variant="destructive">エラー</Badge>;
+        return <Badge variant="destructive" className="bg-status-error status-error">エラー</Badge>;
       case 'upcoming':
         return <Badge variant="secondary">待機中</Badge>;
       default:
@@ -101,16 +101,16 @@ export function WorkflowStatusTracker({
     const IconComponent = step.icon;
     
     if (status === 'error') {
-      return <AlertCircle className="h-5 w-5 text-red-500" />;
+      return <AlertCircle className="h-5 w-5 text-status-error" />;
     }
     if (status === 'completed') {
-      return <CheckCircle className="h-5 w-5 text-green-500" />;
+      return <CheckCircle className="h-5 w-5 text-status-success" />;
     }
     if (status === 'current') {
-      return <IconComponent className="h-5 w-5 text-blue-500" />;
+      return <IconComponent className="h-5 w-5 text-status-info" />;
     }
     
-    return <IconComponent className="h-5 w-5 text-gray-400" />;
+    return <IconComponent className="h-5 w-5 text-muted-foreground" />;
   };
 
   return (
@@ -129,7 +129,7 @@ export function WorkflowStatusTracker({
         </CardTitle>
         <div className="space-y-2">
           <Progress value={getProgressValue()} className="h-2" />
-          <div className="flex justify-between text-xs text-gray-500">
+          <div className="flex justify-between text-xs text-text-subtle">
             <span>進捗: {Math.round(getProgressValue())}%</span>
             <span>ステップ {WORKFLOW_STEPS.findIndex(s => s.key === currentStep) + 1} / {WORKFLOW_STEPS.length}</span>
           </div>
@@ -147,10 +147,10 @@ export function WorkflowStatusTracker({
                 key={step.key}
                 className={`
                   flex items-center gap-3 p-3 rounded-lg border transition-colors
-                  ${status === 'current' ? 'bg-blue-50 border-blue-200' :
-                    status === 'completed' ? 'bg-green-50 border-green-200' :
-                    status === 'error' ? 'bg-red-50 border-red-200' :
-                    'bg-gray-50 border-gray-200'}
+                  ${status === 'current' ? 'bg-status-info-foreground border-status-info' :
+                    status === 'completed' ? 'bg-status-success-foreground border-status-success' :
+                    status === 'error' ? 'bg-status-error-foreground border-status-error' :
+                    'bg-muted border-border'}
                 `}
               >
                 <div className="flex-shrink-0">
@@ -160,26 +160,26 @@ export function WorkflowStatusTracker({
                 <div className="flex-grow">
                   <div className="flex items-center gap-2">
                     <span className={`font-medium ${
-                      status === 'current' ? 'text-blue-800' :
-                      status === 'completed' ? 'text-green-800' :
-                      status === 'error' ? 'text-red-800' :
-                      'text-gray-600'
+                      status === 'current' ? 'text-status-info' :
+                      status === 'completed' ? 'text-status-success' :
+                      status === 'error' ? 'text-status-error' :
+                      'text-text-body'
                     }`}>
                       {step.label}
                     </span>
                     {getStepStatusBadge(status)}
                   </div>
                   <p className={`text-sm mt-1 ${
-                    status === 'current' ? 'text-blue-600' :
-                    status === 'completed' ? 'text-green-600' :
-                    status === 'error' ? 'text-red-600' :
-                    'text-gray-500'
+                    status === 'current' ? 'text-status-info' :
+                    status === 'completed' ? 'text-status-success' :
+                    status === 'error' ? 'text-status-error' :
+                    'text-text-subtle'
                   }`}>
                     {error || step.description}
                   </p>
                 </div>
 
-                <div className="flex-shrink-0 text-sm text-gray-400">
+                <div className="flex-shrink-0 text-sm text-text-subtle">
                   {index + 1}
                 </div>
               </div>

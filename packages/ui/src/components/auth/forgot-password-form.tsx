@@ -101,8 +101,8 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
 
   if (step === 'confirm') {
     return (
-      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-pink-50 p-4 ${className || ''}`}>
-        <Card className={`w-full max-w-md mx-auto ${cardClassName || ''}`}>
+      <div className={`min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-pink-50 p-4 ${className || ''}`}>
+        <Card className={`w-full max-w-md ${cardClassName || ''}`}>
             <CardHeader className="text-center pb-8">
               <div className="flex justify-center mb-4">
                 <div className="p-3 bg-purple-100 rounded-full">
@@ -282,8 +282,8 @@ export function ForgotPasswordForm({ onSignIn, className, cardClassName }: Forgo
   }
 
   return (
-    <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50 p-4 ${className || ''}`}>
-      <Card className={`w-full max-w-md mx-auto ${cardClassName || ''}`}>
+    <div className={`min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50 p-4 ${className || ''}`}>
+      <Card className={`w-full max-w-md ${cardClassName || ''}`}>
           <CardHeader className="text-center pb-8">
             <div className="flex justify-center mb-4">
               <div className="p-3 bg-orange-100 rounded-full">

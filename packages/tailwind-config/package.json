@@ -9,6 +9,7 @@
     "./postcss": "./postcss.config.js"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^4.0.0-beta.19",
+    "@tailwindcss/postcss": "^4.0.0-beta.19"
   }
 }

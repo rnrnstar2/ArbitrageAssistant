@@ -5,11 +5,11 @@ interface StatCardProps {
   title: string;
   value: number | string;
   format?: 'currency' | 'number';
-  color?: 'blue' | 'green' | 'orange' | 'red' | 'purple';
+  color?: 'info' | 'success' | 'warning' | 'error' | 'primary';
   icon?: React.ReactNode;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'number', color = 'blue', icon }) => {
+export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'number', color = 'info', icon }) => {
   const formatValue = (value: number | string, format: string) => {
     if (typeof value === 'string') {
       return value;
@@ -25,12 +25,12 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'numb
 
   const getColorClass = (color: string) => {
     switch (color) {
-      case 'blue': return 'text-blue-600';
-      case 'green': return 'text-green-600';
-      case 'orange': return 'text-orange-600';
-      case 'red': return 'text-red-600';
-      case 'purple': return 'text-purple-600';
-      default: return 'text-blue-600';
+      case 'info': return 'text-status-info';
+      case 'success': return 'text-status-success';
+      case 'warning': return 'text-status-warning';
+      case 'error': return 'text-status-error';
+      case 'primary': return 'text-primary';
+      default: return 'text-status-info';
     }
   };
 
@@ -42,7 +42,7 @@ export const StatCard: React.FC<StatCardProps> = ({ title, value, format = 'numb
         </div>
         {icon && <div className={`${getColorClass(color)}`}>{icon}</div>}
       </div>
-      <div className="text-sm text-gray-600">{title}</div>
+      <div className="text-sm text-text-subtle">{title}</div>
     </Card>
   );
 };
